@@ -1,16 +1,23 @@
 "use client";
 
+import { Clock, Database, Power } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useEffect, useState } from "react";
 
 const DURATION_PRESETS = [
-  { label: "5 minutes", value: "5m" },
-  { label: "15 minutes", value: "15m" },
-  { label: "30 minutes", value: "30m" },
-  { label: "Permanent", value: "0" },
+  { label: "5 minutes", value: "5m", icon: Clock },
+  { label: "15 minutes", value: "15m", icon: Clock },
+  { label: "30 minutes", value: "30m", icon: Clock },
+  { label: "Permanent", value: "0", icon: Power },
 ];
 
 export function BlockingStatus() {
@@ -42,28 +49,6 @@ export function BlockingStatus() {
     },
   });
 
-  const clearCacheMutation = api.blocky.cacheClear.useMutation({
-    onSuccess: () => {
-      toast.success("Cache has been cleared");
-    },
-    onError: (error) => {
-      toast.error("Failed to clear cache", {
-        description: error.message,
-      });
-    },
-  });
-
-  const refreshListsMutation = api.blocky.listsRefresh.useMutation({
-    onSuccess: () => {
-      toast.success("Lists have been refreshed");
-    },
-    onError: (error) => {
-      toast.error("Failed to refresh lists", {
-        description: error.message,
-      });
-    },
-  });
-
   useEffect(() => {
     if (!status?.autoEnableInSec) {
       setCountdown(null);
@@ -89,14 +74,17 @@ export function BlockingStatus() {
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    return `${minutes}m ${remainingSeconds.toString().padStart(2, "0")}s`;
   };
 
   if (isLoading) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>DNS Controls</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            DNS Server Status
+          </CardTitle>
         </CardHeader>
         <CardContent>Loading...</CardContent>
       </Card>
@@ -106,88 +94,64 @@ export function BlockingStatus() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>DNS Controls</CardTitle>
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            DNS Server Status
+          </span>
+          <div
+            className={`rounded-full px-3 py-1 text-sm font-medium ${
+              status?.enabled
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {status?.enabled ? "Enabled" : "Disabled"}
+          </div>
+        </CardTitle>
+        <CardDescription>
+          {status?.enabled
+            ? "DNS server is currently running and processing queries."
+            : countdown
+              ? `DNS server is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`
+              : "DNS server is permanently disabled until manually enabled."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
+        {status?.enabled ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div
-                className={`h-3 w-3 rounded-full ${
-                  status?.enabled ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
-              <span>
-                Blocking is {status?.enabled ? "enabled" : "disabled"}
-              </span>
-            </div>
-
-            {countdown !== null && (
-              <div className="text-muted-foreground text-sm">
-                Will be enabled in {formatTime(countdown)}
-              </div>
-            )}
-
-            {status?.disabledGroups && status.disabledGroups.length > 0 && (
-              <div className="text-muted-foreground text-sm">
-                Disabled groups: {status.disabledGroups.join(", ")}
-              </div>
-            )}
-
-            {status?.enabled ? (
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  key="0"
-                  variant="default"
-                  onClick={() => disableMutation.mutate({ duration: "0" })}
-                  disabled={disableMutation.isPending}
-                >
-                  Disable
-                </Button>
-                {DURATION_PRESETS.filter((preset) => preset.value !== "0").map(
-                  (preset) => (
+            <div>
+              <div className="grid grid-cols-2 gap-2">
+                {DURATION_PRESETS.map((preset) => {
+                  const Icon = preset.icon;
+                  return (
                     <Button
                       key={preset.value}
-                      variant="outline"
+                      variant={preset.value === "0" ? "destructive" : "outline"}
                       onClick={() =>
                         disableMutation.mutate({ duration: preset.value })
                       }
                       disabled={disableMutation.isPending}
+                      className="flex items-center gap-2"
                     >
-                      {`Disable for ${preset.label}`}
+                      <Icon className="h-4 w-4" />
+                      {preset.label === "Permanent" ? "Disable" : preset.label}
                     </Button>
-                  ),
-                )}
+                  );
+                })}
               </div>
-            ) : (
-              <Button
-                onClick={() => enableMutation.mutate()}
-                disabled={enableMutation.isPending}
-              >
-                Enable
-              </Button>
-            )}
+            </div>
           </div>
-
-          <div className="text-muted-foreground mb-2 text-sm font-semibold">
-            Advanced
-          </div>
-          <div className="flex gap-4">
-            <Button
-              onClick={() => clearCacheMutation.mutate()}
-              disabled={clearCacheMutation.isPending}
-              variant="destructive"
-            >
-              Clear Cache
-            </Button>
-            <Button
-              onClick={() => refreshListsMutation.mutate()}
-              disabled={refreshListsMutation.isPending}
-            >
-              Refresh Lists
-            </Button>
-          </div>
-        </div>
+        ) : (
+          <Button
+            className="flex w-full items-center gap-2"
+            onClick={() => enableMutation.mutate()}
+            disabled={enableMutation.isPending}
+          >
+            <Power className="h-4 w-4" />
+            Enable
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
