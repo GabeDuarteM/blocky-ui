@@ -1,9 +1,6 @@
-import { Inter } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "sonner";
 import "../styles/globals.css";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Blocky UI",
@@ -17,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html className="dark" lang="en">
-      <body className={inter.className}>
+      <body>
         <TRPCReactProvider>
           {children}
           <Toaster />
