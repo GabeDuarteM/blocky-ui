@@ -2,24 +2,19 @@
 
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { useToast } from "~/components/ui/use-toast";
 
 export function CacheControls() {
-  const { toast } = useToast();
+  const utils = api.useUtils();
 
   const clearMutation = api.blocky.cacheClear.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Cache has been cleared",
-      });
+      toast.success("Cache has been cleared");
     },
     onError: (error) => {
-      toast({
-        title: "Error",
+      toast.error("Failed to clear cache", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -30,13 +25,17 @@ export function CacheControls() {
         <CardTitle>Cache Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button
-          onClick={() => clearMutation.mutate()}
-          disabled={clearMutation.isPending}
-          variant="destructive"
-        >
-          Clear Cache
-        </Button>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => clearMutation.mutate()}
+              disabled={clearMutation.isPending}
+              variant="destructive"
+            >
+              Clear Cache
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

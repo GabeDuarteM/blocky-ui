@@ -2,24 +2,19 @@
 
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { useToast } from "~/components/ui/use-toast";
 
 export function ListControls() {
-  const { toast } = useToast();
+  const utils = api.useUtils();
 
   const refreshMutation = api.blocky.listsRefresh.useMutation({
     onSuccess: () => {
-      toast({
-        title: "Success",
-        description: "Lists have been refreshed",
-      });
+      toast.success("Lists have been refreshed");
     },
     onError: (error) => {
-      toast({
-        title: "Error",
+      toast.error("Failed to refresh lists", {
         description: error.message,
-        variant: "destructive",
       });
     },
   });
@@ -30,12 +25,16 @@ export function ListControls() {
         <CardTitle>List Controls</CardTitle>
       </CardHeader>
       <CardContent>
-        <Button
-          onClick={() => refreshMutation.mutate()}
-          disabled={refreshMutation.isPending}
-        >
-          Refresh Lists
-        </Button>
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => refreshMutation.mutate()}
+              disabled={refreshMutation.isPending}
+            >
+              Refresh Lists
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
