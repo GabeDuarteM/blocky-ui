@@ -1,29 +1,44 @@
-# Create T3 App
+# Blocky UI
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+A modern web interface for managing and controlling your Blocky DNS server.
 
-## What's next? How do I make an app with this?
+## ✨ Key Features
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+- DNS blocking controls with optional timed disable presets
+- DNS query tool to test domain blocking and filtering rules
+- One-click cache clearing and list refresh
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## 🏁 Getting Started
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+1. Clone the repository:
 
-## Learn More
+```bash
+git clone https://github.com/yourusername/blocky-ui.git
+cd blocky-ui
+```
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+2. Install dependencies:
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+```bash
+pnpm install
+```
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+3. Configure environment variables:
 
-## How do I deploy this?
+```bash
+cp .env.example .env
+# Don't forget to update the file with the correct values
+```
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+4. Start the development server:
+
+```bash
+pnpm dev
+```
+
+Visit `http://localhost:3000` to access the Blocky UI.
+
+## 🤝 Contributing
+
+We welcome contributions! Whether it's bug fixes, new features, or documentation
+improvements, your input helps make Blocky UI better.
