@@ -22,7 +22,7 @@ const queryResultSchema = z.object({
 });
 
 const api = ky.create({
-  prefixUrl: env.BLOCKY_API_URL as string,
+  prefixUrl: env.BLOCKY_API_URL,
   headers: {
     "Content-Type": "application/json",
   },

@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 
 export function ListControls() {
-  const utils = api.useUtils();
-
   const refreshMutation = api.blocky.listsRefresh.useMutation({
     onSuccess: () => {
       toast.success("Lists have been refreshed");

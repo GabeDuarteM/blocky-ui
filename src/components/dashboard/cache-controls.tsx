@@ -6,8 +6,6 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 
 export function CacheControls() {
-  const utils = api.useUtils();
-
   const clearMutation = api.blocky.cacheClear.useMutation({
     onSuccess: () => {
       toast.success("Cache has been cleared");
