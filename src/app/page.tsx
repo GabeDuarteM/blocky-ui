@@ -5,7 +5,7 @@ import { Operations } from "~/components/dashboard/operations";
 export default function HomePage() {
   return (
     <main className="container mx-auto max-w-3xl p-4">
-      <h1 className="mb-8 text-4xl font-bold">Blocky UI</h1>
+      <h1 className="font-title my-8 text-6xl font-bold">{"> "}BlockyUI</h1>
 
       <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
