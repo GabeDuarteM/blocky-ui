@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Database, Power } from "lucide-react";
+import { Clock, Database, Loader2, Power } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useEffect, useState } from "react";
+import clsx from "clsx";
 
 const DURATION_PRESETS = [
   { label: "5 minutes", value: "5m", icon: Clock },
@@ -77,17 +78,60 @@ export function ServerStatus() {
     return `${minutes}m ${remainingSeconds.toString().padStart(2, "0")}s`;
   };
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Server Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>Loading...</CardContent>
-      </Card>
+  let description = "";
+
+  if (status?.enabled) {
+    description = "DNS server is currently running and processing queries.";
+  } else if (countdown) {
+    description = `DNS server is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`;
+  } else if (!isLoading) {
+    description = "DNS server is permanently disabled until manually enabled.";
+  }
+
+  let content = null;
+
+  if (status?.enabled) {
+    content = (
+      <div className="space-y-4">
+        <div>
+          <div className="grid grid-cols-2 gap-2">
+            {DURATION_PRESETS.map((preset) => {
+              const Icon = preset.icon;
+              return (
+                <Button
+                  key={preset.value}
+                  variant={preset.value === "0" ? "destructive" : "outline"}
+                  onClick={() =>
+                    disableMutation.mutate({ duration: preset.value })
+                  }
+                  disabled={disableMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  {preset.label}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  } else if (!isLoading) {
+    content = (
+      <Button
+        className="flex w-full items-center gap-2"
+        onClick={() => enableMutation.mutate()}
+        disabled={enableMutation.isPending}
+      >
+        <Power className="h-4 w-4" />
+        Enable
+      </Button>
+    );
+  } else {
+    content = (
+      <div className="flex justify-center">
+        <Loader2 className="h-10 w-10 animate-spin" />
+      </div>
     );
   }
 
@@ -100,59 +144,20 @@ export function ServerStatus() {
             Server Status
           </span>
           <div
-            className={`rounded-full px-3 py-1 text-sm font-medium ${
+            className={clsx(
+              "rounded-full px-3 py-1 text-sm font-medium",
               status?.enabled
                 ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
+                : "bg-red-100 text-red-800",
+              isLoading && "invisible",
+            )}
           >
             {status?.enabled ? "Enabled" : "Disabled"}
           </div>
         </CardTitle>
-        <CardDescription>
-          {status?.enabled
-            ? "DNS server is currently running and processing queries."
-            : countdown
-              ? `DNS server is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`
-              : "DNS server is permanently disabled until manually enabled."}
-        </CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>
-        {status?.enabled ? (
-          <div className="space-y-4">
-            <div>
-              <div className="grid grid-cols-2 gap-2">
-                {DURATION_PRESETS.map((preset) => {
-                  const Icon = preset.icon;
-                  return (
-                    <Button
-                      key={preset.value}
-                      variant={preset.value === "0" ? "destructive" : "outline"}
-                      onClick={() =>
-                        disableMutation.mutate({ duration: preset.value })
-                      }
-                      disabled={disableMutation.isPending}
-                      className="flex items-center gap-2"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {preset.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <Button
-            className="flex w-full items-center gap-2"
-            onClick={() => enableMutation.mutate()}
-            disabled={enableMutation.isPending}
-          >
-            <Power className="h-4 w-4" />
-            Enable
-          </Button>
-        )}
-      </CardContent>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 }
