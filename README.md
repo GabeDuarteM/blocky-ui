@@ -1,6 +1,8 @@
-# Blocky UI
+# BlockyUI
 
-A modern web interface for managing and controlling your Blocky DNS server.
+A modern web interface for managing and controlling your [Blocky DNS](https://github.com/0xERR0R/blocky) server.
+
+![BlockyUI Screenshot](docs/BlockyUI-Screenshot.png)
 
 ## ✨ Key Features
 
@@ -16,14 +18,26 @@ A modern web interface for managing and controlling your Blocky DNS server.
 
 ```yaml
 services:
+  blocky:
+    image: spx01/blocky
+    container_name: blocky
+    hostname: blocky
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 4000:4000
+      - 53:53/udp
   blocky-ui:
     image: gabrielduartem/blocky-ui:latest
     container_name: blocky-ui
-    ports:
-      - "3000:3000"
-    environment:
-      - BLOCKY_API_URL=http://your-blocky-server:4000
     restart: unless-stopped
+    depends_on:
+      - blocky
+    ports:
+      - 3000:3000
+    environment:
+      - BLOCKY_API_URL=http://blocky:4000
 ```
 
 2. Start the container:
@@ -32,7 +46,7 @@ services:
 docker compose up -d
 ```
 
-Visit `http://localhost:3000` to access the Blocky UI.
+Visit `http://localhost:3000` to access BlockyUI.
 
 ### Using Docker Run
 
@@ -45,7 +59,7 @@ docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 gabr
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/blocky-ui.git
+git clone https://github.com/gabeduartem/blocky-ui.git
 cd blocky-ui
 ```
 
@@ -68,9 +82,9 @@ cp .env.example .env
 pnpm dev
 ```
 
-Visit `http://localhost:3000` to access the Blocky UI.
+Visit `http://localhost:3000` to access BlockyUI.
 
 ## 🤝 Contributing
 
 We welcome contributions! Whether it's bug fixes, new features, or documentation
-improvements, your input helps make Blocky UI better.
+improvements, your input helps make BlockyUI better.
