@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, Type, Code, AlertCircle, MessageSquare } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -90,22 +90,40 @@ export function QueryTool() {
         </form>
 
         {queryMutation.data && (
-          <div className="mt-4 space-y-2 rounded-lg border p-4">
-            <div>
-              <span className="font-medium">Response Type:</span>{" "}
-              {queryMutation.data.responseType}
+          <div className="mt-6 space-y-2">
+            <div className="flex items-start gap-2">
+              <Type className="text-muted-foreground mt-1 h-4 w-4" />
+              <div>
+                <span className="text-muted-foreground font-bold">
+                  Response Type:
+                </span>{" "}
+                {queryMutation.data.responseType}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Return Code:</span>{" "}
-              {queryMutation.data.returnCode}
+            <div className="flex items-start gap-2">
+              <Code className="text-muted-foreground mt-1 h-4 w-4" />
+              <div>
+                <span className="text-muted-foreground font-bold">
+                  Return Code:
+                </span>{" "}
+                {queryMutation.data.returnCode}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Reason:</span>{" "}
-              {queryMutation.data.reason}
+            <div className="flex items-start gap-2">
+              <AlertCircle className="text-muted-foreground mt-1 h-4 w-4" />
+              <div>
+                <span className="text-muted-foreground font-bold">Reason:</span>{" "}
+                {queryMutation.data.reason}
+              </div>
             </div>
-            <div>
-              <span className="font-medium">Response:</span>{" "}
-              {queryMutation.data.response}
+            <div className="flex items-start gap-2">
+              <MessageSquare className="text-muted-foreground mt-1 h-4 w-4" />
+              <div>
+                <span className="text-muted-foreground font-bold">
+                  Response:
+                </span>{" "}
+                {queryMutation.data.response}
+              </div>
             </div>
           </div>
         )}
