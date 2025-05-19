@@ -3,6 +3,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "sonner";
 import "../styles/globals.css";
 import clsx from "clsx";
+import { Pattern } from "~/components/dashboard/pattern";
 
 export const metadata = {
   title: "Blocky UI",
@@ -36,6 +37,7 @@ export default function RootLayout({
         <TRPCReactProvider>
           {children}
           <Toaster />
+          <Pattern />
         </TRPCReactProvider>
       </body>
     </html>
