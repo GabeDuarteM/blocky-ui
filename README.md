@@ -10,6 +10,38 @@ A modern web interface for managing and controlling your Blocky DNS server.
 
 ## 🏁 Getting Started
 
+### Using Docker Compose
+
+1. Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  blocky-ui:
+    image: gabrielduartem/blocky-ui:latest
+    container_name: blocky-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - BLOCKY_API_URL=http://your-blocky-server:4000
+    restart: unless-stopped
+```
+
+2. Start the container:
+
+```bash
+docker compose up -d
+```
+
+Visit `http://localhost:3000` to access the Blocky UI.
+
+### Using Docker Run
+
+```bash
+docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 gabrielduartem/blocky-ui:latest
+```
+
+### Local Development
+
 1. Clone the repository:
 
 ```bash
