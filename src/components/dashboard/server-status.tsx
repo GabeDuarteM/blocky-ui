@@ -17,10 +17,10 @@ const DURATION_PRESETS = [
   { label: "5 minutes", value: "5m", icon: Clock },
   { label: "15 minutes", value: "15m", icon: Clock },
   { label: "30 minutes", value: "30m", icon: Clock },
-  { label: "Permanent", value: "0", icon: Power },
+  { label: "Disable", value: "0", icon: Power },
 ];
 
-export function BlockingStatus() {
+export function ServerStatus() {
   const utils = api.useUtils();
   const { data: status, isLoading } = api.blocky.blockingStatus.useQuery();
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -83,7 +83,7 @@ export function BlockingStatus() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            DNS Server Status
+            Server Status
           </CardTitle>
         </CardHeader>
         <CardContent>Loading...</CardContent>
@@ -97,7 +97,7 @@ export function BlockingStatus() {
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            DNS Server Status
+            Server Status
           </span>
           <div
             className={`rounded-full px-3 py-1 text-sm font-medium ${
@@ -135,7 +135,7 @@ export function BlockingStatus() {
                       className="flex items-center gap-2"
                     >
                       <Icon className="h-4 w-4" />
-                      {preset.label === "Permanent" ? "Disable" : preset.label}
+                      {preset.label}
                     </Button>
                   );
                 })}

@@ -1,6 +1,6 @@
-import { BlockingStatus } from "~/components/dashboard/blocking-status";
+import { ServerStatus } from "~/components/dashboard/server-status";
 import { QueryTool } from "~/components/dashboard/query-tool";
-import { AdvancedControls } from "~/components/dashboard/advanced-controls";
+import { Operations } from "~/components/dashboard/operations";
 
 export default function HomePage() {
   return (
@@ -9,8 +9,8 @@ export default function HomePage() {
 
       <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-          <BlockingStatus />
-          <AdvancedControls />
+          <ServerStatus />
+          <Operations />
         </div>
         <QueryTool />
       </div>

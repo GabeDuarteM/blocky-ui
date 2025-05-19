@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 
-export function AdvancedControls() {
+export function Operations() {
   const clearCacheMutation = api.blocky.cacheClear.useMutation({
     onSuccess: () => {
       toast.success("Cache has been cleared");
@@ -40,7 +40,7 @@ export function AdvancedControls() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          DNS Operations
+          Operations
         </CardTitle>
         <CardDescription>
           Perform maintenance operations on the DNS server

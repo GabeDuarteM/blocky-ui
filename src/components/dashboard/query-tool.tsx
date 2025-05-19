@@ -43,7 +43,7 @@ export function QueryTool() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Search className="h-5 w-5" />
-          DNS Query Tool
+          Query Tool
         </CardTitle>
         <CardDescription>Test DNS resolution for a domain</CardDescription>
       </CardHeader>
