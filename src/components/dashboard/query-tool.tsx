@@ -20,18 +20,16 @@ import {
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useState } from "react";
-import type { TRPCClientErrorLike } from "@trpc/client";
-import type { AppRouter } from "~/server/api/root";
 import { DNS_RECORD_TYPES } from "~/lib/constants";
+
+type DNS_RECORD_TYPE = (typeof DNS_RECORD_TYPES)[number];
 
 export function QueryTool() {
   const [query, setQuery] = useState("");
-  const [type, setType] = useState<(typeof DNS_RECORD_TYPES)[number]>(
-    DNS_RECORD_TYPES[0],
-  );
+  const [type, setType] = useState<DNS_RECORD_TYPE>(DNS_RECORD_TYPES[0]);
 
   const queryMutation = api.blocky.queryExecute.useMutation({
-    onError: (error: TRPCClientErrorLike<AppRouter>) => {
+    onError: (error) => {
       toast.error("Query failed", {
         description: error.message,
       });
@@ -68,9 +66,7 @@ export function QueryTool() {
             />
             <Select
               value={type}
-              onValueChange={(value: (typeof DNS_RECORD_TYPES)[number]) =>
-                setType(value)
-              }
+              onValueChange={(value: DNS_RECORD_TYPE) => setType(value)}
             >
               <SelectTrigger className="w-26">
                 <SelectValue placeholder="Type" />
@@ -83,7 +79,13 @@ export function QueryTool() {
                 ))}
               </SelectContent>
             </Select>
-            <Button type="submit" disabled={queryMutation.isPending}>
+            <Button
+              type="submit"
+              variant="outline"
+              disabled={queryMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
               Query
             </Button>
           </div>

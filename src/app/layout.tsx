@@ -1,9 +1,10 @@
 import { Geist, Jersey_15 } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "sonner";
-import "../styles/globals.css";
-import clsx from "clsx";
 import { Pattern } from "~/components/dashboard/pattern";
+
+import "../styles/globals.css";
+import { cn } from "~/lib/utils";
 
 export const metadata = {
   title: "BlockyUI",
@@ -38,7 +39,7 @@ export default function RootLayout({
 }) {
   return (
     <html
-      className={clsx(geist.variable, jersey15.variable, "dark", "font-sans")}
+      className={cn(geist.variable, jersey15.variable, "dark", "font-sans")}
       lang="en"
     >
       <body>

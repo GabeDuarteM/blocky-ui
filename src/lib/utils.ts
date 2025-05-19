@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-restricted-imports
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 

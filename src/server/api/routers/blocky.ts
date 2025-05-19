@@ -47,15 +47,18 @@ export const blockyRouter = createTRPCRouter({
   }),
   blockingDisable: publicProcedure
     .input(
-      z.object({
-        duration: z.string().optional(),
-        groups: z.string().optional(),
-      }),
+      z
+        .object({
+          duration: z.string().optional(),
+          groups: z.string().optional(),
+        })
+        .optional(),
     )
     .mutation(async ({ input }) => {
       const searchParams = new URLSearchParams();
-      if (input.duration) searchParams.set("duration", input.duration);
-      if (input.groups) searchParams.set("groups", input.groups);
+
+      if (input?.duration) searchParams.set("duration", input.duration);
+      if (input?.groups) searchParams.set("groups", input.groups);
 
       const response = await api.get(
         `api/blocking/disable${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
@@ -69,16 +72,20 @@ export const blockyRouter = createTRPCRouter({
     }),
   cacheClear: publicProcedure.mutation(async () => {
     const response = await api.post("api/cache/flush");
+
     if (!response.ok) {
       throw new Error(`Failed to clear cache: ${response.statusText}`);
     }
+
     return { success: true };
   }),
   listsRefresh: publicProcedure.mutation(async () => {
     const response = await api.post("api/lists/refresh");
+
     if (!response.ok) {
       throw new Error(`Failed to refresh lists: ${response.statusText}`);
     }
+
     return { success: true };
   }),
   queryExecute: publicProcedure
@@ -87,10 +94,13 @@ export const blockyRouter = createTRPCRouter({
       const response = await api.post("api/query", {
         json: input,
       });
+
       if (!response.ok) {
         throw new Error(`Failed to execute query: ${response.statusText}`);
       }
+
       const data = await response.json();
+
       return queryResultSchema.parse(data);
     }),
 });

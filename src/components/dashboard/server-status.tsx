@@ -9,10 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { Badge } from "~/components/ui/badge";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useEffect, useState } from "react";
-import clsx from "clsx";
+import { cn } from "~/lib/utils";
 
 const DURATION_PRESETS = [
   { label: "5 minutes", value: "5m", icon: Clock },
@@ -23,7 +24,11 @@ const DURATION_PRESETS = [
 
 export function ServerStatus() {
   const utils = api.useUtils();
-  const { data: status, isLoading } = api.blocky.blockingStatus.useQuery();
+  const {
+    data: status,
+    isLoading,
+    isFetching,
+  } = api.blocky.blockingStatus.useQuery();
   const [countdown, setCountdown] = useState<number | null>(null);
 
   const enableMutation = api.blocky.blockingEnable.useMutation({
@@ -104,7 +109,7 @@ export function ServerStatus() {
                   onClick={() =>
                     disableMutation.mutate({ duration: preset.value })
                   }
-                  disabled={disableMutation.isPending}
+                  disabled={isFetching || disableMutation.isPending}
                   className="flex items-center gap-2"
                 >
                   <Icon className="h-4 w-4" />
@@ -121,7 +126,7 @@ export function ServerStatus() {
       <Button
         className="flex w-full items-center gap-2"
         onClick={() => enableMutation.mutate()}
-        disabled={enableMutation.isPending}
+        disabled={isFetching || enableMutation.isPending}
       >
         <Power className="h-4 w-4" />
         Enable
@@ -143,17 +148,17 @@ export function ServerStatus() {
             <Database className="h-5 w-5" />
             Server Status
           </span>
-          <div
-            className={clsx(
-              "rounded-full px-3 py-1 text-sm font-medium",
-              status?.enabled
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800",
+          <Badge
+            variant="outline"
+            className={cn(
               isLoading && "invisible",
+              status?.enabled
+                ? "border-green-400 bg-green-400/10 text-green-600"
+                : "border-red-400 bg-red-400/10 text-red-400",
             )}
           >
             {status?.enabled ? "Enabled" : "Disabled"}
-          </div>
+          </Badge>
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>

@@ -33,6 +33,18 @@ export default tseslint.config(
         "error",
         { checksVoidReturn: { attributes: false } },
       ],
+      // Disable imports from "clsx", import from utils/cn instead
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["clsx"],
+              message: "Please use cn from ~/lib/utils instead. ",
+            },
+          ],
+        },
+      ],
     },
   },
   {
