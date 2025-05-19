@@ -2,6 +2,7 @@ import { z } from "zod";
 import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
+import { DNS_RECORD_TYPES } from "~/lib/constants";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -11,7 +12,7 @@ const statusSchema = z.object({
 
 const queryRequestSchema = z.object({
   query: z.string(),
-  type: z.string(),
+  type: z.enum(DNS_RECORD_TYPES),
 });
 
 const queryResultSchema = z.object({

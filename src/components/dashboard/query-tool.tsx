@@ -10,15 +10,25 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useState } from "react";
 import type { TRPCClientErrorLike } from "@trpc/client";
 import type { AppRouter } from "~/server/api/root";
+import { DNS_RECORD_TYPES } from "~/lib/constants";
 
 export function QueryTool() {
   const [query, setQuery] = useState("");
-  const [type, setType] = useState("A");
+  const [type, setType] = useState<(typeof DNS_RECORD_TYPES)[number]>(
+    DNS_RECORD_TYPES[0],
+  );
 
   const queryMutation = api.blocky.queryExecute.useMutation({
     onError: (error: TRPCClientErrorLike<AppRouter>) => {
@@ -56,17 +66,23 @@ export function QueryTool() {
               onChange={(e) => setQuery(e.target.value)}
               className="flex-1"
             />
-            <select
+            <Select
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="border-input bg-background ring-offset-background focus-visible:ring-ring rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              onValueChange={(value: (typeof DNS_RECORD_TYPES)[number]) =>
+                setType(value)
+              }
             >
-              <option value="A">A</option>
-              <option value="AAAA">AAAA</option>
-              <option value="CNAME">CNAME</option>
-              <option value="MX">MX</option>
-              <option value="TXT">TXT</option>
-            </select>
+              <SelectTrigger className="w-26">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {DNS_RECORD_TYPES.map((recordType) => (
+                  <SelectItem key={recordType} value={recordType}>
+                    {recordType}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button type="submit" disabled={queryMutation.isPending}>
               Query
             </Button>
