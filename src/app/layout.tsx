@@ -6,8 +6,16 @@ import clsx from "clsx";
 import { Pattern } from "~/components/dashboard/pattern";
 
 export const metadata = {
-  title: "Blocky UI",
+  title: "BlockyUI",
   description: "A modern UI for the Blocky DNS server",
+  icons: {
+    icon: [
+      {
+        url: "/icon",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 const geist = Geist({
