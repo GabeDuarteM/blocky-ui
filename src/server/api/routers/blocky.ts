@@ -31,12 +31,37 @@ const api = ky.create({
 
 export const blockyRouter = createTRPCRouter({
   blockingStatus: publicProcedure.query(async () => {
-    const response = await api.get("api/blocking/status");
-    if (!response.ok) {
-      throw new Error(`Failed to get blocking status: ${response.statusText}`);
+    try {
+      const response = await api.get("api/blocking/status");
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to get blocking status: ${response.statusText}`,
+        );
+      }
+
+      const data = await response.json();
+
+      return statusSchema.parse(data);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (
+          error.message.includes("Failed to fetch") ||
+          error.message.includes("fetch failed") ||
+          error.message.includes("NetworkError")
+        ) {
+          throw new Error(
+            `Unable to reach Blocky API at ${env.BLOCKY_API_URL}. Please check if the API server is running.`,
+          );
+        }
+
+        throw error;
+      }
+
+      throw new Error(
+        "An unexpected error occurred while fetching blocking status",
+      );
     }
-    const data = await response.json();
-    return statusSchema.parse(data);
   }),
   blockingEnable: publicProcedure.mutation(async () => {
     const response = await api.get("api/blocking/enable");

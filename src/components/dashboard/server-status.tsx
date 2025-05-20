@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Database, Loader2, Power } from "lucide-react";
+import { Clock, Database, Loader2, Power, AlertCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -28,6 +28,7 @@ export function ServerStatus() {
     data: status,
     isLoading,
     isFetching,
+    error,
   } = api.blocky.blockingStatus.useQuery();
   const [countdown, setCountdown] = useState<number | null>(null);
 
@@ -77,6 +78,14 @@ export function ServerStatus() {
     return () => clearInterval(timer);
   }, [status?.autoEnableInSec]);
 
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to query blocking status", {
+        description: error.message,
+      });
+    }
+  }, [error]);
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -85,7 +94,9 @@ export function ServerStatus() {
 
   let description = "";
 
-  if (status?.enabled) {
+  if (error) {
+    description = "";
+  } else if (status?.enabled) {
     description = "DNS server is currently running and processing queries.";
   } else if (countdown) {
     description = `DNS server is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`;
@@ -95,7 +106,14 @@ export function ServerStatus() {
 
   let content = null;
 
-  if (status?.enabled) {
+  if (error) {
+    content = (
+      <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-red-400">
+        <AlertCircle className="h-8 w-8" />
+        <p className="text-sm">{error.message}</p>
+      </div>
+    );
+  } else if (status?.enabled) {
     content = (
       <div className="space-y-4">
         <div>
@@ -151,7 +169,7 @@ export function ServerStatus() {
           <Badge
             variant="outline"
             className={cn(
-              isLoading && "invisible",
+              (isLoading || error) && "invisible",
               status?.enabled
                 ? "border-green-400 bg-green-400/10 text-green-600"
                 : "border-red-400 bg-red-400/10 text-red-400",
@@ -162,7 +180,7 @@ export function ServerStatus() {
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent>{content}</CardContent>
+      <CardContent className="h-full">{content}</CardContent>
     </Card>
   );
 }
