@@ -57,7 +57,7 @@ export function QueryTool() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <Input
               placeholder="Enter domain (e.g., example.com)"
               value={query}
@@ -68,7 +68,7 @@ export function QueryTool() {
               value={type}
               onValueChange={(value: DNS_RECORD_TYPE) => setType(value)}
             >
-              <SelectTrigger className="w-26">
+              <SelectTrigger className="w-full sm:w-26">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -83,7 +83,7 @@ export function QueryTool() {
               type="submit"
               variant="outline"
               disabled={queryMutation.isPending}
-              className="flex items-center gap-2"
+              className="flex items-center justify-center gap-2"
             >
               <Search className="h-4 w-4" />
               Query
@@ -92,7 +92,7 @@ export function QueryTool() {
         </form>
 
         {queryMutation.data && (
-          <div className="mt-6 space-y-2">
+          <div className="mt-6 space-y-4 sm:space-y-2">
             <div className="flex items-start gap-2">
               <Type className="text-muted-foreground mt-1 h-4 w-4" />
               <div>
