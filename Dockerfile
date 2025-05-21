@@ -1,25 +1,34 @@
+# 1) base image for the final container (native, multi-arch)
 FROM node:20-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
 
-FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
-
-FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm build
-
-FROM base AS runner
+# 2) builder base (FORCED to amd64 due to nextjs build issues on armv6/v7)
+FROM --platform=linux/amd64 node:20-alpine AS base-build
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 WORKDIR /app
 
+# 3) deps + build, all on amd64 still
+FROM base-build AS deps-build
+COPY package.json pnpm-lock.yaml ./
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+  pnpm install --frozen-lockfile
+
+FROM deps-build AS builder
+COPY . .
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+  pnpm build
+
+# 4) the runner stage, multi-arch from now on
+FROM base AS runner
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs && \
-  adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -32,4 +41,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"] 
+CMD ["node", "server.js"]
