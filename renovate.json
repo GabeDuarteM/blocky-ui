@@ -21,6 +21,10 @@
       "groupName": "t3-env",
       "matchPackagePrefixes": ["@t3-oss/env-"],
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["pnpm"],
+      "matchUpdateTypes": ["major"]
     }
   ]
 }
