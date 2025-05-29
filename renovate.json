@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "groupName": "eslint",
+      "matchPackagePrefixes": ["eslint", "eslint-plugin-", "eslint-config-", "@typescript-eslint/", "@eslint/"],
+      "automerge": true
+    },
+    {
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true
+    },
+    {
+      "groupName": "tailwind",
+      "matchPackagePrefixes": ["tailwindcss", "tailwind-merge", "prettier-plugin-tailwindcss"]
+    },
+    {
+      "groupName": "t3-env",
+      "matchPackagePrefixes": ["@t3-oss/env-"],
+      "automerge": true
+    }
+  ]
+}
