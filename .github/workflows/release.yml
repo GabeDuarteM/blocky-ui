@@ -13,6 +13,9 @@ jobs:
   release:
     name: Changesets
     runs-on: ubuntu-latest
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     permissions:
       contents: write
       packages: write
@@ -41,8 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           publish: pnpm changeset publish
-          commit: "chore: update versions"
-          title: "chore: update versions"
 
   publish-docker:
     name: Publish Docker Images
