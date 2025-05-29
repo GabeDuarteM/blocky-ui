@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "check": "next lint && tsc --noEmit",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -14,7 +13,8 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "changeset": "pnpx @changesets/cli"
+    "changeset": "pnpx @changesets/cli",
+    "ci": "pnpm run lint && pnpm run format:check && pnpm run typecheck"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.4",
