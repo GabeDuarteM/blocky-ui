@@ -44,6 +44,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           publish: pnpm changeset publish
+          commit: "chore: update versions"
+          title: "Release new version"
 
   publish-docker:
     name: Publish Docker Images
