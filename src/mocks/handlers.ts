@@ -18,20 +18,87 @@ interface QueryResult {
   returnCode: string;
 }
 
+interface BlockingState extends BlockingStatus {
+  disabledAt?: number;
+}
+
+let blockingState: BlockingState = {
+  enabled: true,
+  autoEnableInSec: 0,
+  disabledGroups: [],
+};
+
 export const handlers = [
   http.get("http://localhost:4000/api/blocking/status", () => {
+    if (!blockingState.enabled && blockingState.disabledAt) {
+      const now = Date.now();
+      const elapsedSeconds = Math.floor(
+        (now - blockingState.disabledAt) / 1000,
+      );
+      const remainingSeconds = Math.max(
+        0,
+        blockingState.autoEnableInSec - elapsedSeconds,
+      );
+
+      if (remainingSeconds === 0) {
+        blockingState = {
+          enabled: true,
+          autoEnableInSec: 0,
+          disabledGroups: [],
+        };
+      } else {
+        blockingState.autoEnableInSec = remainingSeconds;
+      }
+    }
+
     return HttpResponse.json<BlockingStatus>({
-      enabled: true,
-      autoEnableInSec: 0,
-      disabledGroups: [],
+      enabled: blockingState.enabled,
+      autoEnableInSec: blockingState.autoEnableInSec,
+      disabledGroups: blockingState.disabledGroups,
     });
   }),
 
   http.get("http://localhost:4000/api/blocking/enable", () => {
+    blockingState = {
+      enabled: true,
+      autoEnableInSec: 0,
+      disabledGroups: [],
+    };
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.get("http://localhost:4000/api/blocking/disable", () => {
+  http.get("http://localhost:4000/api/blocking/disable", ({ request }) => {
+    const url = new URL(request.url);
+    const duration = url.searchParams.get("duration");
+    const groups = url.searchParams.get("groups")?.split(",") ?? [];
+
+    let seconds = 0;
+    if (duration) {
+      const match = /(\d+)([smh])/.exec(duration);
+      if (match) {
+        const [, value, unit] = match;
+        const numValue = parseInt(value ?? "0");
+        switch (unit) {
+          case "s":
+            seconds = numValue;
+            break;
+          case "m":
+            seconds = numValue * 60;
+            break;
+          case "h":
+            seconds = numValue * 3600;
+            break;
+        }
+      }
+    }
+
+    blockingState = {
+      enabled: false,
+      autoEnableInSec: seconds,
+      disabledGroups: groups,
+      disabledAt: Date.now(),
+    };
+
     return new HttpResponse(null, { status: 200 });
   }),
 
