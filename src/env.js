@@ -7,6 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    DATABASE_URL: z.string().url().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.string().url().default("http://localhost:4000"),
     DEMO_MODE: z.boolean().default(false),
@@ -26,6 +27,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
+    DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     DEMO_MODE: process.env.DEMO_MODE === "true",
