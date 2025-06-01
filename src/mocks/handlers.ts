@@ -1,4 +1,5 @@
 import { http, HttpResponse } from "msw";
+import { env } from "~/env";
 
 interface BlockingStatus {
   enabled: boolean;
@@ -24,7 +25,7 @@ let blockingState: BlockingState = {
 };
 
 export const handlers = [
-  http.get("http://localhost:4000/api/blocking/status", () => {
+  http.get(`${env.BLOCKY_API_URL}/api/blocking/status`, () => {
     if (
       !blockingState.enabled &&
       blockingState.disabledAt &&
@@ -57,7 +58,7 @@ export const handlers = [
     });
   }),
 
-  http.get("http://localhost:4000/api/blocking/enable", () => {
+  http.get(`${env.BLOCKY_API_URL}/api/blocking/enable`, () => {
     blockingState = {
       enabled: true,
       autoEnableInSec: 0,
@@ -66,7 +67,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.get("http://localhost:4000/api/blocking/disable", ({ request }) => {
+  http.get(`${env.BLOCKY_API_URL}/api/blocking/disable`, ({ request }) => {
     const url = new URL(request.url);
     const duration = url.searchParams.get("duration");
     const groups = url.searchParams.get("groups")?.split(",") ?? [];
@@ -101,7 +102,7 @@ export const handlers = [
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.post("http://localhost:4000/api/query", () => {
+  http.post(`${env.BLOCKY_API_URL}/api/query`, () => {
     return HttpResponse.json<QueryResult>({
       reason: "MOCK",
       response: "93.184.216.34",
@@ -110,11 +111,11 @@ export const handlers = [
     });
   }),
 
-  http.post("http://localhost:4000/api/cache/flush", () => {
+  http.post(`${env.BLOCKY_API_URL}/api/cache/flush`, () => {
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.post("http://localhost:4000/api/lists/refresh", () => {
+  http.post(`${env.BLOCKY_API_URL}/api/lists/refresh`, () => {
     return new HttpResponse(null, { status: 200 });
   }),
 ];
