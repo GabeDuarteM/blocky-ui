@@ -8,7 +8,7 @@ import { cn } from "~/lib/utils";
 
 export const metadata = {
   title: "BlockyUI",
-  description: "A modern UI for the Blocky DNS server",
+  description: "A modern UI for Blocky DNS",
   icons: {
     icon: [
       {

@@ -4,6 +4,12 @@ import { type NextRequest } from "next/server";
 import { env } from "~/env";
 import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
+import { initMocks } from "~/mocks/init";
+
+// Initialize MSW in demo mode
+if (env.DEMO_MODE) {
+  void initMocks();
+}
 
 /**
  * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
