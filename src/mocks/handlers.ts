@@ -6,11 +6,6 @@ interface BlockingStatus {
   disabledGroups: string[];
 }
 
-interface QueryRequest {
-  query: string;
-  type: string;
-}
-
 interface QueryResult {
   reason: string;
   response: string;
@@ -30,7 +25,11 @@ let blockingState: BlockingState = {
 
 export const handlers = [
   http.get("http://localhost:4000/api/blocking/status", () => {
-    if (!blockingState.enabled && blockingState.disabledAt) {
+    if (
+      !blockingState.enabled &&
+      blockingState.disabledAt &&
+      blockingState.autoEnableInSec > 0
+    ) {
       const now = Date.now();
       const elapsedSeconds = Math.floor(
         (now - blockingState.disabledAt) / 1000,
@@ -73,7 +72,7 @@ export const handlers = [
     const groups = url.searchParams.get("groups")?.split(",") ?? [];
 
     let seconds = 0;
-    if (duration) {
+    if (duration && duration !== "0") {
       const match = /(\d+)([smh])/.exec(duration);
       if (match) {
         const [, value, unit] = match;
@@ -96,14 +95,13 @@ export const handlers = [
       enabled: false,
       autoEnableInSec: seconds,
       disabledGroups: groups,
-      disabledAt: Date.now(),
+      disabledAt: seconds > 0 ? Date.now() : undefined,
     };
 
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.post("http://localhost:4000/api/query", async ({ request }) => {
-    const body = (await request.json()) as QueryRequest;
+  http.post("http://localhost:4000/api/query", () => {
     return HttpResponse.json<QueryResult>({
       reason: "MOCK",
       response: "93.184.216.34",
