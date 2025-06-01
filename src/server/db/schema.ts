@@ -1,27 +1,36 @@
-// Example model schema from the Drizzle docs
-// https://orm.drizzle.team/docs/sql-schema-declaration
-
+import {
+  mysqlTable,
+  index,
+  datetime,
+  longtext,
+  varchar,
+  int,
+  bigint,
+} from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
-import { index, mysqlTableCreator } from "drizzle-orm/mysql-core";
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-export const createTable = mysqlTableCreator((name) => `t3-test_${name}`);
-
-export const posts = createTable(
-  "post",
-  (d) => ({
-    id: d.bigint({ mode: "number" }).primaryKey().autoincrement(),
-    name: d.varchar({ length: 256 }),
-    createdAt: d
-      .timestamp()
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    updatedAt: d.timestamp().onUpdateNow(),
-  }),
-  (t) => [index("name_idx").on(t.name)],
+export const logEntries = mysqlTable(
+  "log_entries",
+  {
+    requestTs: datetime("request_ts", { mode: "string", fsp: 3 }).default(
+      "NULL",
+    ),
+    clientIp: longtext("client_ip").default("NULL"),
+    clientName: varchar("client_name", { length: 191 }).default("NULL"),
+    durationMs: bigint("duration_ms", { mode: "number" }).default(sql`NULL`),
+    reason: longtext().default("NULL"),
+    responseType: varchar("response_type", { length: 191 }).default("NULL"),
+    questionType: longtext("question_type").default("NULL"),
+    questionName: longtext("question_name").default("NULL"),
+    effectiveTldp: longtext("effective_tldp").default("NULL"),
+    answer: longtext().default("NULL"),
+    responseCode: longtext("response_code").default("NULL"),
+    hostname: longtext().default("NULL"),
+    id: int().autoincrement().notNull(),
+  },
+  (table) => [
+    index("idx_log_entries_request_ts").on(table.requestTs),
+    index("idx_log_entries_client_name").on(table.clientName),
+    index("idx_log_entries_response_type").on(table.responseType),
+  ],
 );
