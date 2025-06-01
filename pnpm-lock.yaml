@@ -16,7 +16,7 @@ importers:
         version: 1.2.3(@types/react@19.1.6)(react@19.1.0)
       '@t3-oss/env-nextjs':
         specifier: ^0.13.0
-        version: 0.13.6(typescript@5.8.3)(zod@3.25.42)
+        version: 0.13.6(typescript@5.8.3)(zod@3.25.44)
       '@tanstack/react-query':
         specifier: ^5.69.0
         version: 5.79.0(react@19.1.0)
@@ -67,7 +67,7 @@ importers:
         version: 3.3.0
       zod:
         specifier: ^3.24.2
-        version: 3.25.42
+        version: 3.25.44
     devDependencies:
       '@changesets/cli':
         specifier: ^2.29.4
@@ -2819,8 +2819,8 @@ packages:
     resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
     engines: {node: '>=18'}
 
-  zod@3.25.42:
-    resolution: {integrity: sha512-PcALTLskaucbeHc41tU/xfjfhcz8z0GdhhDcSgrCTmSazUuqnYqiXO63M0QUBVwpBlsLsNVn5qHSC5Dw3KZvaQ==}
+  zod@3.25.44:
+    resolution: {integrity: sha512-BVwH2PnqCwxUN+SNjzRL6kcGvvz1JuojtB+uZB1Hg8DA56Zqn0pjpIwMrb1IhUsF75DjpEe4fhxPKO6+AErqzw==}
 
 snapshots:
 
@@ -3519,17 +3519,17 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@t3-oss/env-core@0.13.6(typescript@5.8.3)(zod@3.25.42)':
+  '@t3-oss/env-core@0.13.6(typescript@5.8.3)(zod@3.25.44)':
     optionalDependencies:
       typescript: 5.8.3
-      zod: 3.25.42
+      zod: 3.25.44
 
-  '@t3-oss/env-nextjs@0.13.6(typescript@5.8.3)(zod@3.25.42)':
+  '@t3-oss/env-nextjs@0.13.6(typescript@5.8.3)(zod@3.25.44)':
     dependencies:
-      '@t3-oss/env-core': 0.13.6(typescript@5.8.3)(zod@3.25.42)
+      '@t3-oss/env-core': 0.13.6(typescript@5.8.3)(zod@3.25.44)
     optionalDependencies:
       typescript: 5.8.3
-      zod: 3.25.42
+      zod: 3.25.44
 
   '@tailwindcss/node@4.1.8':
     dependencies:
@@ -5679,4 +5679,4 @@ snapshots:
 
   yoctocolors-cjs@2.1.2: {}
 
-  zod@3.25.42: {}
+  zod@3.25.44: {}
