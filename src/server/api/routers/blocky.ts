@@ -3,6 +3,8 @@ import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
 import { DNS_RECORD_TYPES } from "~/lib/constants";
+import { logEntries } from "~/server/db/schema";
+import { desc, sql } from "drizzle-orm";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -127,5 +129,53 @@ export const blockyRouter = createTRPCRouter({
       const data = await response.json();
 
       return queryResultSchema.parse(data);
+    }),
+  getLogEntries: publicProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().min(1).max(100).default(50),
+          offset: z.number().min(0).default(0),
+          search: z.string().optional(),
+        })
+        .optional(),
+    )
+    .query(async ({ input, ctx }) => {
+      const limit = input?.limit ?? 50;
+      const offset = input?.offset ?? 0;
+      const search = input?.search;
+
+      const countQuery = ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(logEntries);
+
+      if (search) {
+        countQuery.where(
+          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
+        );
+      }
+
+      const countResult = await countQuery;
+      const count = countResult?.[0]?.count ?? 0;
+
+      const query = ctx.db
+        .select()
+        .from(logEntries)
+        .orderBy(desc(logEntries.requestTs))
+        .limit(limit)
+        .offset(offset);
+
+      if (search) {
+        query.where(
+          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
+        );
+      }
+
+      const entries = await query;
+
+      return {
+        items: entries,
+        totalCount: Number(count),
+      };
     }),
 });
