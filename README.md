@@ -9,6 +9,8 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - DNS blocking controls with optional timed disable presets
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
+- Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
+  - Currently only works with MySQL/MariaDB databases
 
 ## 🏁 Getting Started
 
@@ -38,6 +40,8 @@ services:
       - 3000:3000
     environment:
       - BLOCKY_API_URL=http://blocky:4000
+      # Uncomment to enable query logging features if you have it configured on blocky (MySQL/MariaDB only):
+      # - DATABASE_URL="username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s"
 ```
 
 2. Start the container:
@@ -51,7 +55,7 @@ Visit `http://localhost:3000` to access BlockyUI.
 ### Using Docker Run
 
 ```bash
-docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 gabrielduartem/blocky-ui:latest
+docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 [-e DATABASE_URL="username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s"] gabrielduartem/blocky-ui:latest
 ```
 
 ### Local Development
