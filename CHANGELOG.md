@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.1.2
+
+### Patch Changes
+
+- a4927a3: Remove unecessary url validation on the database env variable
+
 ## 1.1.1
 
 ### Patch Changes
