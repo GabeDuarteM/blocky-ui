@@ -1,5 +1,17 @@
 # blocky-ui
 
+## 1.1.2
+
+### Patch Changes
+
+- a4927a3: Remove unecessary url validation on the database env variable
+
+## 1.1.1
+
+### Patch Changes
+
+- ca4d28f: Fix a bug where the docker builds would never show the new query logs table, even when configured to be shown
+
 ## 1.1.0
 
 ### Minor Changes
