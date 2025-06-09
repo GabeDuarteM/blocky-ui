@@ -23,10 +23,6 @@ export const columns: ColumnDef<LogEntry>[] = [
     },
   },
   {
-    accessorKey: "clientIp",
-    header: "Client IP",
-  },
-  {
     accessorKey: "clientName",
     header: "Client Name",
   },
