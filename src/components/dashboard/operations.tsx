@@ -46,7 +46,7 @@ export function Operations() {
           Perform maintenance operations on the DNS server
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-2">
         <Button
           variant="outline"
           className="flex w-full items-center gap-2"
