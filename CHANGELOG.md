@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.1.3
+
+### Patch Changes
+
+- c4763fe: Improve docs and validation for the DATABASE_URL env variable
+
 ## 1.1.2
 
 ### Patch Changes
