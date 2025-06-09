@@ -20,21 +20,38 @@ import { useState, useEffect } from "react";
 import { useDebounce } from "~/hooks/use-debounce";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+
+const BLOCKY_RESPONSE_TYPES = [
+  "BLOCKED",
+  "RESOLVED",
+  "CACHED",
+  "CUSTOMDNS",
+  "SPECIAL",
+];
 
 export function QueryLogs() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [pageIndex, setPageIndex] = useState(0);
+  const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const pageSize = 10;
 
   useEffect(() => {
     setPageIndex(0);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, responseTypeFilter]);
 
   const searchParams = {
     search: debouncedSearch,
     limit: pageSize,
     offset: (pageIndex + 1) * pageSize,
+    responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
   };
 
   const {
@@ -96,14 +113,32 @@ export function QueryLogs() {
           </div>
         </div>
         <div className="mt-4">
-          <div className="relative">
-            <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-            <Input
-              placeholder="Search domains..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8"
-            />
+          <div className="relative flex flex-row items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+              <Input
+                placeholder="Search domains..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8"
+              />
+            </div>
+            <Select
+              value={responseTypeFilter}
+              onValueChange={setResponseTypeFilter}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Response Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Types</SelectItem>
+                {BLOCKY_RESPONSE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </CardHeader>

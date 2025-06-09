@@ -4,7 +4,7 @@ import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
 import { DNS_RECORD_TYPES } from "~/lib/constants";
 import { logEntries } from "~/server/db/schema";
-import { desc, sql } from "drizzle-orm";
+import { desc, sql, and, eq } from "drizzle-orm";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -137,6 +137,7 @@ export const blockyRouter = createTRPCRouter({
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().min(0).default(0),
           search: z.string().optional(),
+          responseType: z.string().optional(),
         })
         .optional(),
     )
@@ -144,16 +145,22 @@ export const blockyRouter = createTRPCRouter({
       const limit = input?.limit ?? 50;
       const offset = input?.offset ?? 0;
       const search = input?.search;
+      const responseType = input?.responseType;
 
-      const countQuery = ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(logEntries);
-
+      const filters = [];
       if (search) {
-        countQuery.where(
+        filters.push(
           sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
         );
       }
+      if (responseType) {
+        filters.push(eq(logEntries.responseType, responseType));
+      }
+
+      const countQuery = ctx.db
+        .select({ count: sql<number>`count(*)` })
+        .from(logEntries)
+        .where(filters.length > 0 ? and(...filters) : undefined);
 
       const countResult = await countQuery;
       const count = countResult?.[0]?.count ?? 0;
@@ -163,13 +170,8 @@ export const blockyRouter = createTRPCRouter({
         .from(logEntries)
         .orderBy(desc(logEntries.requestTs))
         .limit(limit)
-        .offset(offset);
-
-      if (search) {
-        query.where(
-          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
-        );
-      }
+        .offset(offset)
+        .where(filters.length > 0 ? and(...filters) : undefined);
 
       const logs = await query;
 
