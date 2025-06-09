@@ -41,7 +41,7 @@ services:
     environment:
       - BLOCKY_API_URL=http://blocky:4000
       # Uncomment to enable query logging features if you have it configured on blocky (MySQL/MariaDB only):
-      # - DATABASE_URL="username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s"
+      # - DATABASE_URL=username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s
 ```
 
 2. Start the container:
