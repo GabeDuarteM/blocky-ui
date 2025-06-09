@@ -1,9 +1,8 @@
-"use client";
-
 import { ServerStatus } from "~/components/dashboard/server-status";
 import { QueryTool } from "~/components/dashboard/query-tool";
 import { Operations } from "~/components/dashboard/operations";
 import { RecentQueries } from "~/components/dashboard/recent-queries/recent-queries";
+import { env } from "~/env";
 
 export default function HomePage() {
   return (
@@ -18,7 +17,7 @@ export default function HomePage() {
           <Operations />
         </div>
         <QueryTool />
-        <RecentQueries />
+        {env.DATABASE_URL && <RecentQueries />}
       </div>
     </main>
   );
