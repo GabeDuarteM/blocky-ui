@@ -4,6 +4,8 @@ import { Operations } from "~/components/dashboard/operations";
 import { QueryLogs } from "~/components/dashboard/query-logs/query-logs";
 import { env } from "~/env";
 
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   return (
     <main className="container mx-auto max-w-5xl p-4">
