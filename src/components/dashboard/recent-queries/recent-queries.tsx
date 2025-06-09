@@ -1,15 +1,22 @@
 "use client";
 
 import { api } from "~/trpc/react";
-import { History, Search } from "lucide-react";
+import { History, Search, RefreshCw } from "lucide-react";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardAction,
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "~/components/ui/tooltip";
 import { useState, useEffect } from "react";
 import { useDebounce } from "~/hooks/use-debounce";
 import { DataTable } from "./data-table";
@@ -31,15 +38,18 @@ export function RecentQueries() {
     offset: (pageIndex + 1) * pageSize,
   };
 
-  const { data: logEntriesData, isFetching: isFetchingLogs } =
-    api.blocky.getLogEntries.useQuery(searchParams, {
-      placeholderData: (previousData) => ({
-        items: [],
-        totalCount: previousData?.totalCount ?? 0,
-      }),
-    });
+  const {
+    data: logEntriesData,
+    isFetching: isFetchingLogs,
+    refetch,
+  } = api.blocky.getLogEntries.useQuery(searchParams, {
+    placeholderData: (previousData) => ({
+      items: [],
+      totalCount: previousData?.totalCount ?? 0,
+    }),
+  });
 
-  const pageCount = Math.ceil((logEntriesData?.totalCount ?? 0) / pageSize);
+  const pageCount = Math.floor((logEntriesData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();
 
   if (pageIndex > 0) {
@@ -59,13 +69,33 @@ export function RecentQueries() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <History className="h-5 w-5" />
-          Recent DNS Queries
-        </CardTitle>
-        <CardDescription>
-          View the most recent DNS queries processed by the server
-        </CardDescription>
+        <div className="flex w-full flex-row items-center justify-between">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <CardTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Recent DNS Queries
+            </CardTitle>
+            <CardDescription>
+              View the most recent DNS queries processed by the server
+            </CardDescription>
+          </div>
+          <div className="flex h-full items-center justify-center pl-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => refetch()}
+                  disabled={isFetchingLogs}
+                  aria-label="Refresh"
+                >
+                  <RefreshCw className={isFetchingLogs ? "animate-spin" : ""} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent sideOffset={4}>Refresh</TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
         <div className="mt-4">
           <div className="relative">
             <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
