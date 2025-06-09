@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Database, Loader2, Power, AlertCircle } from "lucide-react";
+import { Database, Loader2, Power, AlertCircle, Pause } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -16,9 +16,9 @@ import { useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 
 const DURATION_PRESETS = [
-  { label: "5 minutes", value: "5m", icon: Clock },
-  { label: "15 minutes", value: "15m", icon: Clock },
-  { label: "30 minutes", value: "30m", icon: Clock },
+  { label: "5 minutes", value: "5m", icon: Pause },
+  { label: "15 minutes", value: "15m", icon: Pause },
+  { label: "30 minutes", value: "30m", icon: Pause },
   { label: "Disable", value: "0", icon: Power },
 ];
 
