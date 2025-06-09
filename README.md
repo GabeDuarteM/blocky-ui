@@ -41,7 +41,7 @@ services:
     environment:
       - BLOCKY_API_URL=http://blocky:4000
       # Uncomment to enable query logging features if you have it configured on blocky (MySQL/MariaDB only):
-      # - DATABASE_URL="username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s"
+      # - DATABASE_URL=mysql://username:password@localhost:3306/blocky_query_log_table_name
 ```
 
 2. Start the container:
@@ -55,7 +55,7 @@ Visit `http://localhost:3000` to access BlockyUI.
 ### Using Docker Run
 
 ```bash
-docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 [-e DATABASE_URL="username:password@tcp(localhost:3306)/blocky_query_log?timeout=15s"] gabrielduartem/blocky-ui:latest
+docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 [-e DATABASE_URL="mysql://username:password@localhost:3306/blocky_query_log_table_name"] gabrielduartem/blocky-ui:latest
 ```
 
 ### Local Development
