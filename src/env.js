@@ -7,7 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url().optional(),
+    DATABASE_URL: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.string().url().default("http://localhost:4000"),
     DEMO_MODE: z.boolean().default(false),
