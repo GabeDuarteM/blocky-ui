@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardAction,
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -22,7 +21,7 @@ import { useDebounce } from "~/hooks/use-debounce";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 
-export function RecentQueries() {
+export function QueryLogs() {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [pageIndex, setPageIndex] = useState(0);
@@ -39,28 +38,28 @@ export function RecentQueries() {
   };
 
   const {
-    data: logEntriesData,
+    data: queryLogsData,
     isFetching: isFetchingLogs,
     refetch,
-  } = api.blocky.getLogEntries.useQuery(searchParams, {
+  } = api.blocky.getQueryLogs.useQuery(searchParams, {
     placeholderData: (previousData) => ({
       items: [],
       totalCount: previousData?.totalCount ?? 0,
     }),
   });
 
-  const pageCount = Math.floor((logEntriesData?.totalCount ?? 0) / pageSize);
+  const pageCount = Math.floor((queryLogsData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();
 
   if (pageIndex > 0) {
-    void utils.blocky.getLogEntries.prefetch({
+    void utils.blocky.getQueryLogs.prefetch({
       ...searchParams,
       offset: (pageIndex - 1) * pageSize,
     });
   }
 
   if (pageIndex < pageCount - 1) {
-    void utils.blocky.getLogEntries.prefetch({
+    void utils.blocky.getQueryLogs.prefetch({
       ...searchParams,
       offset: (pageIndex + 1) * pageSize,
     });
@@ -73,10 +72,10 @@ export function RecentQueries() {
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Recent DNS Queries
+              Query Logs
             </CardTitle>
             <CardDescription>
-              View the most recent DNS queries processed by the server
+              View the DNS query logs processed by the server
             </CardDescription>
           </div>
           <div className="flex h-full items-center justify-center pl-4">
@@ -111,7 +110,7 @@ export function RecentQueries() {
       <CardContent>
         <DataTable
           columns={columns}
-          data={logEntriesData?.items ?? []}
+          data={queryLogsData?.items ?? []}
           pageCount={pageCount}
           pageIndex={pageIndex}
           onPageChange={setPageIndex}

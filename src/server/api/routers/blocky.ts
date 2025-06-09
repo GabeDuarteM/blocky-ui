@@ -130,7 +130,7 @@ export const blockyRouter = createTRPCRouter({
 
       return queryResultSchema.parse(data);
     }),
-  getLogEntries: publicProcedure
+  getQueryLogs: publicProcedure
     .input(
       z
         .object({
@@ -171,10 +171,10 @@ export const blockyRouter = createTRPCRouter({
         );
       }
 
-      const entries = await query;
+      const logs = await query;
 
       return {
-        items: entries,
+        items: logs,
         totalCount: Number(count),
       };
     }),

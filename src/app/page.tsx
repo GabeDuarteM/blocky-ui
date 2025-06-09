@@ -1,7 +1,7 @@
 import { ServerStatus } from "~/components/dashboard/server-status";
 import { QueryTool } from "~/components/dashboard/query-tool";
 import { Operations } from "~/components/dashboard/operations";
-import { RecentQueries } from "~/components/dashboard/recent-queries/recent-queries";
+import { QueryLogs } from "~/components/dashboard/query-logs/query-logs";
 import { env } from "~/env";
 
 export default function HomePage() {
@@ -17,7 +17,7 @@ export default function HomePage() {
           <Operations />
         </div>
         <QueryTool />
-        {env.DATABASE_URL && <RecentQueries />}
+        {env.DATABASE_URL && <QueryLogs />}
       </div>
     </main>
   );
