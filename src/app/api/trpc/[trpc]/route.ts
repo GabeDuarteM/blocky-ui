@@ -6,7 +6,6 @@ import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
 import { initMocks } from "~/mocks/init";
 
-// Initialize MSW in demo mode
 if (env.DEMO_MODE) {
   void initMocks();
 }
