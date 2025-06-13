@@ -33,6 +33,18 @@
     {
       "matchPackageNames": ["pnpm"],
       "matchUpdateTypes": ["major"]
+    },
+    {
+      "matchPackageNames": ["zod"],
+      "schedule": ["every 1 week on friday"]
+    },
+    {
+      "matchPackageNames": ["trpc{/,}**"],
+      "schedule": ["every 1 week on friday"]
+    },
+    {
+      "matchPackageNames": ["@tanstack/react-query"],
+      "schedule": ["every 1 week on friday"]
     }
   ]
 }
