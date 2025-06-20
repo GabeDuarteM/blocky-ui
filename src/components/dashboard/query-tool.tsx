@@ -20,13 +20,13 @@ import {
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useState } from "react";
-import { DNS_RECORD_TYPES } from "~/lib/constants";
+import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 
-type DNS_RECORD_TYPE = (typeof DNS_RECORD_TYPES)[number];
+type DNS_RECORD_TYPE = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
 
 export function QueryTool() {
   const [query, setQuery] = useState("");
-  const [type, setType] = useState<DNS_RECORD_TYPE>(DNS_RECORD_TYPES[0]);
+  const [type, setType] = useState<DNS_RECORD_TYPE>(BLOCKY_DNS_RECORD_TYPES[0]);
 
   const queryMutation = api.blocky.queryExecute.useMutation({
     onError: (error) => {
@@ -72,7 +72,7 @@ export function QueryTool() {
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
-                {DNS_RECORD_TYPES.map((recordType) => (
+                {BLOCKY_DNS_RECORD_TYPES.map((recordType) => (
                   <SelectItem key={recordType} value={recordType}>
                     {recordType}
                   </SelectItem>

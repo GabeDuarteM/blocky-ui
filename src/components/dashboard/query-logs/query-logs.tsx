@@ -27,14 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-
-const BLOCKY_RESPONSE_TYPES = [
-  "BLOCKED",
-  "RESOLVED",
-  "CACHED",
-  "CUSTOMDNS",
-  "SPECIAL",
-];
+import { BLOCKY_RESPONSE_TYPES } from "~/lib/constants";
 
 export function QueryLogs() {
   const [searchQuery, setSearchQuery] = useState("");

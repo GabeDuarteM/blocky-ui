@@ -2,7 +2,7 @@ import { z } from "zod";
 import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
-import { DNS_RECORD_TYPES } from "~/lib/constants";
+import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 import { logEntries } from "~/server/db/schema";
 import { desc, sql, and, eq } from "drizzle-orm";
 
@@ -14,7 +14,7 @@ const statusSchema = z.object({
 
 const queryRequestSchema = z.object({
   query: z.string(),
-  type: z.enum(DNS_RECORD_TYPES),
+  type: z.enum(BLOCKY_DNS_RECORD_TYPES),
 });
 
 const queryResultSchema = z.object({
@@ -146,6 +146,43 @@ export const blockyRouter = createTRPCRouter({
       const offset = input?.offset ?? 0;
       const search = input?.search;
       const responseType = input?.responseType;
+
+      if (env.DEMO_MODE) {
+        const { default: logEntryMocks } = await import(
+          "~/mocks/logEntryMocks.json"
+        );
+
+        let filteredLogs = logEntryMocks.sort((item1, item2) => {
+          const date1 = new Date(item1.requestTs);
+          const date2 = new Date(item2.requestTs);
+
+          if (date1 > date2) return -1;
+          if (date1 < date2) return 1;
+
+          return 0;
+        });
+
+        if (search) {
+          filteredLogs = filteredLogs.filter((log) =>
+            log.questionName?.toLowerCase().includes(search.toLowerCase()),
+          );
+        }
+
+        if (responseType) {
+          filteredLogs = filteredLogs.filter(
+            (log) => log.responseType === responseType,
+          );
+        }
+
+        const totalCount = filteredLogs.length;
+
+        const paginatedLogs = filteredLogs.slice(offset, offset + limit);
+
+        return {
+          items: paginatedLogs,
+          totalCount,
+        };
+      }
 
       const filters = [];
       if (search) {
