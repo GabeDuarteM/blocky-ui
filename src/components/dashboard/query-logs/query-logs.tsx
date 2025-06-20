@@ -50,7 +50,7 @@ export function QueryLogs() {
   const searchParams = {
     search: debouncedSearch,
     limit: pageSize,
-    offset: (pageIndex + 1) * pageSize,
+    offset: pageIndex * pageSize,
     responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
   };
 
@@ -65,7 +65,7 @@ export function QueryLogs() {
     }),
   });
 
-  const pageCount = Math.floor((queryLogsData?.totalCount ?? 0) / pageSize);
+  const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();
 
   if (pageIndex > 0) {
