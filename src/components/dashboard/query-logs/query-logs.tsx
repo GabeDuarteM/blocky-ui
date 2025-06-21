@@ -27,14 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-
-const BLOCKY_RESPONSE_TYPES = [
-  "BLOCKED",
-  "RESOLVED",
-  "CACHED",
-  "CUSTOMDNS",
-  "SPECIAL",
-];
+import { BLOCKY_RESPONSE_TYPES } from "~/lib/constants";
 
 export function QueryLogs() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,7 +43,7 @@ export function QueryLogs() {
   const searchParams = {
     search: debouncedSearch,
     limit: pageSize,
-    offset: (pageIndex + 1) * pageSize,
+    offset: pageIndex * pageSize,
     responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
   };
 
@@ -65,7 +58,7 @@ export function QueryLogs() {
     }),
   });
 
-  const pageCount = Math.floor((queryLogsData?.totalCount ?? 0) / pageSize);
+  const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();
 
   if (pageIndex > 0) {
