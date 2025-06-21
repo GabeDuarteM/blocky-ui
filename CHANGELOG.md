@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.1.4
+
+### Patch Changes
+
+- 179e82f: fix a bug where some results were not shown on query logs
+
 ## 1.1.3
 
 ### Patch Changes
