@@ -148,13 +148,11 @@ export const blockyRouter = createTRPCRouter({
       const responseType = input?.responseType;
 
       if (env.DEMO_MODE) {
-        const { default: logEntryMocks } = await import(
-          "~/mocks/logEntryMocks.json"
-        );
+        const { logEntryMock } = await import("~/mocks/logEntryMock");
 
-        let filteredLogs = logEntryMocks.sort((item1, item2) => {
-          const date1 = new Date(item1.requestTs);
-          const date2 = new Date(item2.requestTs);
+        let filteredLogs = logEntryMock.sort((item1, item2) => {
+          const date1 = new Date(item1.requestTs ?? 0);
+          const date2 = new Date(item2.requestTs ?? 0);
 
           if (date1 > date2) return -1;
           if (date1 < date2) return 1;

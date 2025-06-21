@@ -40,10 +40,6 @@ const generateMockLogEntry = (id: number): LogEntry => {
   };
 };
 
-export const logEntryMock: LogEntry[] = Array.from({ length: 50 }, (_, i) =>
+export const logEntryMock: LogEntry[] = Array.from({ length: 200 }, (_, i) =>
   generateMockLogEntry(i + 1),
 );
-
-// void import("fs").then(({ writeFileSync }) =>
-//   writeFileSync("./logEntryMocks.json", JSON.stringify(logEntryMock)),
-// );
