@@ -19,7 +19,8 @@ export default function HomePage() {
           <Operations />
         </div>
         <QueryTool />
-        {env.DATABASE_URL && <QueryLogs />}
+        {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing */}
+        {(env.DATABASE_URL || env.DEMO_MODE) && <QueryLogs />}
       </div>
     </main>
   );
