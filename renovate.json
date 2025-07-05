@@ -3,6 +3,15 @@
   "extends": ["config:recommended"],
   "packageRules": [
     {
+      "matchPackageNames": ["pnpm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": ["pnpm"],
+      "matchUpdateTypes": ["major"]
+    },
+    {
       "groupName": "eslint",
       "automerge": true,
       "matchPackageNames": [
@@ -29,10 +38,6 @@
       "groupName": "t3-env",
       "automerge": true,
       "matchPackageNames": ["@t3-oss/env-{/,}**"]
-    },
-    {
-      "matchPackageNames": ["pnpm"],
-      "matchUpdateTypes": ["major"]
     },
     {
       "matchPackageNames": ["zod"],
