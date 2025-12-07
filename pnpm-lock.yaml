@@ -52,7 +52,7 @@ importers:
         version: 0.44.2(gel@2.1.0)(mysql2@3.14.1)
       ky:
         specifier: ^1.8.1
-        version: 1.8.1
+        version: 1.14.1
       lucide-react:
         specifier: ^0.525.0
         version: 0.525.0(react@19.1.0)
@@ -2511,8 +2511,8 @@ packages:
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
 
-  ky@1.8.1:
-    resolution: {integrity: sha512-7Bp3TpsE+L+TARSnnDpk3xg8Idi8RwSLdj6CMbNWoOARIrGrbuLGusV0dYwbZOm4bB3jHNxSw8Wk/ByDqJEnDw==}
+  ky@1.14.1:
+    resolution: {integrity: sha512-hYje4L9JCmpEQBtudo+v52X5X8tgWXUYyPcxKSuxQNboqufecl9VMWjGiucAFH060AwPXHZuH+WB2rrqfkmafw==}
     engines: {node: '>=18'}
 
   language-subtag-registry@0.3.23:
@@ -5741,7 +5741,7 @@ snapshots:
     dependencies:
       json-buffer: 3.0.1
 
-  ky@1.8.1: {}
+  ky@1.14.1: {}
 
   language-subtag-registry@0.3.23: {}
 
