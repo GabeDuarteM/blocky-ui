@@ -12,7 +12,7 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 
 const DURATION_PRESETS = [
@@ -31,6 +31,12 @@ export function ServerStatus() {
     error,
   } = api.blocky.blockingStatus.useQuery();
   const [countdown, setCountdown] = useState<number | null>(null);
+
+  useEffect(() => {
+    startTransition(() => {
+      setCountdown(status?.autoEnableInSec ?? null);
+    });
+  }, [status?.autoEnableInSec]);
 
   const enableMutation = api.blocky.blockingEnable.useMutation({
     onSuccess: () => {
@@ -57,13 +63,7 @@ export function ServerStatus() {
   });
 
   useEffect(() => {
-    if (!status?.autoEnableInSec) {
-      setCountdown(null);
-      return;
-    }
-
-    const initialCountdown = status.autoEnableInSec;
-    setCountdown(initialCountdown);
+    if (countdown === null) return undefined;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -76,7 +76,7 @@ export function ServerStatus() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [status?.autoEnableInSec]);
+  }, [countdown]);
 
   useEffect(() => {
     if (error) {

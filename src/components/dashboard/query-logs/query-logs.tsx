@@ -16,7 +16,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "~/components/ui/tooltip";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDebounce } from "~/hooks/use-debounce";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
@@ -36,9 +36,15 @@ export function QueryLogs() {
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const pageSize = 10;
 
-  useEffect(() => {
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
     setPageIndex(0);
-  }, [debouncedSearch, responseTypeFilter]);
+  };
+
+  const handleResponseTypeChange = (value: string) => {
+    setResponseTypeFilter(value);
+    setPageIndex(0);
+  };
 
   const searchParams = {
     search: debouncedSearch,
@@ -112,13 +118,13 @@ export function QueryLogs() {
               <Input
                 placeholder="Search domains..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-8"
               />
             </div>
             <Select
               value={responseTypeFilter}
-              onValueChange={setResponseTypeFilter}
+              onValueChange={handleResponseTypeChange}
             >
               <SelectTrigger className="w-36">
                 <SelectValue placeholder="Response Type" />

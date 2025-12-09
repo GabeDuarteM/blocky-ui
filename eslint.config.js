@@ -1,27 +1,29 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import tseslint from "typescript-eslint";
-// @ts-ignore -- no types for this plugin
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+// @ts-expect-error -- no types for this plugin
 import drizzle from "eslint-plugin-drizzle";
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-});
-
-export default tseslint.config(
-  {
-    ignores: [".next", "src/components/ui/**"],
-  },
-  ...compat.extends("next/core-web-vitals"),
+export default defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    "src/components/ui/**",
+  ]),
   {
     files: ["**/*.ts", "**/*.tsx"],
     plugins: {
       drizzle,
     },
-    extends: [
-      ...tseslint.configs.recommended,
-      ...tseslint.configs.recommendedTypeChecked,
-      ...tseslint.configs.stylisticTypeChecked,
-    ],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
     rules: {
       "@typescript-eslint/array-type": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
@@ -59,15 +61,8 @@ export default tseslint.config(
         },
       ],
     },
-  },
-  {
     linterOptions: {
       reportUnusedDisableDirectives: true,
     },
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-      },
-    },
   },
-);
+]);
