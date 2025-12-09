@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.1.5
+
+### Patch Changes
+
+- ca002bc: Bump packages to cover CVEs
+
 ## 1.1.4
 
 ### Patch Changes
