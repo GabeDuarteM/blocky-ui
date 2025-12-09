@@ -7,6 +7,8 @@ import { env } from "~/env";
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
+  const showLogs = env.DATABASE_URL ?? env.DEMO_MODE ?? false;
+
   return (
     <main className="container mx-auto max-w-5xl p-4">
       <h1 className="font-title mt-8 mb-16 text-6xl font-bold">
@@ -19,8 +21,7 @@ export default function HomePage() {
           <Operations />
         </div>
         <QueryTool />
-        {/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing */}
-        {(env.DATABASE_URL || env.DEMO_MODE) && <QueryLogs />}
+        {Boolean(showLogs) && <QueryLogs />}
       </div>
     </main>
   );
