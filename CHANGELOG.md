@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.1.6
+
+### Patch Changes
+
+- 1b3fd87: Fix React Server Components CVE
+
 ## 1.1.5
 
 ### Patch Changes
