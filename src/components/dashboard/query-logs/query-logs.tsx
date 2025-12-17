@@ -34,7 +34,7 @@ export function QueryLogs() {
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -44,6 +44,11 @@ export function QueryLogs() {
   const handleResponseTypeChange = (value: string) => {
     setResponseTypeFilter(value);
     setPageIndex(0);
+  };
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(Number(value));
+    setPageIndex(0); // Reset to first page when changing page size
   };
 
   const searchParams = {
@@ -94,7 +99,19 @@ export function QueryLogs() {
               View the DNS query logs processed by the server
             </CardDescription>
           </div>
-          <div className="flex h-full items-center justify-center pl-4">
+          <div className="flex h-full items-center justify-center gap-2 pl-4">
+            <span className="text-muted-foreground hidden text-sm md:inline">Rows</span>
+            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
