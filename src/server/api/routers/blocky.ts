@@ -3,8 +3,7 @@ import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
-import { logEntries } from "~/server/db/schema";
-import { desc, sql, and, eq } from "drizzle-orm";
+import { createLogProvider } from "~/server/log-provider";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -182,37 +181,15 @@ export const blockyRouter = createTRPCRouter({
         };
       }
 
-      const filters = [];
-      if (search) {
-        filters.push(
-          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
-        );
-      }
-      if (responseType) {
-        filters.push(eq(logEntries.responseType, responseType));
-      }
+      const logProvider = createLogProvider(ctx.db);
 
-      const countQuery = ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(logEntries)
-        .where(filters.length > 0 ? and(...filters) : undefined);
+      const logs = await logProvider.getQueryLogs({
+        limit,
+        offset,
+        search,
+        responseType,
+      });
 
-      const countResult = await countQuery;
-      const count = countResult?.[0]?.count ?? 0;
-
-      const query = ctx.db
-        .select()
-        .from(logEntries)
-        .orderBy(desc(logEntries.requestTs))
-        .limit(limit)
-        .offset(offset)
-        .where(filters.length > 0 ? and(...filters) : undefined);
-
-      const logs = await query;
-
-      return {
-        items: logs,
-        totalCount: Number(count),
-      };
+      return logs;
     }),
 });

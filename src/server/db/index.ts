@@ -12,7 +12,22 @@ const globalForDb = globalThis as unknown as {
   conn: Pool | undefined;
 };
 
-const conn = globalForDb.conn ?? createPool({ uri: env.QUERY_LOG_TARGET });
-if (env.NODE_ENV !== "production") globalForDb.conn = conn;
+// Only create database connection if using MySQL log type
+const createDbConnection = () => {
+  if (env.QUERY_LOG_TYPE !== "mysql") {
+    return undefined;
+  }
 
-export const db = drizzle(conn, { schema, mode: "default" });
+  if (!env.QUERY_LOG_TARGET) {
+    throw new Error(
+      "QUERY_LOG_TARGET (MySQL connection URI) is required when QUERY_LOG_TYPE is 'mysql'",
+    );
+  }
+
+  const conn = globalForDb.conn ?? createPool({ uri: env.QUERY_LOG_TARGET });
+  if (env.NODE_ENV !== "production") globalForDb.conn = conn;
+
+  return drizzle(conn, { schema, mode: "default" });
+};
+
+export const db = createDbConnection();

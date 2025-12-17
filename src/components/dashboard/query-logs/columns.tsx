@@ -1,7 +1,8 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { logEntries } from "~/server/db/schema";
+import type { LogEntry } from "~/server/csv-log-reader";
+
 import {
   Tooltip,
   TooltipContent,
@@ -9,8 +10,6 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { Badge, type BadgeVariants } from "~/components/ui/badge";
-
-type LogEntry = typeof logEntries.$inferSelect;
 
 export const columns: ColumnDef<LogEntry>[] = [
   {

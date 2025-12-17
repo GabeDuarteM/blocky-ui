@@ -7,7 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    QUERY_LOG_TYPE: z.string().optional(),
+    QUERY_LOG_TYPE: z.enum(["mysql", "csv"]).default("mysql"),
     QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.url().default("http://localhost:4000"),
@@ -28,7 +28,7 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE ?? 'mysql',
+    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE ?? "mysql",
     QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
