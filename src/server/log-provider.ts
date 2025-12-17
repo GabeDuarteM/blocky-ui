@@ -181,7 +181,7 @@ export function createLogProvider(dbConnection?: DbType): LogProvider {
     return globalForLogProvider.logProvider;
   }
 
-  const logType = env.QUERY_LOG_TYPE.toLowerCase();
+  const logType = env.QUERY_LOG_TYPE?.toLowerCase();
 
   let provider: LogProvider;
 
