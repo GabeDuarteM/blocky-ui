@@ -7,7 +7,7 @@ import { env } from "~/env";
 export const dynamic = "force-dynamic";
 
 export default function HomePage() {
-  const showLogs = env.DATABASE_URL ?? env.DEMO_MODE ?? false;
+  const showLogs = env.QUERY_LOG_TARGET ?? env.DEMO_MODE ?? false;
 
   return (
     <main className="container mx-auto max-w-5xl p-4">

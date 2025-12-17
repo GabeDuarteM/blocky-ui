@@ -7,9 +7,10 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().url().optional(),
+    QUERY_LOG_TYPE: z.string().optional(),
+    QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
-    BLOCKY_API_URL: z.string().url().default("http://localhost:4000"),
+    BLOCKY_API_URL: z.url().default("http://localhost:4000"),
     DEMO_MODE: z.boolean().default(false),
   },
 
@@ -27,12 +28,14 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    DATABASE_URL: process.env.DATABASE_URL,
+    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE ?? 'mysql',
+    QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     DEMO_MODE: process.env.DEMO_MODE === "true",
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
+
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
    * useful for Docker builds.

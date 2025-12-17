@@ -6,6 +6,6 @@ export default {
   schema: "./src/server/db/schema.ts",
   dialect: "mysql",
   dbCredentials: {
-    url: env.DATABASE_URL ?? "",
+    url: env.QUERY_LOG_TARGET ?? "",
   },
 } satisfies Config;
