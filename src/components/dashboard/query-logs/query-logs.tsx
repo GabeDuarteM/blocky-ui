@@ -100,8 +100,13 @@ export function QueryLogs() {
             </CardDescription>
           </div>
           <div className="flex h-full items-center justify-center gap-2 pl-4">
-            <span className="text-muted-foreground hidden text-sm md:inline">Rows</span>
-            <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <span className="text-muted-foreground hidden text-sm md:inline">
+              Rows
+            </span>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={handlePageSizeChange}
+            >
               <SelectTrigger className="w-20">
                 <SelectValue />
               </SelectTrigger>

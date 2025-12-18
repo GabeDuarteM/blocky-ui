@@ -60,7 +60,12 @@ Visit `http://localhost:3000` to access BlockyUI.
 ### Using Docker Run
 
 ```bash
-docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 [-e QUERY_LOG_TARGET="mysql://username:password@localhost:3306/blocky_query_log_table_name"] gabrielduartem/blocky-ui:latest
+docker run -d \
+  -p 3000:3000 \
+  -e BLOCKY_API_URL=http://your-blocky-server:4000 \
+  -e QUERY_LOG_TYPE=mysql \
+  -e QUERY_LOG_TARGET="mysql://username:password@localhost:3306/blocky_query_log_table_name" \
+  gabrielduartem/blocky-ui:latest
 ```
 
 ### Local Development

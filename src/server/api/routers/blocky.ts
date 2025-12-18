@@ -3,7 +3,6 @@ import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
-import { createLogProvider } from "~/server/log-provider";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -181,15 +180,11 @@ export const blockyRouter = createTRPCRouter({
         };
       }
 
-      const logProvider = createLogProvider(ctx.db);
-
-      const logs = await logProvider.getQueryLogs({
+      return await ctx.logProvider.getQueryLogs({
         limit,
         offset,
         search,
         responseType,
       });
-
-      return logs;
     }),
 });

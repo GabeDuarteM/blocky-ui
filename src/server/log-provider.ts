@@ -7,6 +7,8 @@ import {
 } from "./csv-log-reader";
 import { desc, sql, and, eq } from "drizzle-orm";
 import type { MySql2Database } from "drizzle-orm/mysql2";
+
+import { db } from "./db";
 import { logEntries } from "./db/schema";
 import type * as schema from "./db/schema";
 
@@ -75,12 +77,18 @@ export class MySQLLogProvider implements LogProvider {
 }
 
 /**
- * CSV file-based log provider
+ * CSV file-based log provider with in-memory caching
  */
 export class CSVLogProvider implements LogProvider {
   private currentLogFile: string | null = null;
   private watcher: LogFileWatcher | null = null;
   private checkFileIntervalId: NodeJS.Timeout | null = null;
+
+  // In-memory cache for log entries
+  private cachedEntries: LogEntry[] = [];
+  private cacheMaxSize: number = 1000; // Keep last 1k entries in memory
+  private lastFullRead: number = 0;
+  private cacheInvalidationMs: number = 300000; // Re-read full file every 5 minutes
 
   constructor(private directory: string) {
     this.initializeWatcher();
@@ -93,11 +101,15 @@ export class CSVLogProvider implements LogProvider {
       if (this.currentLogFile) {
         console.log(`Monitoring log file: ${this.currentLogFile}`);
 
+        // Load initial cache
+        await this.loadInitialCache();
+
         // Start watching for new entries
         this.watcher = new LogFileWatcher(
           this.currentLogFile,
           (newEntries) => {
             console.log(`Detected ${newEntries.length} new log entries`);
+            this.addToCache(newEntries);
           },
           5000, // Check every 5 seconds
         );
@@ -116,6 +128,40 @@ export class CSVLogProvider implements LogProvider {
     }
   }
 
+  /**
+   * Load initial cache from the log file
+   */
+  private async loadInitialCache(): Promise<void> {
+    if (!this.currentLogFile) return;
+
+    try {
+      // Read the last N entries to populate cache
+      const result = await readLogFile(this.currentLogFile, {
+        limit: this.cacheMaxSize,
+        offset: 0,
+      });
+
+      this.cachedEntries = result.items;
+      this.lastFullRead = Date.now();
+      console.log(`Loaded ${this.cachedEntries.length} entries into cache`);
+    } catch (error) {
+      console.error("Error loading initial cache:", error);
+    }
+  }
+
+  /**
+   * Add new entries to the cache (from file watcher)
+   */
+  private addToCache(newEntries: LogEntry[]): void {
+    // Add new entries to the beginning (most recent first)
+    this.cachedEntries = [...newEntries.reverse(), ...this.cachedEntries];
+
+    // Trim cache if it exceeds max size
+    if (this.cachedEntries.length > this.cacheMaxSize) {
+      this.cachedEntries = this.cachedEntries.slice(0, this.cacheMaxSize);
+    }
+  }
+
   private async checkForFileRotation(): Promise<void> {
     try {
       const latestFile = await findLatestLogFile(this.directory);
@@ -129,6 +175,9 @@ export class CSVLogProvider implements LogProvider {
         if (this.watcher) {
           await this.watcher.switchToFile(latestFile);
         }
+
+        // Reload cache from new file
+        await this.loadInitialCache();
       }
     } catch (error) {
       console.error("Error checking for file rotation:", error);
@@ -146,12 +195,48 @@ export class CSVLogProvider implements LogProvider {
       this.currentLogFile = await findLatestLogFile(this.directory);
     }
 
-    if (!this.currentLogFile) {
+    const logFile = this.currentLogFile;
+
+    if (!logFile) {
       console.error(`No log files found in directory: ${this.directory}`);
       return { items: [], totalCount: 0 };
     }
 
-    return await readLogFile(this.currentLogFile, options);
+    // Check if cache is stale and needs refresh
+    const cacheAge = Date.now() - this.lastFullRead;
+    if (cacheAge > this.cacheInvalidationMs) {
+      console.log(`Cache is stale (${cacheAge}ms old), reloading...`);
+      await this.loadInitialCache();
+    }
+
+    // If we have filters or the offset is beyond our cache, fall back to file reading
+    const hasFilters = options.search || options.responseType;
+
+    if (
+      !hasFilters &&
+      this.cachedEntries.length > 0 &&
+      options.offset < this.cachedEntries.length
+    ) {
+      // Use cache for simple pagination queries
+      const end = Math.min(
+        options.offset + options.limit,
+        this.cachedEntries.length,
+      );
+      const items = this.cachedEntries.slice(options.offset, end);
+
+      console.log(
+        `Serving ${items.length} entries from cache (offset: ${options.offset}, limit: ${options.limit})`,
+      );
+
+      return {
+        items,
+        totalCount: this.cachedEntries.length,
+      };
+    }
+
+    // For filtered queries or queries beyond cache, read from file
+    console.log(`Reading from file for filtered/paginated query`);
+    return await readLogFile(logFile, options);
   }
 
   cleanup(): void {
@@ -176,7 +261,7 @@ const globalForLogProvider = globalThis as unknown as {
  * Factory function to create the appropriate log provider
  * Uses singleton pattern to avoid creating multiple watchers/connections
  */
-export function createLogProvider(dbConnection?: DbType): LogProvider {
+export function createLogProvider(): LogProvider {
   if (globalForLogProvider.logProvider) {
     return globalForLogProvider.logProvider;
   }
@@ -197,11 +282,11 @@ export function createLogProvider(dbConnection?: DbType): LogProvider {
     provider = new CSVLogProvider(directory);
   } else {
     // Default to MySQL
-    if (!dbConnection) {
+    if (!db) {
       throw new Error("Database connection required for MySQL log provider");
     }
 
-    provider = new MySQLLogProvider(dbConnection);
+    provider = new MySQLLogProvider(db);
   }
 
   // Cache the provider for reuse

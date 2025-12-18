@@ -1,10 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { promisify } from "util";
-
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-const readFile = promisify(fs.readFile);
 
 export interface LogEntry {
   requestTs: string | null;
@@ -19,53 +14,13 @@ export interface LogEntry {
   questionType: string | null;
   hostname: string | null;
   effectiveTldp: string | null;
-  id: number;
-}
-
-/**
- * Find the most recently modified .log file in a directory
- */
-export async function findLatestLogFile(
-  directory: string,
-): Promise<string | null> {
-  try {
-    if (!fs.existsSync(directory)) {
-      console.error(`Directory not found: ${directory}`);
-      return null;
-    }
-
-    const files = await readdir(directory);
-    const logFiles = files.filter((file) => file.endsWith(".log"));
-
-    if (logFiles.length === 0) {
-      console.error(`No .log files found in directory: ${directory}`);
-      return null;
-    }
-
-    let latestFile: string | null = null;
-    let latestMtime = 0;
-
-    for (const file of logFiles) {
-      const filePath = path.join(directory, file);
-      const stats = await stat(filePath);
-
-      if (stats.mtimeMs > latestMtime) {
-        latestMtime = stats.mtimeMs;
-        latestFile = filePath;
-      }
-    }
-
-    return latestFile;
-  } catch (error) {
-    console.error(`Error finding latest log file:`, error);
-    return null;
-  }
+  id: number | null;
 }
 
 /**
  * Parse a tab-separated log line into a LogEntry object
  */
-export function parseLogLine(line: string, id: number): LogEntry | null {
+export function parseLogLine(line: string): LogEntry | null {
   try {
     const trimmed = line.trim();
     if (!trimmed) return null;
@@ -84,7 +39,6 @@ export function parseLogLine(line: string, id: number): LogEntry | null {
     const parsedDuration = fields[3] ? parseInt(fields[3], 10) : NaN;
 
     return {
-      id,
       requestTs: fields[0] || null,
       clientIp: fields[1] || null,
       clientName: fields[2] || null,
@@ -97,9 +51,50 @@ export function parseLogLine(line: string, id: number): LogEntry | null {
       questionType: fields[9] || null,
       hostname: fields[10] || null, // Using the hostname ID as hostname
       effectiveTldp: null, // Not available in CSV format
+      id: null, // Not available in CSV format
     };
   } catch (error) {
     console.error(`Error parsing log line:`, error);
+    return null;
+  }
+}
+
+/**
+ * Find the most recently modified .log file in a directory
+ */
+export async function findLatestLogFile(
+  directory: string,
+): Promise<string | null> {
+  try {
+    if (!fs.existsSync(directory)) {
+      console.error(`Directory not found: ${directory}`);
+      return null;
+    }
+
+    const files = await fs.promises.readdir(directory);
+    const logFiles = files.filter((file) => file.endsWith(".log"));
+
+    if (logFiles.length === 0) {
+      console.error(`No .log files found in directory: ${directory}`);
+      return null;
+    }
+
+    let latestFile: string | null = null;
+    let latestMtime = 0;
+
+    for (const file of logFiles) {
+      const filePath = path.join(directory, file);
+      const stats = await fs.promises.stat(filePath);
+
+      if (stats.mtimeMs > latestMtime) {
+        latestMtime = stats.mtimeMs;
+        latestFile = filePath;
+      }
+    }
+
+    return latestFile;
+  } catch (error) {
+    console.error(`Error finding latest log file:`, error);
     return null;
   }
 }
@@ -122,56 +117,7 @@ export async function readLogFile(
       return { items: [], totalCount: 0 };
     }
 
-    const content = await readFile(filePath, "utf-8");
-    const lines = content.split("\n");
-
-    // Parse all lines
-    const allEntries: LogEntry[] = [];
-    let lineId = 1;
-
-    for (const line of lines) {
-      const entry = parseLogLine(line, lineId);
-      if (entry) {
-        allEntries.push(entry);
-        lineId++;
-      }
-    }
-
-    // Sort by timestamp descending (most recent first)
-    allEntries.sort((a, b) => {
-      const dateA = a.requestTs ? new Date(a.requestTs).getTime() : 0;
-      const dateB = b.requestTs ? new Date(b.requestTs).getTime() : 0;
-      return dateB - dateA;
-    });
-
-    // Apply filters
-    let filteredEntries = allEntries;
-
-    if (options.search) {
-      const searchLower = options.search.toLowerCase();
-      filteredEntries = filteredEntries.filter((entry) =>
-        entry.questionName?.toLowerCase().includes(searchLower),
-      );
-    }
-
-    if (options.responseType) {
-      filteredEntries = filteredEntries.filter(
-        (entry) => entry.responseType === options.responseType,
-      );
-    }
-
-    const totalCount = filteredEntries.length;
-
-    // Apply pagination
-    const paginatedEntries = filteredEntries.slice(
-      options.offset,
-      options.offset + options.limit,
-    );
-
-    return {
-      items: paginatedEntries,
-      totalCount,
-    };
+    return await streamAndParseLogFile(filePath, options);
   } catch (error) {
     console.error(`Error reading log file:`, error);
     return { items: [], totalCount: 0 };
@@ -179,15 +125,112 @@ export async function readLogFile(
 }
 
 /**
+ * Stream and parse log file efficiently without loading entire file into memory
+ * Applies filtering during parsing and collects entries for sorting
+ */
+async function streamAndParseLogFile(
+  filePath: string,
+  options: {
+    limit: number;
+    offset: number;
+    search?: string;
+    responseType?: string;
+  },
+): Promise<{ items: LogEntry[]; totalCount: number }> {
+  return new Promise((resolve, reject) => {
+    const filteredEntries: LogEntry[] = [];
+    let buffer = "";
+
+    const searchLower = options.search?.toLowerCase();
+
+    const stream = fs.createReadStream(filePath, {
+      encoding: "utf-8",
+      highWaterMark: 64 * 1024, // 64KB chunks
+    });
+
+    stream.on("data", (chunk: string | Buffer) => {
+      const str = typeof chunk === "string" ? chunk : chunk.toString("utf-8");
+      buffer += str;
+
+      // Process complete lines
+      const lines = buffer.split("\n");
+      // Keep the last incomplete line in buffer
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const entry = parseLogLine(line);
+        if (!entry) continue;
+
+        // Apply filters during parsing (memory efficient)
+        if (
+          searchLower &&
+          !entry.questionName?.toLowerCase().includes(searchLower)
+        ) {
+          continue;
+        }
+
+        if (
+          options.responseType &&
+          entry.responseType !== options.responseType
+        ) {
+          continue;
+        }
+
+        filteredEntries.push(entry);
+      }
+    });
+
+    stream.on("end", () => {
+      // Process last line if buffer has content
+      if (buffer.trim()) {
+        const entry = parseLogLine(buffer);
+        if (entry) {
+          // Apply filters
+          const passesSearch =
+            !searchLower ||
+            entry.questionName?.toLowerCase().includes(searchLower);
+          const passesType =
+            !options.responseType ||
+            entry.responseType === options.responseType;
+
+          if (passesSearch && passesType) {
+            filteredEntries.push(entry);
+          }
+        }
+      }
+
+      // Reverse to show most recent first
+      filteredEntries.reverse();
+
+      const totalCount = filteredEntries.length;
+      const paginatedEntries = filteredEntries.slice(
+        options.offset,
+        options.offset + options.limit,
+      );
+
+      resolve({
+        items: paginatedEntries,
+        totalCount,
+      });
+    });
+
+    stream.on("error", (error) => {
+      reject(error);
+    });
+  });
+}
+
+/**
  * File watcher class for monitoring log file changes
  */
 export class LogFileWatcher {
   private filePath: string;
-  private callback: (newEntries: LogEntry[]) => void;
   private lastSize: number = 0;
   private intervalId: NodeJS.Timeout | null = null;
   private pollInterval: number;
-  private lastLineId: number = 0;
+  private callback: (newEntries: LogEntry[]) => void;
 
   constructor(
     filePath: string,
@@ -201,16 +244,9 @@ export class LogFileWatcher {
 
   async start(): Promise<void> {
     try {
-      // Initialize with current file size
-      const stats = await stat(this.filePath);
+      const stats = await fs.promises.stat(this.filePath);
       this.lastSize = stats.size;
 
-      // Count existing lines to set initial line ID
-      const content = await readFile(this.filePath, "utf-8");
-      const lines = content.split("\n").filter((line) => line.trim());
-      this.lastLineId = lines.length;
-
-      // Start polling
       this.intervalId = setInterval(
         // eslint-disable-next-line @typescript-eslint/no-misused-promises
         () => this.checkForChanges(),
@@ -221,23 +257,42 @@ export class LogFileWatcher {
     }
   }
 
+  private async readNewContent(from: number, to: number): Promise<string> {
+    if (to <= from) {
+      return "";
+    }
+
+    return await new Promise<string>((resolve, reject) => {
+      const stream = fs.createReadStream(this.filePath, {
+        encoding: "utf-8",
+        start: from,
+        end: to - 1,
+      });
+      let data = "";
+      stream.on("data", (chunk) => {
+        data += chunk;
+      });
+      stream.on("error", (err) => {
+        reject(err);
+      });
+      stream.on("end", () => {
+        resolve(data);
+      });
+    });
+  }
+
   private async checkForChanges(): Promise<void> {
     try {
-      const stats = await stat(this.filePath);
-
+      const stats = await fs.promises.stat(this.filePath);
       if (stats.size > this.lastSize) {
-        // File has grown, read new content
-        const content = await readFile(this.filePath, "utf-8");
-        const lines = content.split("\n");
-
-        // Get only new lines
-        const newLines = lines.slice(this.lastLineId);
+        // File has grown, read only new content
+        const newContent = await this.readNewContent(this.lastSize, stats.size);
+        const newLines = newContent.split("\n");
         const newEntries: LogEntry[] = [];
 
         for (const line of newLines) {
           if (line.trim()) {
-            this.lastLineId++;
-            const entry = parseLogLine(line, this.lastLineId);
+            const entry = parseLogLine(line);
             if (entry) {
               newEntries.push(entry);
             }
@@ -250,9 +305,8 @@ export class LogFileWatcher {
 
         this.lastSize = stats.size;
       } else if (stats.size < this.lastSize) {
-        // File was truncated or rotated, reset
-        this.lastSize = stats.size;
-        this.lastLineId = 0;
+        // File was truncated or rotated; reinitialize watcher state
+        await this.switchToFile(this.filePath);
       }
     } catch (error) {
       console.error(`Error checking for file changes:`, error);
@@ -269,15 +323,10 @@ export class LogFileWatcher {
   async switchToFile(newFilePath: string): Promise<void> {
     this.filePath = newFilePath;
     this.lastSize = 0;
-    this.lastLineId = 0;
 
     try {
-      const stats = await stat(this.filePath);
+      const stats = await fs.promises.stat(this.filePath);
       this.lastSize = stats.size;
-
-      const content = await readFile(this.filePath, "utf-8");
-      const lines = content.split("\n").filter((line) => line.trim());
-      this.lastLineId = lines.length;
     } catch (error) {
       console.error(`Error switching to new file:`, error);
     }

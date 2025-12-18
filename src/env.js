@@ -28,7 +28,9 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE ?? (process.env.DATABASE_URL ? "mysql" : undefined),
+    QUERY_LOG_TYPE:
+      process.env.QUERY_LOG_TYPE ??
+      (process.env.DATABASE_URL ? "mysql" : undefined),
     QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
