@@ -46,11 +46,6 @@ export function QueryLogs() {
     setPageIndex(0);
   };
 
-  const handlePageSizeChange = (value: string) => {
-    setPageSize(Number(value));
-    setPageIndex(0); // Reset to first page when changing page size
-  };
-
   const searchParams = {
     search: debouncedSearch,
     limit: pageSize,
@@ -100,23 +95,6 @@ export function QueryLogs() {
             </CardDescription>
           </div>
           <div className="flex h-full items-center justify-center gap-2 pl-4">
-            <span className="text-muted-foreground hidden text-sm md:inline">
-              Rows
-            </span>
-            <Select
-              value={pageSize.toString()}
-              onValueChange={handlePageSizeChange}
-            >
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -170,6 +148,8 @@ export function QueryLogs() {
           pageCount={pageCount}
           pageIndex={pageIndex}
           onPageChange={setPageIndex}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
           isLoading={isFetchingLogs}
         />
       </CardContent>

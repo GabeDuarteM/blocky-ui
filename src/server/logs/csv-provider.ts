@@ -39,7 +39,7 @@ export class CsvLogProvider implements LogProvider {
       const logFiles = files.filter((file) => file.endsWith(".log"));
 
       if (logFiles.length === 0) {
-        console.error(`No .log files found in directory: ${this.directory}`);
+        console.error(`No *.log files found in directory: ${this.directory}`);
         return null;
       }
 

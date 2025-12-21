@@ -17,6 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from "~/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
 import { useState } from "react";
 import {
@@ -32,6 +39,8 @@ interface DataTableProps<TData, TValue> {
   pageCount: number;
   pageIndex: number;
   onPageChange: (pageIndex: number) => void;
+  pageSize: number;
+  onPageSizeChange: (pageSize: number) => void;
   isLoading: boolean;
 }
 
@@ -41,9 +50,17 @@ export function DataTable<TData, TValue>({
   pageCount,
   pageIndex,
   onPageChange,
+  pageSize,
+  onPageSizeChange,
   isLoading,
 }: DataTableProps<TData, TValue>) {
   const [sorting] = useState<SortingState>([]);
+
+  const handlePageSizeChange = (value: string) => {
+    onPageSizeChange(Number(value));
+    onPageChange(0); // Reset to first page when changing page size
+  };
+
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
@@ -56,14 +73,14 @@ export function DataTable<TData, TValue>({
       sorting,
       pagination: {
         pageIndex,
-        pageSize: 10,
+        pageSize,
       },
     },
     onPaginationChange: (updater) => {
       if (typeof updater === "function") {
         const newState = updater({
           pageIndex,
-          pageSize: 10,
+          pageSize,
         });
         onPageChange(newState.pageIndex);
       } else {
@@ -134,7 +151,24 @@ export function DataTable<TData, TValue>({
           </Table>
         </div>
       </div>
-      <div className="flex items-center justify-end pt-4">
+      <div className="flex flex-col-reverse items-center justify-between gap-4 pt-4 md:flex-row">
+        <div className="flex items-center space-x-2">
+          <span className="text-muted-foreground text-sm">Rows per page</span>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={handlePageSizeChange}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
