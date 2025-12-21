@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { LogEntry } from "~/server/csv-log-reader";
+import type { LogEntry } from "~/server/logs/types";
 
 import {
   Tooltip,

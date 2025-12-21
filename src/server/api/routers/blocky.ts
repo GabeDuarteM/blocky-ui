@@ -140,51 +140,15 @@ export const blockyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ input, ctx }) => {
-      const limit = input?.limit ?? 50;
-      const offset = input?.offset ?? 0;
-      const search = input?.search;
-      const responseType = input?.responseType;
-
-      if (env.DEMO_MODE) {
-        const { logEntryMock } = await import("~/mocks/logEntryMock");
-
-        let filteredLogs = logEntryMock.sort((item1, item2) => {
-          const date1 = new Date(item1.requestTs ?? 0);
-          const date2 = new Date(item2.requestTs ?? 0);
-
-          if (date1 > date2) return -1;
-          if (date1 < date2) return 1;
-
-          return 0;
-        });
-
-        if (search) {
-          filteredLogs = filteredLogs.filter((log) =>
-            log.questionName?.toLowerCase().includes(search.toLowerCase()),
-          );
-        }
-
-        if (responseType) {
-          filteredLogs = filteredLogs.filter(
-            (log) => log.responseType === responseType,
-          );
-        }
-
-        const totalCount = filteredLogs.length;
-
-        const paginatedLogs = filteredLogs.slice(offset, offset + limit);
-
-        return {
-          items: paginatedLogs,
-          totalCount,
-        };
+      if (!ctx.logProvider) {
+        throw new Error("Log provider is not configured.");
       }
 
       return await ctx.logProvider.getQueryLogs({
-        limit,
-        offset,
-        search,
-        responseType,
+        limit: input?.limit ?? 50,
+        offset: input?.offset ?? 0,
+        search: input?.search,
+        responseType: input?.responseType,
       });
     }),
 });
