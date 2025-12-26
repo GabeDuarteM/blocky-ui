@@ -34,7 +34,7 @@ export function QueryLogs() {
   const debouncedSearch = useDebounce(searchQuery, 300);
   const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
-  const pageSize = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
@@ -94,7 +94,7 @@ export function QueryLogs() {
               View the DNS query logs processed by the server
             </CardDescription>
           </div>
-          <div className="flex h-full items-center justify-center pl-4">
+          <div className="flex h-full items-center justify-center gap-2 pl-4">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -148,6 +148,8 @@ export function QueryLogs() {
           pageCount={pageCount}
           pageIndex={pageIndex}
           onPageChange={setPageIndex}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
           isLoading={isFetchingLogs}
         />
       </CardContent>

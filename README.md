@@ -10,7 +10,7 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
-  - Currently only works with MySQL/MariaDB databases
+  - Requires MySQL/MariaDB or CSV logging type configured on Blocky
 
 ## 🏁 Getting Started
 
@@ -40,8 +40,13 @@ services:
       - 3000:3000
     environment:
       - BLOCKY_API_URL=http://blocky:4000
-      # Uncomment to enable query logging features if you have it configured on blocky (MySQL/MariaDB only):
-      # - DATABASE_URL=mysql://username:password@localhost:3306/blocky_query_log_table_name
+      # Uncomment to enable query logging features
+      # from a MySQL/MariaDB database:
+      # - QUERY_LOG_TYPE=mysql
+      # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
+      # from a CSV file:
+      # - QUERY_LOG_TYPE=csv
+      # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
 ```
 
 2. Start the container:
@@ -55,7 +60,12 @@ Visit `http://localhost:3000` to access BlockyUI.
 ### Using Docker Run
 
 ```bash
-docker run -d -p 3000:3000 -e BLOCKY_API_URL=http://your-blocky-server:4000 [-e DATABASE_URL="mysql://username:password@localhost:3306/blocky_query_log_table_name"] gabrielduartem/blocky-ui:latest
+docker run -d \
+  -p 3000:3000 \
+  -e BLOCKY_API_URL=http://your-blocky-server:4000 \
+  -e QUERY_LOG_TYPE=mysql \
+  -e QUERY_LOG_TARGET="mysql://username:password@localhost:3306/blocky_query_log_table_name" \
+  gabrielduartem/blocky-ui:latest
 ```
 
 ### Local Development

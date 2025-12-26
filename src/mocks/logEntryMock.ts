@@ -1,12 +1,9 @@
-import type { InferSelectModel } from "drizzle-orm";
-import type { logEntries } from "~/server/db/schema";
+import type { LogEntry } from "~/server/logs/types";
 import { faker } from "@faker-js/faker";
 import {
   BLOCKY_DNS_RECORD_TYPES,
   BLOCKY_RESPONSE_TYPES,
 } from "~/lib/constants";
-
-type LogEntry = InferSelectModel<typeof logEntries>;
 
 const generateMockLogEntry = (id: number): LogEntry => {
   const responseType = faker.helpers.arrayElement(BLOCKY_RESPONSE_TYPES);
