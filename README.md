@@ -46,7 +46,7 @@ services:
       # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
       # from a CSV file:
       # - QUERY_LOG_TYPE=csv
-      # - QUERY_LOG_TARGET=/path/to/blocky/logs/
+      # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
 ```
 
 2. Start the container:

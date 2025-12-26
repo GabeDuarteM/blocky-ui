@@ -5,7 +5,8 @@ import { CsvLogProvider } from "./csv-provider";
 import type { LogProvider } from "./types";
 
 /**
- * Singleton cache for log provider
+ * Cache the log provider in development.
+ * This avoids creating a new provider (and db connections, when applicable) on every HMR update.
  */
 const globalForLogProvider = globalThis as unknown as {
   logProvider: LogProvider | undefined;
@@ -45,7 +46,7 @@ export function createLogProvider(): LogProvider | undefined {
 
       provider = new CsvLogProvider({ directory: logTarget });
     } else if (logType === "mysql") {
-      console.log("Using log provider type: mysql, target:", logTarget);
+      console.log("Using log provider type: mysql");
       if (!logTarget) {
         throw new Error(
           "QUERY_LOG_TARGET (MySQL connection URI) is required when using QUERY_LOG_TYPE == 'mysql'",

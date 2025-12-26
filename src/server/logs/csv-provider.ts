@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import * as readline from "readline";
 import type { LogProvider, LogEntry } from "./types";
 
 /**
@@ -108,35 +109,22 @@ export class CsvLogProvider implements LogProvider {
   ): Promise<LogEntry[]> {
     return new Promise((resolve, reject) => {
       const entries: LogEntry[] = [];
-      let buffer = "";
 
-      stream.on("data", (chunk: string | Buffer) => {
-        const str = typeof chunk === "string" ? chunk : chunk.toString("utf-8");
-        buffer += str;
+      const rl = readline.createInterface({
+        input: stream,
+        crlfDelay: Infinity,
+      });
 
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+      rl.on("line", (line) => {
+        const entry = this.parseLogLine(line);
+        if (!entry) return;
 
-        for (const line of lines) {
-          if (!line.trim()) continue;
-
-          const entry = this.parseLogLine(line);
-          if (!entry) continue;
-
-          if (!filterFn || filterFn(entry)) {
-            entries.push(entry);
-          }
+        if (!filterFn || filterFn(entry)) {
+          entries.push(entry);
         }
       });
 
-      stream.on("end", () => {
-        if (buffer.trim()) {
-          const entry = this.parseLogLine(buffer);
-          if (entry && (!filterFn || filterFn(entry))) {
-            entries.push(entry);
-          }
-        }
-
+      rl.on("close", () => {
         resolve(entries);
       });
 
