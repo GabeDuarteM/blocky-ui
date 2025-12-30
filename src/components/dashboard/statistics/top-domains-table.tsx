@@ -105,7 +105,7 @@ export function TopDomainsTable({ range }: TopDomainsTableProps) {
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-[var(--chart-1)]" />
+                            <div className="h-2 w-2 rounded-full bg-[var(--chart-1)]/75" />
                             <span className="text-muted-foreground text-sm">
                               {isBlockedFilter ? "Blocked" : "Total"}
                             </span>
@@ -118,7 +118,7 @@ export function TopDomainsTable({ range }: TopDomainsTableProps) {
                         {!isBlockedFilter && entry.blocked > 0 && (
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-[var(--chart-5)]" />
+                              <div className="h-2 w-2 rounded-full bg-[var(--chart-5-muted)]" />
                               <span className="text-muted-foreground text-sm">
                                 Blocked
                               </span>
@@ -142,18 +142,21 @@ export function TopDomainsTable({ range }: TopDomainsTableProps) {
                         {formatCount(entry.count)}
                       </span>
                     </div>
-                    <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+                    <div className="bg-muted flex h-2 w-full overflow-hidden rounded-full">
                       <div
-                        className="relative h-full rounded-full bg-[var(--chart-1)] transition-all duration-300"
-                        style={{ width: `${barWidth}%` }}
-                      >
-                        {!isBlockedFilter && entry.blocked > 0 && (
-                          <div
-                            className="absolute top-0 right-0 h-full rounded-r-full bg-[var(--chart-5)]"
-                            style={{ width: `${blockedPercentage}%` }}
-                          />
-                        )}
-                      </div>
+                        className="h-full rounded-l-full bg-[var(--chart-1)]/75 transition-all duration-300"
+                        style={{
+                          width: `${isBlockedFilter ? barWidth : barWidth * (1 - blockedPercentage / 100)}%`,
+                        }}
+                      />
+                      {!isBlockedFilter && entry.blocked > 0 && (
+                        <div
+                          className="h-full rounded-r-full bg-[var(--chart-5-muted)] transition-all duration-300"
+                          style={{
+                            width: `${barWidth * (blockedPercentage / 100)}%`,
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </FloatingCard>

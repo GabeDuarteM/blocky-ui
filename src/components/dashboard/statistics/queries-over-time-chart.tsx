@@ -41,7 +41,7 @@ const chartConfig = {
   },
   blocked: {
     label: "Blocked",
-    color: "var(--chart-5)",
+    color: "var(--chart-5-muted)",
   },
   cached: {
     label: "Cached",
