@@ -1,4 +1,9 @@
-export type MetricType = "counter" | "gauge" | "histogram" | "summary";
+export type MetricType =
+  | "counter"
+  | "gauge"
+  | "histogram"
+  | "summary"
+  | "untyped";
 
 export interface MetricLabels {
   [key: string]: string;

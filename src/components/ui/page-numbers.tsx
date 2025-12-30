@@ -50,6 +50,8 @@ export function PageNumbers({
     if (!isNaN(parsed)) {
       const clamped = Math.max(1, Math.min(parsed, totalPages));
       onPageChange(clamped - 1);
+    } else {
+      setInputValue(String(currentPage + 1));
     }
   };
 
@@ -64,6 +66,7 @@ export function PageNumbers({
         onChange={(e) => setInputValue(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
+        aria-label={`Go to page (1-${totalPages})`}
         className="h-7 w-16 px-1 text-center text-xs tabular-nums"
       />
     );

@@ -11,6 +11,7 @@ const VALID_METRIC_TYPES: Set<string> = new Set([
   "gauge",
   "histogram",
   "summary",
+  "untyped",
 ]);
 
 function isValidMetricType(type: string): type is MetricType {
