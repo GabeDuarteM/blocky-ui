@@ -263,6 +263,10 @@ export class MySQLLogProvider implements LogProvider {
     query: string;
     limit: number;
   }): Promise<SearchDomainEntry[]> {
+    if (!options.query.trim()) {
+      return [];
+    }
+
     const { startTime } = getTimeRangeConfig(options.range);
 
     const result = await this.db
@@ -292,6 +296,10 @@ export class MySQLLogProvider implements LogProvider {
     query: string;
     limit: number;
   }): Promise<SearchClientEntry[]> {
+    if (!options.query.trim()) {
+      return [];
+    }
+
     const { startTime } = getTimeRangeConfig(options.range);
 
     const result = await this.db

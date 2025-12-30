@@ -168,6 +168,10 @@ export function searchDomainsInEntries(
   query: string,
   limit: number,
 ): SearchDomainEntry[] {
+  if (!query.trim()) {
+    return [];
+  }
+
   const queryLower = query.toLowerCase();
   const domainCounts = new Map<string, number>();
 
@@ -188,6 +192,10 @@ export function searchClientsInEntries(
   query: string,
   limit: number,
 ): SearchClientEntry[] {
+  if (!query.trim()) {
+    return [];
+  }
+
   const queryLower = query.toLowerCase();
   const clientCounts = new Map<string, number>();
 
