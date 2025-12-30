@@ -29,6 +29,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM base AS runner
 ENV NODE_ENV=production
 
+LABEL org.opencontainers.image.source="https://github.com/GabeDuarteM/blocky-ui"
+
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs
 
