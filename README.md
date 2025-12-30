@@ -41,11 +41,17 @@ services:
     environment:
       - BLOCKY_API_URL=http://blocky:4000
       # Uncomment to enable query logging features
+
       # from a MySQL/MariaDB database:
       # - QUERY_LOG_TYPE=mysql
       # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
-      # from a CSV file:
+
+      # from a CSV file (single daily file):
       # - QUERY_LOG_TYPE=csv
+      # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
+
+      # from CSV per-client files (multiple files per day):
+      # - QUERY_LOG_TYPE=csv-client
       # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
 ```
 

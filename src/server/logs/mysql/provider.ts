@@ -3,8 +3,8 @@ import { drizzle } from "drizzle-orm/mysql2";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 
-import { logEntries } from "~/server/logs/mysql-schema";
-import type { LogProvider, LogEntry } from "./types";
+import { logEntries } from "./schema";
+import type { LogProvider, LogEntry } from "../types";
 
 const schema = { logEntries };
 

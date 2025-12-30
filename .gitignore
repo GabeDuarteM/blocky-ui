@@ -44,3 +44,6 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# Generated CSV logs
+/generated-logs/
