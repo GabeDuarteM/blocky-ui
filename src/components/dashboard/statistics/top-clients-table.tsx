@@ -51,8 +51,6 @@ export function TopClientsTable({ range }: TopClientsTableProps) {
             {data?.map((entry) => {
               const totalWidth =
                 maxTotal > 0 ? (entry.total / maxTotal) * 100 : 0;
-              const blockedWidth =
-                entry.total > 0 ? (entry.blocked / entry.total) * 100 : 0;
               const blockedPercentage =
                 entry.total > 0 ? (entry.blocked / entry.total) * 100 : 0;
               return (
@@ -112,7 +110,7 @@ export function TopClientsTable({ range }: TopClientsTableProps) {
                         {entry.blocked > 0 && (
                           <div
                             className="absolute top-0 right-0 h-full rounded-r-full bg-[var(--chart-5)]"
-                            style={{ width: `${blockedWidth}%` }}
+                            style={{ width: `${blockedPercentage}%` }}
                           />
                         )}
                       </div>

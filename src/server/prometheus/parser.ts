@@ -6,6 +6,17 @@ import {
   type ParsedMetrics,
 } from "./types";
 
+const VALID_METRIC_TYPES: Set<string> = new Set([
+  "counter",
+  "gauge",
+  "histogram",
+  "summary",
+]);
+
+function isValidMetricType(type: string): type is MetricType {
+  return VALID_METRIC_TYPES.has(type);
+}
+
 function parseLabels(labelStr: string): MetricLabels {
   const labels: MetricLabels = {};
   if (!labelStr) return labels;
@@ -71,7 +82,10 @@ export function parsePrometheusText(text: string): ParsedMetrics {
         const typeMatch = /^# TYPE (\S+) (\S+)$/.exec(trimmed);
         if (typeMatch) {
           const name = typeMatch[1];
-          const type = typeMatch[2] as MetricType;
+          const rawType = typeMatch[2] ?? "";
+          const type: MetricType = isValidMetricType(rawType)
+            ? rawType
+            : "gauge";
           if (name) {
             currentMetric = metrics.get(name) ?? {
               name,

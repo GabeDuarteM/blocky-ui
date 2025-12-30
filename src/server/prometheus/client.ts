@@ -14,7 +14,7 @@ function getPrometheusUrl(): string {
 
 export async function fetchPrometheusMetrics(): Promise<ParsedMetrics | null> {
   try {
-    const text = await ky.get(getPrometheusUrl()).text();
+    const text = await ky.get(getPrometheusUrl(), { timeout: 10000 }).text();
     return parsePrometheusText(text);
   } catch {
     return null;
@@ -23,7 +23,7 @@ export async function fetchPrometheusMetrics(): Promise<ParsedMetrics | null> {
 
 export async function checkPrometheusAvailable(): Promise<boolean> {
   try {
-    await ky.head(getPrometheusUrl());
+    await ky.head(getPrometheusUrl(), { timeout: 5000 });
     return true;
   } catch {
     return false;

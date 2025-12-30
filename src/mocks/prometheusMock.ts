@@ -2,7 +2,10 @@ export function generateMockPrometheusMetrics(): string {
   const totalQueries = 12453;
   const blockedQueries = 2134;
   const cachedQueries = 8976;
-  const resolvedQueries = totalQueries - blockedQueries - cachedQueries;
+  const resolvedQueries = Math.max(
+    0,
+    totalQueries - blockedQueries - cachedQueries,
+  );
 
   const cacheHits = 9832;
   const cacheMisses = 2621;

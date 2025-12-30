@@ -36,7 +36,8 @@ const CLIENT_POOL = [
 ];
 
 function weightedPick<T extends { weight: number }>(pool: readonly T[]): T {
-  if (pool.length === 0) {
+  const first = pool[0];
+  if (!first) {
     throw new Error("weightedPick called with empty pool");
   }
   const totalWeight = pool.reduce((sum, item) => sum + item.weight, 0);
@@ -45,14 +46,7 @@ function weightedPick<T extends { weight: number }>(pool: readonly T[]): T {
     random -= item.weight;
     if (random < 0) return item;
   }
-
-  const pick = pool[pool.length - 1];
-
-  if (!pick) {
-    throw new Error("weightedPick called with empty pool");
-  }
-
-  return pick;
+  return first;
 }
 
 const generateMockLogEntry = (id: number): LogEntry => {

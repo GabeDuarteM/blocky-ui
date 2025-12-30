@@ -86,8 +86,6 @@ export function TopDomainsTable({ range }: TopDomainsTableProps) {
             {data?.map((entry) => {
               const barWidth =
                 maxCount > 0 ? (entry.count / maxCount) * 100 : 0;
-              const blockedWidth =
-                entry.count > 0 ? (entry.blocked / entry.count) * 100 : 0;
               const blockedPercentage =
                 entry.count > 0 ? (entry.blocked / entry.count) * 100 : 0;
 
@@ -152,7 +150,7 @@ export function TopDomainsTable({ range }: TopDomainsTableProps) {
                         {!isBlockedFilter && entry.blocked > 0 && (
                           <div
                             className="absolute top-0 right-0 h-full rounded-r-full bg-[var(--chart-5)]"
-                            style={{ width: `${blockedWidth}%` }}
+                            style={{ width: `${blockedPercentage}%` }}
                           />
                         )}
                       </div>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TIME_RANGES } from "~/lib/constants";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   checkPrometheusAvailable,
@@ -6,7 +7,7 @@ import {
   fetchPrometheusMetrics,
 } from "~/server/prometheus/client";
 
-const timeRangeSchema = z.enum(["1h", "24h", "7d", "30d"]);
+const timeRangeSchema = z.enum(TIME_RANGES);
 
 export const statsRouter = createTRPCRouter({
   prometheusStatus: publicProcedure.query(async () => {

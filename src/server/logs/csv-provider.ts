@@ -249,6 +249,12 @@ export class CsvLogProvider implements LogProvider {
     }
 
     const promise = this.fetchEntriesInRange(range);
+    promise.catch(() => {
+      const current = this.entriesCache.get(range);
+      if (current?.promise === promise) {
+        this.entriesCache.delete(range);
+      }
+    });
     this.entriesCache.set(range, { promise, timestamp: Date.now() });
 
     return promise;
