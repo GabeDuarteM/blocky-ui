@@ -20,7 +20,7 @@ _Requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#pr
 
 _Requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) (MySQL or CSV)_
 
-![Statistics Dashboard](https://i.imgur.com/nxxgUQh.png)
+![Statistics Dashboard](https://i.imgur.com/NtAdFhc.png)
 
 ### Configuration
 
