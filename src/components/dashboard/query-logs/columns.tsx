@@ -36,7 +36,7 @@ export const columns: ColumnDef<LogEntry>[] = [
           <Tooltip delayDuration={100}>
             <TooltipTrigger>
               <div className="flex h-full items-center">
-                <div className="max-w-[200px] truncate">{domain}</div>
+                <div className="max-w-50 truncate">{domain}</div>
               </div>
             </TooltipTrigger>
             <TooltipContent>

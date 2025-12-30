@@ -115,10 +115,7 @@ export function DataTable<TData, TValue>({
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-[calc(520px-40px)]"
-                  >
+                  <TableCell colSpan={columns.length} className="h-120">
                     <div className="flex h-full items-center justify-center">
                       <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
                     </div>
