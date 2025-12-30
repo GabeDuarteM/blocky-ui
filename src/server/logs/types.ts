@@ -1,3 +1,5 @@
+import { type TimeRange } from "~/lib/constants";
+
 export interface LogEntry {
   requestTs: string | null;
   clientIp: string | null;
@@ -14,6 +16,38 @@ export interface LogEntry {
   id: number | null;
 }
 
+export interface StatsResult {
+  totalQueries: number;
+  blocked: number;
+}
+
+export interface QueriesOverTimeEntry {
+  time: string;
+  total: number;
+  blocked: number;
+  cached: number;
+}
+
+export interface TopDomainEntry {
+  domain: string;
+  count: number;
+  blocked: number;
+  percentage: number;
+}
+
+export interface TopClientEntry {
+  client: string;
+  total: number;
+  blocked: number;
+  percentage: number;
+}
+
+export interface QueryTypeEntry {
+  type: string;
+  count: number;
+  percentage: number;
+}
+
 export interface LogProvider {
   getQueryLogs(options: {
     limit: number;
@@ -24,4 +58,21 @@ export interface LogProvider {
     items: LogEntry[];
     totalCount: number;
   }>;
+
+  getStats24h(): Promise<StatsResult>;
+
+  getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]>;
+
+  getTopDomains(options: {
+    range: TimeRange;
+    limit: number;
+    filter: "all" | "blocked";
+  }): Promise<TopDomainEntry[]>;
+
+  getTopClients(options: {
+    range: TimeRange;
+    limit: number;
+  }): Promise<TopClientEntry[]>;
+
+  getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]>;
 }

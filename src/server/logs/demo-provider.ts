@@ -1,4 +1,20 @@
-import type { LogEntry, LogProvider } from "./types";
+import { type TimeRange } from "~/lib/constants";
+import type {
+  LogEntry,
+  LogProvider,
+  StatsResult,
+  QueriesOverTimeEntry,
+  TopDomainEntry,
+  TopClientEntry,
+  QueryTypeEntry,
+} from "./types";
+import {
+  getTimeRangeConfig,
+  aggregateQueriesOverTime,
+  aggregateTopDomains,
+  aggregateTopClients,
+  aggregateQueryTypes,
+} from "./aggregation-utils";
 
 /**
  * Demo log provider that uses mock data.
@@ -45,5 +61,64 @@ export class DemoLogProvider implements LogProvider {
       items: paginatedLogs,
       totalCount,
     };
+  }
+
+  async getStats24h(): Promise<StatsResult> {
+    const { logEntryMock } = await import("~/mocks/logEntryMock");
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const recentLogs = logEntryMock.filter((log) => {
+      const logDate = new Date(log.requestTs ?? 0);
+      return logDate >= oneDayAgo;
+    });
+
+    const blocked = recentLogs.filter(
+      (log) => log.responseType === "BLOCKED",
+    ).length;
+
+    return {
+      totalQueries: recentLogs.length,
+      blocked,
+    };
+  }
+
+  private async getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+    const { logEntryMock } = await import("~/mocks/logEntryMock");
+    const { startTime } = getTimeRangeConfig(range);
+
+    return logEntryMock.filter((log) => {
+      const logDate = new Date(log.requestTs ?? 0);
+      return logDate >= startTime;
+    });
+  }
+
+  async getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]> {
+    const entries = await this.getEntriesInRange(range);
+    return aggregateQueriesOverTime(entries, range);
+  }
+
+  async getTopDomains(options: {
+    range: TimeRange;
+    limit: number;
+    filter: "all" | "blocked";
+  }): Promise<TopDomainEntry[]> {
+    let entries = await this.getEntriesInRange(options.range);
+    if (options.filter === "blocked") {
+      entries = entries.filter((log) => log.responseType === "BLOCKED");
+    }
+    return aggregateTopDomains(entries, options.limit);
+  }
+
+  async getTopClients(options: {
+    range: TimeRange;
+    limit: number;
+  }): Promise<TopClientEntry[]> {
+    const entries = await this.getEntriesInRange(options.range);
+    return aggregateTopClients(entries, options.limit);
+  }
+
+  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
+    const entries = await this.getEntriesInRange(range);
+    return aggregateQueryTypes(entries);
   }
 }

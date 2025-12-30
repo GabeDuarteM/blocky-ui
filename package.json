@@ -23,6 +23,8 @@
     "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 7 --type csv-client --clients 5"
   },
   "dependencies": {
+    "@radix-ui/react-hover-card": "^1.1.15",
+    "@radix-ui/react-progress": "^1.1.8",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-slot": "^1.2.4",
@@ -44,6 +46,7 @@
     "next-themes": "^0.4.6",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "recharts": "2.15.4",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
     "superjson": "^2.2.6",
@@ -55,7 +58,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@faker-js/faker": "^10.1.0",
     "@tailwindcss/postcss": "^4.1.7",
-    "@types/node": "^24.10.2",
+    "@types/node": "^24.10.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.0",

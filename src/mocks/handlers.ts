@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { env } from "~/env";
+import { generateMockPrometheusMetrics } from "./prometheusMock";
 
 interface BlockingStatus {
   enabled: boolean;
@@ -116,6 +117,19 @@ export const handlers = [
   }),
 
   http.post(`${env.BLOCKY_API_URL}/api/lists/refresh`, () => {
+    return new HttpResponse(null, { status: 200 });
+  }),
+
+  http.get(`${env.BLOCKY_API_URL}/metrics`, () => {
+    return new HttpResponse(generateMockPrometheusMetrics(), {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+      },
+    });
+  }),
+
+  http.head(`${env.BLOCKY_API_URL}/metrics`, () => {
     return new HttpResponse(null, { status: 200 });
   }),
 ];
