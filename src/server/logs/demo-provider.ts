@@ -13,7 +13,7 @@ export class DemoLogProvider implements LogProvider {
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
 
-    let filteredLogs = logEntryMock.sort((item1, item2) => {
+    let filteredLogs = logEntryMock.toSorted((item1, item2) => {
       const date1 = new Date(item1.requestTs ?? 0);
       const date2 = new Date(item2.requestTs ?? 0);
 
