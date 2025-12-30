@@ -47,8 +47,9 @@ export function PageNumbers({
 
   const submitValue = () => {
     const parsed = parseInt(inputValue, 10);
-    if (!isNaN(parsed) && parsed >= 1 && parsed <= totalPages) {
-      onPageChange(parsed - 1);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(1, Math.min(parsed, totalPages));
+      onPageChange(clamped - 1);
     }
   };
 
