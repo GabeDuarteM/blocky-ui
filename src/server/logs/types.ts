@@ -48,6 +48,16 @@ export interface QueryTypeEntry {
   percentage: number;
 }
 
+export interface SearchDomainEntry {
+  domain: string;
+  count: number;
+}
+
+export interface SearchClientEntry {
+  client: string;
+  count: number;
+}
+
 export interface LogProvider {
   getQueryLogs(options: {
     limit: number;
@@ -61,7 +71,11 @@ export interface LogProvider {
 
   getStats24h(): Promise<StatsResult>;
 
-  getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]>;
+  getQueriesOverTime(options: {
+    range: TimeRange;
+    domain?: string;
+    client?: string;
+  }): Promise<QueriesOverTimeEntry[]>;
 
   getTopDomains(options: {
     range: TimeRange;
@@ -78,4 +92,16 @@ export interface LogProvider {
   }): Promise<{ items: TopClientEntry[]; totalCount: number }>;
 
   getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]>;
+
+  searchDomains(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchDomainEntry[]>;
+
+  searchClients(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchClientEntry[]>;
 }

@@ -14,6 +14,8 @@ import type {
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
+  SearchDomainEntry,
+  SearchClientEntry,
 } from "./types";
 
 const schema = { logEntries };
@@ -87,9 +89,27 @@ export class MySQLLogProvider implements LogProvider {
     };
   }
 
-  async getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]> {
-    const { startTime, interval } = getTimeRangeConfig(range);
-    const bucketExpr = getMysqlBucketExpression(range);
+  async getQueriesOverTime(options: {
+    range: TimeRange;
+    domain?: string;
+    client?: string;
+  }): Promise<QueriesOverTimeEntry[]> {
+    const { startTime, interval } = getTimeRangeConfig(options.range);
+    const bucketExpr = getMysqlBucketExpression(options.range);
+
+    const filters = [gte(logEntries.requestTs, startTime.toISOString())];
+
+    if (options.domain) {
+      filters.push(
+        sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${options.domain}%`})`,
+      );
+    }
+
+    if (options.client) {
+      filters.push(
+        sql`LOWER(${logEntries.clientName}) LIKE LOWER(${`%${options.client}%`})`,
+      );
+    }
 
     const result = await this.db
       .select({
@@ -99,11 +119,11 @@ export class MySQLLogProvider implements LogProvider {
         cached: sql<number>`sum(case when ${logEntries.responseType} = 'CACHED' then 1 else 0 end)`,
       })
       .from(logEntries)
-      .where(gte(logEntries.requestTs, startTime.toISOString()))
+      .where(and(...filters))
       .groupBy(sql`${bucketExpr}`)
       .orderBy(sql`${bucketExpr}`);
 
-    return fillTimeBuckets(result, startTime, interval, range);
+    return fillTimeBuckets(result, startTime, interval, options.range);
   }
 
   async getTopDomains(options: {
@@ -235,6 +255,64 @@ export class MySQLLogProvider implements LogProvider {
       type: row.type ?? "unknown",
       count: Number(row.count),
       percentage: totalCount > 0 ? (Number(row.count) / totalCount) * 100 : 0,
+    }));
+  }
+
+  async searchDomains(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchDomainEntry[]> {
+    const { startTime } = getTimeRangeConfig(options.range);
+
+    const result = await this.db
+      .select({
+        domain: logEntries.questionName,
+        count: sql<number>`count(*)`,
+      })
+      .from(logEntries)
+      .where(
+        and(
+          gte(logEntries.requestTs, startTime.toISOString()),
+          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${options.query}%`})`,
+        ),
+      )
+      .groupBy(logEntries.questionName)
+      .orderBy(desc(sql`count(*)`))
+      .limit(options.limit);
+
+    return result.map((row) => ({
+      domain: row.domain ?? "unknown",
+      count: Number(row.count),
+    }));
+  }
+
+  async searchClients(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchClientEntry[]> {
+    const { startTime } = getTimeRangeConfig(options.range);
+
+    const result = await this.db
+      .select({
+        client: logEntries.clientName,
+        count: sql<number>`count(*)`,
+      })
+      .from(logEntries)
+      .where(
+        and(
+          gte(logEntries.requestTs, startTime.toISOString()),
+          sql`LOWER(${logEntries.clientName}) LIKE LOWER(${`%${options.query}%`})`,
+        ),
+      )
+      .groupBy(logEntries.clientName)
+      .orderBy(desc(sql`count(*)`))
+      .limit(options.limit);
+
+    return result.map((row) => ({
+      client: row.client ?? "unknown",
+      count: Number(row.count),
     }));
   }
 }

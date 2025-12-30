@@ -80,10 +80,16 @@ export const statsRouter = createTRPCRouter({
   }),
 
   queriesOverTime: publicProcedure
-    .input(z.object({ range: timeRangeSchema }))
+    .input(
+      z.object({
+        range: timeRangeSchema,
+        domain: z.string().optional(),
+        client: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
-      return ctx.logProvider.getQueriesOverTime(input.range);
+      return ctx.logProvider.getQueriesOverTime(input);
     }),
 
   topDomains: publicProcedure
@@ -119,5 +125,31 @@ export const statsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
       return ctx.logProvider.getQueryTypesBreakdown(input.range);
+    }),
+
+  searchDomains: publicProcedure
+    .input(
+      z.object({
+        range: timeRangeSchema,
+        query: z.string().min(1),
+        limit: z.number().min(1).max(50).default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.logProvider) return null;
+      return ctx.logProvider.searchDomains(input);
+    }),
+
+  searchClients: publicProcedure
+    .input(
+      z.object({
+        range: timeRangeSchema,
+        query: z.string().min(1),
+        limit: z.number().min(1).max(50).default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      if (!ctx.logProvider) return null;
+      return ctx.logProvider.searchClients(input);
     }),
 });
