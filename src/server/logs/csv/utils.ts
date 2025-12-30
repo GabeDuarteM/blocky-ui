@@ -47,6 +47,7 @@ export function streamAndParseEntries(
 ): Promise<LogEntry[]> {
   return new Promise((resolve, reject) => {
     const entries: LogEntry[] = [];
+    let rejected = false;
 
     const stream = fs.createReadStream(filePath, {
       encoding: "utf-8",
@@ -58,6 +59,12 @@ export function streamAndParseEntries(
       crlfDelay: Infinity,
     });
 
+    const onError = (error: Error) => {
+      if (rejected) return;
+      rejected = true;
+      reject(error);
+    };
+
     rl.on("line", (line) => {
       const entry = parseLogLine(line);
       if (!entry) return;
@@ -68,12 +75,13 @@ export function streamAndParseEntries(
     });
 
     rl.on("close", () => {
-      resolve(entries);
+      if (!rejected) {
+        resolve(entries);
+      }
     });
 
-    stream.on("error", (error) => {
-      reject(error);
-    });
+    rl.on("error", onError);
+    stream.on("error", onError);
   });
 }
 
