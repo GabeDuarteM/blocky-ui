@@ -10,7 +10,8 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
-  - Requires MySQL/MariaDB or CSV logging type configured on Blocky
+  - Supports MySQL, CSV and CSV-Client logging type from Blocky
+  - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
 
 ## 🏁 Getting Started
 
