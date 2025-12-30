@@ -154,10 +154,10 @@ function generateClientPool(count: number): Client[] {
   return clients;
 }
 
-function generateEntries(
+function generateEntriesForClient(
   date: Date,
   count: number,
-  clients: Client[],
+  client: Client,
   blockyHost: string,
 ): Entry[] {
   const entries: Entry[] = [];
@@ -165,8 +165,6 @@ function generateEntries(
   startOfDay.setHours(0, 0, 0, 0);
 
   for (let i = 0; i < count; i++) {
-    const client = randomElement(clients);
-
     const timestamp = new Date(startOfDay);
     timestamp.setHours(Math.floor(Math.random() * 24));
     timestamp.setMinutes(Math.floor(Math.random() * 60));
@@ -312,17 +310,21 @@ function main(): void {
     const date = new Date(today);
     date.setDate(date.getDate() - day);
 
-    const entries = generateEntries(
-      date,
-      config.numRows,
-      clients,
-      config.blockyHost,
-    );
+    const allEntries: Entry[] = [];
+    for (const client of clients) {
+      const clientEntries = generateEntriesForClient(
+        date,
+        config.numRows,
+        client,
+        config.blockyHost,
+      );
+      allEntries.push(...clientEntries);
+    }
 
     if (config.perClient) {
-      writePerClientFiles(date, entries, config.outputDir);
+      writePerClientFiles(date, allEntries, config.outputDir);
     } else {
-      writeAllFile(date, entries, config.outputDir);
+      writeAllFile(date, allEntries, config.outputDir);
     }
   }
 
