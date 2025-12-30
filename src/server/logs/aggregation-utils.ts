@@ -5,6 +5,8 @@ import type {
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
+  SearchDomainEntry,
+  SearchClientEntry,
 } from "./types";
 
 export interface TimeRangeConfig {
@@ -159,4 +161,52 @@ export function aggregateQueryTypes(entries: LogEntry[]): QueryTypeEntry[] {
       count,
       percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
     }));
+}
+
+export function searchDomainsInEntries(
+  entries: LogEntry[],
+  query: string,
+  limit: number,
+): SearchDomainEntry[] {
+  if (!query.trim()) {
+    return [];
+  }
+
+  const queryLower = query.toLowerCase();
+  const domainCounts = new Map<string, number>();
+
+  for (const entry of entries) {
+    const domain = entry.questionName;
+    if (!domain?.toLowerCase().includes(queryLower)) continue;
+    domainCounts.set(domain, (domainCounts.get(domain) ?? 0) + 1);
+  }
+
+  return Array.from(domainCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([domain, count]) => ({ domain, count }));
+}
+
+export function searchClientsInEntries(
+  entries: LogEntry[],
+  query: string,
+  limit: number,
+): SearchClientEntry[] {
+  if (!query.trim()) {
+    return [];
+  }
+
+  const queryLower = query.toLowerCase();
+  const clientCounts = new Map<string, number>();
+
+  for (const entry of entries) {
+    const client = entry.clientName;
+    if (!client?.toLowerCase().includes(queryLower)) continue;
+    clientCounts.set(client, (clientCounts.get(client) ?? 0) + 1);
+  }
+
+  return Array.from(clientCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([client, count]) => ({ client, count }));
 }

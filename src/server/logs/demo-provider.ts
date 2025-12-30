@@ -7,6 +7,8 @@ import type {
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
+  SearchDomainEntry,
+  SearchClientEntry,
 } from "./types";
 import {
   getTimeRangeConfig,
@@ -14,6 +16,8 @@ import {
   aggregateTopDomains,
   aggregateTopClients,
   aggregateQueryTypes,
+  searchDomainsInEntries,
+  searchClientsInEntries,
 } from "./aggregation-utils";
 
 /**
@@ -92,9 +96,28 @@ export class DemoLogProvider implements LogProvider {
     });
   }
 
-  async getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]> {
-    const entries = await this.getEntriesInRange(range);
-    return aggregateQueriesOverTime(entries, range);
+  async getQueriesOverTime(options: {
+    range: TimeRange;
+    domain?: string;
+    client?: string;
+  }): Promise<QueriesOverTimeEntry[]> {
+    let entries = await this.getEntriesInRange(options.range);
+
+    if (options.domain) {
+      const domainLower = options.domain.toLowerCase();
+      entries = entries.filter((e) =>
+        e.questionName?.toLowerCase().includes(domainLower),
+      );
+    }
+
+    if (options.client) {
+      const clientLower = options.client.toLowerCase();
+      entries = entries.filter((e) =>
+        e.clientName?.toLowerCase().includes(clientLower),
+      );
+    }
+
+    return aggregateQueriesOverTime(entries, options.range);
   }
 
   async getTopDomains(options: {
@@ -126,5 +149,23 @@ export class DemoLogProvider implements LogProvider {
   async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
     const entries = await this.getEntriesInRange(range);
     return aggregateQueryTypes(entries);
+  }
+
+  async searchDomains(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchDomainEntry[]> {
+    const entries = await this.getEntriesInRange(options.range);
+    return searchDomainsInEntries(entries, options.query, options.limit);
+  }
+
+  async searchClients(options: {
+    range: TimeRange;
+    query: string;
+    limit: number;
+  }): Promise<SearchClientEntry[]> {
+    const entries = await this.getEntriesInRange(options.range);
+    return searchClientsInEntries(entries, options.query, options.limit);
   }
 }

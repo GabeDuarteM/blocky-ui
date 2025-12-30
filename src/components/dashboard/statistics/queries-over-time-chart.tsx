@@ -21,6 +21,11 @@ import { BarChart3 } from "lucide-react";
 import { Skeleton } from "~/components/ui/skeleton";
 import { type TimeRange } from "~/lib/constants";
 import { TimeRangeSelector } from "./time-range-selector";
+import {
+  ChartFilterCombobox,
+  ActiveFilterChip,
+  type ChartFilter,
+} from "./chart-filter-combobox";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 
@@ -100,6 +105,7 @@ export function QueriesOverTimeChart({
   const [visibleSeries, setVisibleSeries] = useState<Set<SeriesKey>>(
     () => new Set(SERIES_KEYS),
   );
+  const [filter, setFilter] = useState<ChartFilter>(null);
 
   const handleToggle = useCallback((key: SeriesKey) => {
     setVisibleSeries((prev) => {
@@ -115,7 +121,11 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isLoading } = api.stats.queriesOverTime.useQuery({ range });
+  const { data, isLoading } = api.stats.queriesOverTime.useQuery({
+    range,
+    domain: filter?.type === "domain" ? filter.value : undefined,
+    client: filter?.type === "client" ? filter.value : undefined,
+  });
 
   const chartData = useMemo(
     () =>
@@ -141,17 +151,35 @@ export function QueriesOverTimeChart({
   return (
     <Card>
       <CardHeader>
-        <div className="flex w-full flex-row items-center justify-between">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
-              <BarChart3 className="h-5 w-5" />
-              Queries over time
-            </CardTitle>
-            <CardDescription>
-              DNS query volume and blocking activity
-            </CardDescription>
+        <div className="flex w-full flex-col gap-3">
+          <div className="flex flex-row items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
+                <BarChart3 className="h-5 w-5" />
+                Queries over time
+              </CardTitle>
+              <CardDescription>
+                DNS query volume and blocking activity
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <ChartFilterCombobox
+                value={filter}
+                onChange={setFilter}
+                range={range}
+              />
+              <TimeRangeSelector value={range} onChange={onRangeChange} />
+            </div>
           </div>
-          <TimeRangeSelector value={range} onChange={onRangeChange} />
+          {filter && (
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground text-xs">Showing:</span>
+              <ActiveFilterChip
+                filter={filter}
+                onClear={() => setFilter(null)}
+              />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
