@@ -66,13 +66,16 @@ export interface LogProvider {
   getTopDomains(options: {
     range: TimeRange;
     limit: number;
+    offset: number;
     filter: "all" | "blocked";
-  }): Promise<TopDomainEntry[]>;
+  }): Promise<{ items: TopDomainEntry[]; totalCount: number }>;
 
   getTopClients(options: {
     range: TimeRange;
     limit: number;
-  }): Promise<TopClientEntry[]>;
+    offset: number;
+    filter: "all" | "blocked";
+  }): Promise<{ items: TopClientEntry[]; totalCount: number }>;
 
   getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]>;
 }

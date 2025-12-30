@@ -81,7 +81,8 @@ export function aggregateQueriesOverTime(
 export function aggregateTopDomains(
   entries: LogEntry[],
   limit: number,
-): TopDomainEntry[] {
+  offset: number,
+): { items: TopDomainEntry[]; totalCount: number } {
   const domainStats = new Map<string, { count: number; blocked: number }>();
   for (const entry of entries) {
     const domain = entry.questionName ?? "unknown";
@@ -91,22 +92,30 @@ export function aggregateTopDomains(
     domainStats.set(domain, stats);
   }
 
-  const totalCount = entries.length;
-  return Array.from(domainStats.entries())
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, limit)
-    .map(([domain, stats]) => ({
-      domain,
-      count: stats.count,
-      blocked: stats.blocked,
-      percentage: totalCount > 0 ? (stats.count / totalCount) * 100 : 0,
-    }));
+  const totalQueriesCount = entries.length;
+  const sortedDomains = Array.from(domainStats.entries()).sort(
+    (a, b) => b[1].count - a[1].count,
+  );
+
+  return {
+    items: sortedDomains
+      .slice(offset, offset + limit)
+      .map(([domain, stats]) => ({
+        domain,
+        count: stats.count,
+        blocked: stats.blocked,
+        percentage:
+          totalQueriesCount > 0 ? (stats.count / totalQueriesCount) * 100 : 0,
+      })),
+    totalCount: sortedDomains.length,
+  };
 }
 
 export function aggregateTopClients(
   entries: LogEntry[],
   limit: number,
-): TopClientEntry[] {
+  offset: number,
+): { items: TopClientEntry[]; totalCount: number } {
   const clientStats = new Map<string, { total: number; blocked: number }>();
   for (const entry of entries) {
     const client = entry.clientName ?? "unknown";
@@ -116,16 +125,23 @@ export function aggregateTopClients(
     clientStats.set(client, stats);
   }
 
-  const totalCount = entries.length;
-  return Array.from(clientStats.entries())
-    .sort((a, b) => b[1].total - a[1].total)
-    .slice(0, limit)
-    .map(([client, stats]) => ({
-      client,
-      total: stats.total,
-      blocked: stats.blocked,
-      percentage: totalCount > 0 ? (stats.total / totalCount) * 100 : 0,
-    }));
+  const totalQueriesCount = entries.length;
+  const sortedClients = Array.from(clientStats.entries()).sort(
+    (a, b) => b[1].total - a[1].total,
+  );
+
+  return {
+    items: sortedClients
+      .slice(offset, offset + limit)
+      .map(([client, stats]) => ({
+        client,
+        total: stats.total,
+        blocked: stats.blocked,
+        percentage:
+          totalQueriesCount > 0 ? (stats.total / totalQueriesCount) * 100 : 0,
+      })),
+    totalCount: sortedClients.length,
+  };
 }
 
 export function aggregateQueryTypes(entries: LogEntry[]): QueryTypeEntry[] {

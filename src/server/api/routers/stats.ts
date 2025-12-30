@@ -91,6 +91,7 @@ export const statsRouter = createTRPCRouter({
       z.object({
         range: timeRangeSchema,
         limit: z.number().min(1).max(100).default(10),
+        offset: z.number().min(0).default(0),
         filter: z.enum(["all", "blocked"]).default("all"),
       }),
     )
@@ -104,6 +105,8 @@ export const statsRouter = createTRPCRouter({
       z.object({
         range: timeRangeSchema,
         limit: z.number().min(1).max(100).default(10),
+        offset: z.number().min(0).default(0),
+        filter: z.enum(["all", "blocked"]).default("all"),
       }),
     )
     .query(async ({ ctx, input }) => {

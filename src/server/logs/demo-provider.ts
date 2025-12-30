@@ -100,21 +100,27 @@ export class DemoLogProvider implements LogProvider {
   async getTopDomains(options: {
     range: TimeRange;
     limit: number;
+    offset: number;
     filter: "all" | "blocked";
-  }): Promise<TopDomainEntry[]> {
+  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     let entries = await this.getEntriesInRange(options.range);
     if (options.filter === "blocked") {
       entries = entries.filter((log) => log.responseType === "BLOCKED");
     }
-    return aggregateTopDomains(entries, options.limit);
+    return aggregateTopDomains(entries, options.limit, options.offset);
   }
 
   async getTopClients(options: {
     range: TimeRange;
     limit: number;
-  }): Promise<TopClientEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return aggregateTopClients(entries, options.limit);
+    offset: number;
+    filter: "all" | "blocked";
+  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
+    let entries = await this.getEntriesInRange(options.range);
+    if (options.filter === "blocked") {
+      entries = entries.filter((log) => log.responseType === "BLOCKED");
+    }
+    return aggregateTopClients(entries, options.limit, options.offset);
   }
 
   async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {

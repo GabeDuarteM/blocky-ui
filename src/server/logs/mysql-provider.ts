@@ -109,8 +109,9 @@ export class MySQLLogProvider implements LogProvider {
   async getTopDomains(options: {
     range: TimeRange;
     limit: number;
+    offset: number;
     filter: "all" | "blocked";
-  }): Promise<TopDomainEntry[]> {
+  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const { startTime } = getTimeRangeConfig(options.range);
 
     const filters = [gte(logEntries.requestTs, startTime.toISOString())];
@@ -118,11 +119,19 @@ export class MySQLLogProvider implements LogProvider {
       filters.push(eq(logEntries.responseType, "BLOCKED"));
     }
 
-    const totalResult = await this.db
+    const totalQueriesResult = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(logEntries)
       .where(and(...filters));
-    const totalCount = Number(totalResult[0]?.count ?? 0);
+    const totalQueriesCount = Number(totalQueriesResult[0]?.count ?? 0);
+
+    const uniqueDomainsResult = await this.db
+      .select({
+        count: sql<number>`count(distinct ${logEntries.questionName})`,
+      })
+      .from(logEntries)
+      .where(and(...filters));
+    const totalCount = Number(uniqueDomainsResult[0]?.count ?? 0);
 
     const result = await this.db
       .select({
@@ -134,27 +143,47 @@ export class MySQLLogProvider implements LogProvider {
       .where(and(...filters))
       .groupBy(logEntries.questionName)
       .orderBy(desc(sql`count(*)`))
-      .limit(options.limit);
+      .limit(options.limit)
+      .offset(options.offset);
 
-    return result.map((row) => ({
-      domain: row.domain ?? "unknown",
-      count: Number(row.count),
-      blocked: Number(row.blocked),
-      percentage: totalCount > 0 ? (Number(row.count) / totalCount) * 100 : 0,
-    }));
+    return {
+      items: result.map((row) => ({
+        domain: row.domain ?? "unknown",
+        count: Number(row.count),
+        blocked: Number(row.blocked),
+        percentage:
+          totalQueriesCount > 0
+            ? (Number(row.count) / totalQueriesCount) * 100
+            : 0,
+      })),
+      totalCount,
+    };
   }
 
   async getTopClients(options: {
     range: TimeRange;
     limit: number;
-  }): Promise<TopClientEntry[]> {
+    offset: number;
+    filter: "all" | "blocked";
+  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
     const { startTime } = getTimeRangeConfig(options.range);
 
-    const totalResult = await this.db
+    const filters = [gte(logEntries.requestTs, startTime.toISOString())];
+    if (options.filter === "blocked") {
+      filters.push(eq(logEntries.responseType, "BLOCKED"));
+    }
+
+    const totalQueriesResult = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(logEntries)
-      .where(gte(logEntries.requestTs, startTime.toISOString()));
-    const totalCount = Number(totalResult[0]?.count ?? 0);
+      .where(and(...filters));
+    const totalQueriesCount = Number(totalQueriesResult[0]?.count ?? 0);
+
+    const uniqueClientsResult = await this.db
+      .select({ count: sql<number>`count(distinct ${logEntries.clientName})` })
+      .from(logEntries)
+      .where(and(...filters));
+    const totalCount = Number(uniqueClientsResult[0]?.count ?? 0);
 
     const result = await this.db
       .select({
@@ -163,17 +192,24 @@ export class MySQLLogProvider implements LogProvider {
         blocked: sql<number>`sum(case when ${logEntries.responseType} = 'BLOCKED' then 1 else 0 end)`,
       })
       .from(logEntries)
-      .where(gte(logEntries.requestTs, startTime.toISOString()))
+      .where(and(...filters))
       .groupBy(logEntries.clientName)
       .orderBy(desc(sql`count(*)`))
-      .limit(options.limit);
+      .limit(options.limit)
+      .offset(options.offset);
 
-    return result.map((row) => ({
-      client: row.client ?? "unknown",
-      total: Number(row.total),
-      blocked: Number(row.blocked),
-      percentage: totalCount > 0 ? (Number(row.total) / totalCount) * 100 : 0,
-    }));
+    return {
+      items: result.map((row) => ({
+        client: row.client ?? "unknown",
+        total: Number(row.total),
+        blocked: Number(row.blocked),
+        percentage:
+          totalQueriesCount > 0
+            ? (Number(row.total) / totalQueriesCount) * 100
+            : 0,
+      })),
+      totalCount,
+    };
   }
 
   async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
