@@ -10,7 +10,7 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError, z } from "zod";
 
-import { db } from "~/server/db";
+import { createLogProvider } from "~/server/logs";
 
 /**
  * 1. CONTEXT
@@ -25,8 +25,10 @@ import { db } from "~/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const logProvider = createLogProvider();
+
   return {
-    db,
+    logProvider,
     ...opts,
   };
 };

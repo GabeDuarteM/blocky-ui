@@ -3,8 +3,6 @@ import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
-import { logEntries } from "~/server/db/schema";
-import { desc, sql, and, eq } from "drizzle-orm";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -142,77 +140,15 @@ export const blockyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ input, ctx }) => {
-      const limit = input?.limit ?? 50;
-      const offset = input?.offset ?? 0;
-      const search = input?.search;
-      const responseType = input?.responseType;
-
-      if (env.DEMO_MODE) {
-        const { logEntryMock } = await import("~/mocks/logEntryMock");
-
-        let filteredLogs = logEntryMock.sort((item1, item2) => {
-          const date1 = new Date(item1.requestTs ?? 0);
-          const date2 = new Date(item2.requestTs ?? 0);
-
-          if (date1 > date2) return -1;
-          if (date1 < date2) return 1;
-
-          return 0;
-        });
-
-        if (search) {
-          filteredLogs = filteredLogs.filter((log) =>
-            log.questionName?.toLowerCase().includes(search.toLowerCase()),
-          );
-        }
-
-        if (responseType) {
-          filteredLogs = filteredLogs.filter(
-            (log) => log.responseType === responseType,
-          );
-        }
-
-        const totalCount = filteredLogs.length;
-
-        const paginatedLogs = filteredLogs.slice(offset, offset + limit);
-
-        return {
-          items: paginatedLogs,
-          totalCount,
-        };
+      if (!ctx.logProvider) {
+        throw new Error("Log provider is not configured.");
       }
 
-      const filters = [];
-      if (search) {
-        filters.push(
-          sql`LOWER(${logEntries.questionName}) LIKE LOWER(${`%${search}%`})`,
-        );
-      }
-      if (responseType) {
-        filters.push(eq(logEntries.responseType, responseType));
-      }
-
-      const countQuery = ctx.db
-        .select({ count: sql<number>`count(*)` })
-        .from(logEntries)
-        .where(filters.length > 0 ? and(...filters) : undefined);
-
-      const countResult = await countQuery;
-      const count = countResult?.[0]?.count ?? 0;
-
-      const query = ctx.db
-        .select()
-        .from(logEntries)
-        .orderBy(desc(logEntries.requestTs))
-        .limit(limit)
-        .offset(offset)
-        .where(filters.length > 0 ? and(...filters) : undefined);
-
-      const logs = await query;
-
-      return {
-        items: logs,
-        totalCount: Number(count),
-      };
+      return await ctx.logProvider.getQueryLogs({
+        limit: input?.limit ?? 50,
+        offset: input?.offset ?? 0,
+        search: input?.search,
+        responseType: input?.responseType,
+      });
     }),
 });
