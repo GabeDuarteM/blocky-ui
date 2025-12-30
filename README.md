@@ -11,6 +11,9 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
   - Requires MySQL/MariaDB or CSV logging type configured on Blocky
+- Statistic sections
+  - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on blocky)
+  - Queries over time chart, top domains, and top clients (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
 
 ## 🏁 Getting Started
 
@@ -40,10 +43,15 @@ services:
       - 3000:3000
     environment:
       - BLOCKY_API_URL=http://blocky:4000
+      # Uncomment to override the Prometheus metrics path (defaults to /metrics)
+      # Only use this if you've changed `prometheus.path` on your blocky's server config
+      # - PROMETHEUS_PATH=/custom-metrics-path
+
       # Uncomment to enable query logging features
       # from a MySQL/MariaDB database:
       # - QUERY_LOG_TYPE=mysql
       # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
+
       # from a CSV file:
       # - QUERY_LOG_TYPE=csv
       # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/

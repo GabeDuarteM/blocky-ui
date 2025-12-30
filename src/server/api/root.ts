@@ -1,4 +1,5 @@
 import { blockyRouter } from "~/server/api/routers/blocky";
+import { statsRouter } from "~/server/api/routers/stats";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -8,6 +9,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   blocky: blockyRouter,
+  stats: statsRouter,
 });
 
 // export type definition of API

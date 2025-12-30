@@ -1,7 +1,30 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
-import type { LogProvider, LogEntry } from "./types";
+import { type TimeRange } from "~/lib/constants";
+import type {
+  LogProvider,
+  LogEntry,
+  StatsResult,
+  QueriesOverTimeEntry,
+  TopDomainEntry,
+  TopClientEntry,
+  QueryTypeEntry,
+} from "./types";
+import {
+  getTimeRangeConfig,
+  aggregateQueriesOverTime,
+  aggregateTopDomains,
+  aggregateTopClients,
+  aggregateQueryTypes,
+} from "./aggregation-utils";
+
+interface CacheEntry {
+  promise: Promise<LogEntry[]>;
+  timestamp: number;
+}
+
+const CACHE_TTL_MS = 5000; // 5 seconds
 
 /**
  * CSV file-based log provider
@@ -9,6 +32,7 @@ import type { LogProvider, LogEntry } from "./types";
  */
 export class CsvLogProvider implements LogProvider {
   private readonly directory: string;
+  private readonly entriesCache = new Map<TimeRange, CacheEntry>();
 
   constructor(options: { directory: string }) {
     this.directory = options.directory;
@@ -180,5 +204,115 @@ export class CsvLogProvider implements LogProvider {
       console.error(`Error reading log file:`, error);
       return { items: [], totalCount: 0 };
     }
+  }
+
+  async getStats24h(): Promise<StatsResult> {
+    const logFile = await this.findLatestLogFile();
+
+    if (!logFile) {
+      return { totalQueries: 0, blocked: 0 };
+    }
+
+    try {
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const isWithin24h = (entry: LogEntry): boolean => {
+        if (!entry.requestTs) return false;
+        const entryDate = new Date(entry.requestTs);
+        return entryDate >= oneDayAgo;
+      };
+
+      const stream = fs.createReadStream(logFile, {
+        encoding: "utf-8",
+        highWaterMark: 64 * 1024,
+      });
+
+      const entries = await this.streamAndParseEntries(stream, isWithin24h);
+      const blocked = entries.filter(
+        (e) => e.responseType === "BLOCKED",
+      ).length;
+
+      return {
+        totalQueries: entries.length,
+        blocked,
+      };
+    } catch (error) {
+      console.error(`Error getting stats:`, error);
+      return { totalQueries: 0, blocked: 0 };
+    }
+  }
+
+  private getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+    const cached = this.entriesCache.get(range);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.promise;
+    }
+
+    const promise = this.fetchEntriesInRange(range);
+    promise.catch(() => {
+      const current = this.entriesCache.get(range);
+      if (current?.promise === promise) {
+        this.entriesCache.delete(range);
+      }
+    });
+    this.entriesCache.set(range, { promise, timestamp: Date.now() });
+
+    return promise;
+  }
+
+  private async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+    const logFile = await this.findLatestLogFile();
+    if (!logFile) return [];
+
+    const { startTime } = getTimeRangeConfig(range);
+
+    const isInRange = (entry: LogEntry): boolean => {
+      if (!entry.requestTs) return false;
+      const entryDate = new Date(entry.requestTs);
+      return entryDate >= startTime;
+    };
+
+    const stream = fs.createReadStream(logFile, {
+      encoding: "utf-8",
+      highWaterMark: 64 * 1024,
+    });
+
+    return this.streamAndParseEntries(stream, isInRange);
+  }
+
+  async getQueriesOverTime(range: TimeRange): Promise<QueriesOverTimeEntry[]> {
+    const entries = await this.getEntriesInRange(range);
+    return aggregateQueriesOverTime(entries, range);
+  }
+
+  async getTopDomains(options: {
+    range: TimeRange;
+    limit: number;
+    offset: number;
+    filter: "all" | "blocked";
+  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
+    let entries = await this.getEntriesInRange(options.range);
+    if (options.filter === "blocked") {
+      entries = entries.filter((e) => e.responseType === "BLOCKED");
+    }
+    return aggregateTopDomains(entries, options.limit, options.offset);
+  }
+
+  async getTopClients(options: {
+    range: TimeRange;
+    limit: number;
+    offset: number;
+    filter: "all" | "blocked";
+  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
+    let entries = await this.getEntriesInRange(options.range);
+    if (options.filter === "blocked") {
+      entries = entries.filter((e) => e.responseType === "BLOCKED");
+    }
+    return aggregateTopClients(entries, options.limit, options.offset);
+  }
+
+  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
+    const entries = await this.getEntriesInRange(range);
+    return aggregateQueryTypes(entries);
   }
 }
