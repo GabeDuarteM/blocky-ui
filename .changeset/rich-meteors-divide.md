@@ -2,6 +2,8 @@
 "blocky-ui": minor
 ---
 
+Add client filtering for query logs and support for CSV per-client log format
+
 #### Filter Query Logs by Client
 
 You can now filter query logs by client name in addition to domain. The search box shows suggestions for both domains and clients with their query counts.
