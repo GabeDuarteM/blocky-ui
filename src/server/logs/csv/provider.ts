@@ -47,6 +47,7 @@ export class CsvLogProvider implements LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const logFile = await this.findLatestLogFile();
 
@@ -99,6 +100,7 @@ export class CsvLogProvider implements LogProvider {
       offset: number;
       search?: string;
       responseType?: string;
+      client?: string;
     },
   ): Promise<{ items: LogEntry[]; totalCount: number }> {
     try {

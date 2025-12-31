@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { BarChart3 } from "lucide-react";
+import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { type TimeRange } from "~/lib/constants";
 import { TimeRangeSelector } from "./time-range-selector";
@@ -72,12 +73,13 @@ function InteractiveLegend({
         const config = chartConfig[key];
         const isVisible = visibleSeries.has(key);
         return (
-          <button
+          <Button
             key={key}
-            type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => onToggle(key)}
             className={cn(
-              "flex cursor-pointer items-center gap-1.5 transition-opacity",
+              "h-auto gap-1.5 px-1 py-0",
               !isVisible && "line-through opacity-40",
             )}
           >
@@ -86,7 +88,7 @@ function InteractiveLegend({
               style={{ backgroundColor: config.color }}
             />
             <span className="text-xs">{config.label}</span>
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -121,11 +123,14 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isLoading } = api.stats.queriesOverTime.useQuery({
-    range,
-    domain: filter?.type === "domain" ? filter.value : undefined,
-    client: filter?.type === "client" ? filter.value : undefined,
-  });
+  const { data, isFetching } = api.stats.queriesOverTime.useQuery(
+    {
+      range,
+      domain: filter?.type === "domain" ? filter.value : undefined,
+      client: filter?.type === "client" ? filter.value : undefined,
+    },
+    { placeholderData: (prev) => prev },
+  );
 
   const chartData = useMemo(
     () =>
@@ -183,7 +188,7 @@ export function QueriesOverTimeChart({
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {isFetching ? (
           <Skeleton className="h-[250px] w-full" />
         ) : (
           <ChartContainer config={chartConfig} className="h-[250px] w-full">

@@ -35,6 +35,7 @@ export class MySQLLogProvider implements LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const filters = [];
 
@@ -46,6 +47,12 @@ export class MySQLLogProvider implements LogProvider {
 
     if (options.responseType) {
       filters.push(eq(logEntries.responseType, options.responseType));
+    }
+
+    if (options.client) {
+      filters.push(
+        sql`LOWER(${logEntries.clientName}) LIKE LOWER(${`%${options.client}%`})`,
+      );
     }
 
     const countQuery = this.db

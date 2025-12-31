@@ -1,7 +1,7 @@
 "use client";
 
 import { api } from "~/trpc/react";
-import { History, Search, RefreshCw } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import {
   Tooltip,
@@ -17,7 +16,6 @@ import {
   TooltipContent,
 } from "~/components/ui/tooltip";
 import { useState } from "react";
-import { useDebounce } from "~/hooks/use-debounce";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import {
@@ -28,16 +26,19 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { BLOCKY_RESPONSE_TYPES } from "~/lib/constants";
+import {
+  QueryLogFilterCombobox,
+  type QueryLogFilter,
+} from "./query-log-filter-combobox";
 
 export function QueryLogs() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounce(searchQuery, 300);
+  const [filter, setFilter] = useState<QueryLogFilter>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
 
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
+  const handleFilterChange = (value: QueryLogFilter) => {
+    setFilter(value);
     setPageIndex(0);
   };
 
@@ -47,7 +48,8 @@ export function QueryLogs() {
   };
 
   const searchParams = {
-    search: debouncedSearch,
+    search: filter?.type === "domain" ? filter.value : undefined,
+    client: filter?.type === "client" ? filter.value : undefined,
     limit: pageSize,
     offset: pageIndex * pageSize,
     responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
@@ -111,34 +113,27 @@ export function QueryLogs() {
             </Tooltip>
           </div>
         </div>
-        <div className="mt-4">
-          <div className="relative flex flex-row items-center gap-2">
-            <div className="relative flex-1">
-              <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-              <Input
-                placeholder="Search domains..."
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-8"
-              />
-            </div>
-            <Select
-              value={responseTypeFilter}
-              onValueChange={handleResponseTypeChange}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Response Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Types</SelectItem>
-                {BLOCKY_RESPONSE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="mt-4 flex flex-row items-center gap-2">
+          <QueryLogFilterCombobox
+            value={filter}
+            onChange={handleFilterChange}
+          />
+          <Select
+            value={responseTypeFilter}
+            onValueChange={handleResponseTypeChange}
+          >
+            <SelectTrigger className="w-36">
+              <SelectValue placeholder="Response Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Types</SelectItem>
+              {BLOCKY_RESPONSE_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>

@@ -88,8 +88,10 @@ export function streamAndParseEntries(
 export function createFilterFn(options: {
   search?: string;
   responseType?: string;
+  client?: string;
 }): (entry: LogEntry) => boolean {
   const searchLower = options.search?.toLowerCase();
+  const clientLower = options.client?.toLowerCase();
 
   return (entry: LogEntry): boolean => {
     const passesSearch =
@@ -97,6 +99,9 @@ export function createFilterFn(options: {
       entry.questionName?.toLowerCase().includes(searchLower) === true;
     const passesType =
       !options.responseType || entry.responseType === options.responseType;
-    return passesSearch && passesType;
+    const passesClient =
+      !clientLower ||
+      entry.clientName?.toLowerCase().includes(clientLower) === true;
+    return passesSearch && passesType && passesClient;
   };
 }

@@ -64,6 +64,7 @@ export interface LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{
     items: LogEntry[];
     totalCount: number;
