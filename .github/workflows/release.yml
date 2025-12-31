@@ -8,7 +8,7 @@ on:
 
 env:
   CI: true
-  GHCR_IMAGE: ghcr.io/${{ github.repository }}
+  GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
   DOCKERHUB_IMAGE: gabrielduartem/blocky-ui
 
 jobs:
