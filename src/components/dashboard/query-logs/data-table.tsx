@@ -25,13 +25,9 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Button } from "~/components/ui/button";
+import { PageNumbers } from "~/components/ui/page-numbers";
 import { useState } from "react";
-import {
-  ChevronFirst,
-  ChevronLast,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -148,14 +144,14 @@ export function DataTable<TData, TValue>({
           </Table>
         </div>
       </div>
-      <div className="flex flex-col-reverse items-center justify-between gap-4 pt-4 md:flex-row">
-        <div className="flex items-center space-x-2">
-          <span className="text-muted-foreground text-sm">Rows per page</span>
+      <div className="-mx-6 mt-4 flex flex-col-reverse items-center justify-between gap-4 border-t px-6 pt-4 md:flex-row">
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-xs">Rows</span>
           <Select
             value={pageSize.toString()}
             onValueChange={handlePageSizeChange}
           >
-            <SelectTrigger className="w-20">
+            <SelectTrigger size="sm" className="h-7 w-18 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -166,41 +162,29 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-1">
           <Button
             variant="outline"
-            size="sm"
-            onClick={() => onPageChange(0)}
-            disabled={pageIndex === 0}
-          >
-            <ChevronFirst className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+            size="icon"
+            className="h-7 w-7"
             onClick={() => onPageChange(pageIndex - 1)}
             disabled={pageIndex === 0}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-muted-foreground text-sm">
-            Page {pageIndex + 1} of {pageCount > 999 ? "999+" : pageCount || 1}
-          </div>
+          <PageNumbers
+            currentPage={pageIndex}
+            totalPages={pageCount || 1}
+            onPageChange={onPageChange}
+          />
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-7 w-7"
             onClick={() => onPageChange(pageIndex + 1)}
             disabled={pageIndex >= pageCount - 1}
           >
             <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(pageCount - 1)}
-            disabled={pageIndex >= pageCount - 1}
-          >
-            <ChevronLast className="h-4 w-4" />
           </Button>
         </div>
       </div>
