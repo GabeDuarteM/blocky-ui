@@ -35,7 +35,7 @@ services:
       - 4000:4000
       - 53:53/udp
   blocky-ui:
-    image: gabrielduartem/blocky-ui:latest
+    image: ghcr.io/gabeduartem/blocky-ui:latest
     container_name: blocky-ui
     restart: unless-stopped
     depends_on:
@@ -79,7 +79,7 @@ docker run -d \
   -e BLOCKY_API_URL=http://your-blocky-server:4000 \
   -e QUERY_LOG_TYPE=mysql \
   -e QUERY_LOG_TARGET="mysql://username:password@localhost:3306/blocky_query_log_table_name" \
-  gabrielduartem/blocky-ui:latest
+  ghcr.io/gabeduartem/blocky-ui:latest
 ```
 
 ### Local Development
