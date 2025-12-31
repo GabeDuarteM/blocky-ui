@@ -1,5 +1,54 @@
 # blocky-ui
 
+## 1.4.0
+
+### Minor Changes
+
+- aa37165: Add client filtering for query logs and support for CSV per-client log format
+
+  #### Filter Query Logs by Client
+
+  You can now filter query logs by client name in addition to domain. The search box shows suggestions for both domains and clients with their query counts.
+
+  ![Filter by domain or client](https://i.imgur.com/pArfERS.png)
+
+  #### CSV Per-Client Log Format Support
+
+  Added support for Blocky's `csv-client` logging format, which stores logs in separate files per client.
+
+  To enable, set in your environment:
+
+  ```bash
+  QUERY_LOG_TYPE=csv-client
+  QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
+  ```
+
+### Patch Changes
+
+- e4b8349: Docker images are now published to **GitHub Container Registry** (GHCR)
+
+  #### New Registry
+
+  Blocky UI Docker images are now available on GitHub Container Registry at `ghcr.io/gabeduartem/blocky-ui`.
+
+  Update your `docker-compose.yml` to use the new registry:
+
+  ```yaml
+  services:
+    blocky-ui:
+      image: ghcr.io/gabeduartem/blocky-ui:latest
+  ```
+
+  Or if using `docker run`:
+
+  ```bash
+  docker run -d ghcr.io/gabeduartem/blocky-ui:latest
+  ```
+
+  #### Docker Hub Deprecation Notice
+
+  The existing Docker Hub image (`gabrielduartem/blocky-ui`) will continue to receive updates for the time being, but **may be discontinued in the future**. We recommend updating your configuration to use the GHCR image to avoid disruption.
+
 ## 1.3.0
 
 ### Minor Changes
