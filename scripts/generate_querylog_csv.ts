@@ -9,6 +9,7 @@ interface Args {
   "per-client"?: string;
   clients?: string;
   hostname?: string;
+  "start-from"?: string;
   help?: string;
   [key: string]: string | undefined;
 }
@@ -266,14 +267,15 @@ function showHelp(): void {
   console.log(`Usage: npx tsx scripts/generate_querylog_csv.ts [options]
 
 Options:
-  --output <dir>     Output directory for CSV files (default: ".")
-  --rows <n>         Number of log entries to generate (default: 100)
-  --days <n>         Number of days to generate logs for (default: 1)
-  --type <type>      Log type: "csv" or "csv-client" (default: "csv")
-  --per-client       Generate csv-client format (separate files per client)
-  --clients <n>      Number of unique clients to simulate (default: 3)
-  --hostname <name>  Blocky instance hostname (default: "blocky-instance")
-  --help             Show this help message
+  --output <dir>       Output directory for CSV files (default: ".")
+  --rows <n>           Number of log entries to generate (default: 100)
+  --days <n>           Number of days to generate logs for (default: 1)
+  --type <type>        Log type: "csv" or "csv-client" (default: "csv")
+  --per-client         Generate csv-client format (separate files per client)
+  --clients <n>        Number of unique clients to simulate (default: 3)
+  --hostname <name>    Blocky instance hostname (default: "blocky-instance")
+  --start-from <date>  Start date in YYYY-MM-DD format (default: today)
+  --help               Show this help message
 `);
 }
 
@@ -295,6 +297,7 @@ function main(): void {
       args["per-client"] === "",
     numClients: parseInt(args.clients || "3", 10),
     blockyHost: args.hostname || "blocky-instance",
+    startFrom: args["start-from"],
   };
 
   if (!fs.existsSync(config.outputDir)) {
@@ -303,11 +306,22 @@ function main(): void {
 
   const clients = generateClientPool(config.numClients);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  let startDate: Date;
+  if (config.startFrom) {
+    startDate = new Date(config.startFrom + "T00:00:00");
+    if (isNaN(startDate.getTime())) {
+      console.error(
+        `Invalid date format: ${config.startFrom}. Use YYYY-MM-DD.`,
+      );
+      process.exit(1);
+    }
+  } else {
+    startDate = new Date();
+  }
+  startDate.setHours(0, 0, 0, 0);
 
   for (let day = 0; day < config.numDays; day++) {
-    const date = new Date(today);
+    const date = new Date(startDate);
     date.setDate(date.getDate() - day);
 
     const allEntries: Entry[] = [];

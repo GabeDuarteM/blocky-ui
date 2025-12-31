@@ -1,7 +1,8 @@
 import { env } from "~/env";
-import { MySQLLogProvider } from "./mysql-provider";
+import { MySQLLogProvider } from "./mysql/provider";
 import { DemoLogProvider } from "./demo-provider";
-import { CsvLogProvider } from "./csv-provider";
+import { CsvLogProvider } from "./csv/provider";
+import { CsvClientLogProvider } from "./csv/client-provider";
 import type { LogProvider } from "./types";
 
 /**
@@ -45,6 +46,15 @@ export function createLogProvider(): LogProvider | undefined {
       }
 
       provider = new CsvLogProvider({ directory: logTarget });
+    } else if (logType === "csv-client") {
+      console.log("Using log provider type: csv-client, target:", logTarget);
+      if (!logTarget) {
+        throw new Error(
+          "QUERY_LOG_TARGET must be set to a directory path when QUERY_LOG_TYPE == 'csv-client'",
+        );
+      }
+
+      provider = new CsvClientLogProvider({ directory: logTarget });
     } else if (logType === "mysql") {
       console.log("Using log provider type: mysql");
       if (!logTarget) {

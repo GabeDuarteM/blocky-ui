@@ -3,9 +3,9 @@ import { drizzle } from "drizzle-orm/mysql2";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 
-import { logEntries } from "~/server/logs/mysql-schema";
+import { logEntries } from "./schema";
 import { type TimeRange } from "~/lib/constants";
-import { getTimeRangeConfig } from "./aggregation-utils";
+import { getTimeRangeConfig } from "../aggregation-utils";
 import type {
   LogProvider,
   LogEntry,
@@ -16,7 +16,7 @@ import type {
   QueryTypeEntry,
   SearchDomainEntry,
   SearchClientEntry,
-} from "./types";
+} from "../types";
 
 const schema = { logEntries };
 
@@ -35,6 +35,7 @@ export class MySQLLogProvider implements LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const filters = [];
 
@@ -46,6 +47,12 @@ export class MySQLLogProvider implements LogProvider {
 
     if (options.responseType) {
       filters.push(eq(logEntries.responseType, options.responseType));
+    }
+
+    if (options.client) {
+      filters.push(
+        sql`LOWER(${logEntries.clientName}) LIKE LOWER(${`%${options.client}%`})`,
+      );
     }
 
     const countQuery = this.db
