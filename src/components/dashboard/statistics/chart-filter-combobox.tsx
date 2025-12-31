@@ -1,17 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Filter, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "~/components/ui/command";
+import { Command, CommandInput } from "~/components/ui/command";
 import {
   Popover,
   PopoverContent,
@@ -22,26 +15,19 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { api } from "~/trpc/react";
 import { type TimeRange } from "~/lib/constants";
-import { useDebounce } from "~/hooks/use-debounce";
+import {
+  useFilterSuggestions,
+  type FilterValue,
+} from "~/hooks/use-filter-suggestions";
+import { FilterSelect } from "../filter-select";
 
-export type ChartFilter =
-  | { type: "domain"; value: string }
-  | { type: "client"; value: string }
-  | null;
+export type ChartFilter = FilterValue;
 
 interface ChartFilterComboboxProps {
   value: ChartFilter;
   onChange: (value: ChartFilter) => void;
   range: TimeRange;
-}
-
-function formatCount(count: number): string {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
-  }
-  return count.toString();
 }
 
 export function ChartFilterCombobox({
@@ -51,39 +37,8 @@ export function ChartFilterCombobox({
 }: ChartFilterComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
 
-  const hasSearch = debouncedSearch.length > 0;
-
-  const { data: topDomains } = api.stats.topDomains.useQuery(
-    { range, limit: 5, filter: "all" },
-    { enabled: !hasSearch },
-  );
-
-  const { data: topClients } = api.stats.topClients.useQuery(
-    { range, limit: 5, filter: "all" },
-    { enabled: !hasSearch },
-  );
-
-  const { data: searchedDomains } = api.stats.searchDomains.useQuery(
-    { range, query: debouncedSearch, limit: 10 },
-    { enabled: hasSearch },
-  );
-
-  const { data: searchedClients } = api.stats.searchClients.useQuery(
-    { range, query: debouncedSearch, limit: 10 },
-    { enabled: hasSearch },
-  );
-
-  const domains = hasSearch
-    ? (searchedDomains ?? [])
-    : (topDomains?.items.map((d) => ({ domain: d.domain, count: d.count })) ??
-      []);
-
-  const clients = hasSearch
-    ? (searchedClients ?? [])
-    : (topClients?.items.map((c) => ({ client: c.client, count: c.total })) ??
-      []);
+  const suggestions = useFilterSuggestions(search, range);
 
   const handleSelect = (type: "domain" | "client", selectedValue: string) => {
     onChange({ type, value: selectedValue });
@@ -131,59 +86,11 @@ export function ChartFilterCombobox({
             value={search}
             onValueChange={setSearch}
           />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            {domains.length > 0 && (
-              <CommandGroup heading="Domains">
-                {domains.map((domain) => (
-                  <CommandItem
-                    key={`domain:${domain.domain}`}
-                    value={`domain:${domain.domain}`}
-                    onSelect={() => handleSelect("domain", domain.domain)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value?.type === "domain" &&
-                          value.value === domain.domain
-                          ? "opacity-100"
-                          : "opacity-0",
-                      )}
-                    />
-                    <span className="flex-1 truncate">{domain.domain}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {formatCount(domain.count)}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-            {clients.length > 0 && (
-              <CommandGroup heading="Clients">
-                {clients.map((client) => (
-                  <CommandItem
-                    key={`client:${client.client}`}
-                    value={`client:${client.client}`}
-                    onSelect={() => handleSelect("client", client.client)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value?.type === "client" &&
-                          value.value === client.client
-                          ? "opacity-100"
-                          : "opacity-0",
-                      )}
-                    />
-                    <span className="flex-1 truncate">{client.client}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">
-                      {formatCount(client.count)}
-                    </span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </CommandList>
+          <FilterSelect
+            value={value}
+            suggestions={suggestions}
+            onSelect={handleSelect}
+          />
           {hasFilter && (
             <div className="border-t p-2">
               <Button
@@ -218,13 +125,15 @@ export function ActiveFilterChip({ filter, onClear }: ActiveFilterChipProps) {
       <span className="max-w-[150px] truncate">
         {typeLabel}: {filter.value}
       </span>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={onClear}
-        className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+        className="hover:bg-primary/20 h-auto w-auto rounded-full p-0.5"
         aria-label="Clear filter"
       >
         <X className="h-3 w-3" />
-      </button>
+      </Button>
     </div>
   );
 }

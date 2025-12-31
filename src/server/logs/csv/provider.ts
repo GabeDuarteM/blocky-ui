@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as readline from "readline";
 import { type TimeRange } from "~/lib/constants";
 import type {
   LogProvider,
@@ -12,7 +11,7 @@ import type {
   QueryTypeEntry,
   SearchDomainEntry,
   SearchClientEntry,
-} from "./types";
+} from "../types";
 import {
   getTimeRangeConfig,
   aggregateQueriesOverTime,
@@ -21,7 +20,8 @@ import {
   aggregateQueryTypes,
   searchDomainsInEntries,
   searchClientsInEntries,
-} from "./aggregation-utils";
+} from "../aggregation-utils";
+import { streamAndParseEntries, createFilterFn } from "./utils";
 
 interface CacheEntry {
   promise: Promise<LogEntry[]>;
@@ -47,6 +47,7 @@ export class CsvLogProvider implements LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const logFile = await this.findLatestLogFile();
 
@@ -92,76 +93,6 @@ export class CsvLogProvider implements LogProvider {
     }
   }
 
-  private parseLogLine(line: string): LogEntry | null {
-    try {
-      const trimmed = line.trim();
-      if (!trimmed) return null;
-
-      const fields = trimmed.split("\t");
-
-      // Expected format: timestamp, clientIP, clientName, duration, reason, questionName, answer, responseCode, responseType, questionType, hostnameId
-      if (fields.length < 11) {
-        console.warn(
-          `Malformed log line (expected 11+ fields, got ${fields.length}):`,
-          line,
-        );
-        return null;
-      }
-
-      const parsedDuration = fields[3] ? parseInt(fields[3], 10) : NaN;
-
-      return {
-        requestTs: fields[0] || null,
-        clientIp: fields[1] || null,
-        clientName: fields[2] || null,
-        durationMs: Number.isNaN(parsedDuration) ? null : parsedDuration,
-        reason: fields[4] || null,
-        questionName: fields[5] || null,
-        answer: fields[6] || null,
-        responseCode: fields[7] || null,
-        responseType: fields[8] || null,
-        questionType: fields[9] || null,
-        hostname: fields[10] || null,
-        effectiveTldp: null,
-        id: null,
-      };
-    } catch (error) {
-      console.error(`Error parsing log line:`, error);
-      return null;
-    }
-  }
-
-  private streamAndParseEntries(
-    stream: fs.ReadStream,
-    filterFn?: (entry: LogEntry) => boolean,
-  ): Promise<LogEntry[]> {
-    return new Promise((resolve, reject) => {
-      const entries: LogEntry[] = [];
-
-      const rl = readline.createInterface({
-        input: stream,
-        crlfDelay: Infinity,
-      });
-
-      rl.on("line", (line) => {
-        const entry = this.parseLogLine(line);
-        if (!entry) return;
-
-        if (!filterFn || filterFn(entry)) {
-          entries.push(entry);
-        }
-      });
-
-      rl.on("close", () => {
-        resolve(entries);
-      });
-
-      stream.on("error", (error) => {
-        reject(error);
-      });
-    });
-  }
-
   private async readLogFile(
     filePath: string,
     options: {
@@ -169,29 +100,12 @@ export class CsvLogProvider implements LogProvider {
       offset: number;
       search?: string;
       responseType?: string;
+      client?: string;
     },
   ): Promise<{ items: LogEntry[]; totalCount: number }> {
     try {
-      const searchLower = options.search?.toLowerCase();
-
-      const passesFilters = (entry: LogEntry): boolean => {
-        const passesSearch =
-          !searchLower ||
-          entry.questionName?.toLowerCase().includes(searchLower) === true;
-        const passesType =
-          !options.responseType || entry.responseType === options.responseType;
-        return passesSearch && passesType;
-      };
-
-      const stream = fs.createReadStream(filePath, {
-        encoding: "utf-8",
-        highWaterMark: 64 * 1024, // 64KB chunks
-      });
-
-      const filteredEntries = await this.streamAndParseEntries(
-        stream,
-        passesFilters,
-      );
+      const filterFn = createFilterFn(options);
+      const filteredEntries = await streamAndParseEntries(filePath, filterFn);
       filteredEntries.reverse(); // to show most recent first
 
       const totalCount = filteredEntries.length;
@@ -226,12 +140,7 @@ export class CsvLogProvider implements LogProvider {
         return entryDate >= oneDayAgo;
       };
 
-      const stream = fs.createReadStream(logFile, {
-        encoding: "utf-8",
-        highWaterMark: 64 * 1024,
-      });
-
-      const entries = await this.streamAndParseEntries(stream, isWithin24h);
+      const entries = await streamAndParseEntries(logFile, isWithin24h);
       const blocked = entries.filter(
         (e) => e.responseType === "BLOCKED",
       ).length;
@@ -276,12 +185,7 @@ export class CsvLogProvider implements LogProvider {
       return entryDate >= startTime;
     };
 
-    const stream = fs.createReadStream(logFile, {
-      encoding: "utf-8",
-      highWaterMark: 64 * 1024,
-    });
-
-    return this.streamAndParseEntries(stream, isInRange);
+    return streamAndParseEntries(logFile, isInRange);
   }
 
   async getQueriesOverTime(options: {

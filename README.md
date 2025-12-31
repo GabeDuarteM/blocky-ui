@@ -10,7 +10,8 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
-  - Requires MySQL/MariaDB or CSV logging type configured on Blocky
+  - Supports MySQL, CSV and CSV-Client logging type from Blocky
+  - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
 - Statistic sections
   - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on blocky)
   - Queries over time chart, top domains, and top clients (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
@@ -48,12 +49,17 @@ services:
       # - PROMETHEUS_PATH=/custom-metrics-path
 
       # Uncomment to enable query logging features
+
       # from a MySQL/MariaDB database:
       # - QUERY_LOG_TYPE=mysql
       # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
 
-      # from a CSV file:
+      # from a CSV file (single daily file):
       # - QUERY_LOG_TYPE=csv
+      # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
+
+      # from CSV per-client files (multiple files per day):
+      # - QUERY_LOG_TYPE=csv-client
       # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
 ```
 

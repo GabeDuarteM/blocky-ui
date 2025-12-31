@@ -47,7 +47,7 @@ export function ChartsSection() {
                 value={String(rowsPerTable)}
                 onValueChange={(v) => setRowsPerTable(Number(v) as RowsOption)}
               >
-                <SelectTrigger size="sm" className="h-7 w-16 text-xs">
+                <SelectTrigger size="sm" className="h-7 w-18 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

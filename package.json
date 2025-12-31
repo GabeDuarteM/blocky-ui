@@ -19,8 +19,8 @@
     "typecheck": "tsc --noEmit",
     "changeset": "pnpx @changesets/cli",
     "ci": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
-    "generate:csv": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 7",
-    "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 7 --type csv-client --clients 5"
+    "generate:csv": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1",
+    "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

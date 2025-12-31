@@ -30,6 +30,7 @@ export class DemoLogProvider implements LogProvider {
     offset: number;
     search?: string;
     responseType?: string;
+    client?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
 
@@ -52,6 +53,12 @@ export class DemoLogProvider implements LogProvider {
     if (options.responseType) {
       filteredLogs = filteredLogs.filter(
         (log) => log.responseType === options.responseType,
+      );
+    }
+
+    if (options.client) {
+      filteredLogs = filteredLogs.filter((log) =>
+        log.clientName?.toLowerCase().includes(options.client!.toLowerCase()),
       );
     }
 
