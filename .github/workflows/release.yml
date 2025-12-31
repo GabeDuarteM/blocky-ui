@@ -55,7 +55,10 @@ jobs:
     needs: release
     if: needs.release.outputs.published == 'true'
     permissions:
+      contents: read
       packages: write
+      attestations: write
+      id-token: write
     strategy:
       fail-fast: true
       matrix:
