@@ -123,7 +123,7 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isFetching } = api.stats.queriesOverTime.useQuery(
+  const { data, isLoading } = api.stats.queriesOverTime.useQuery(
     {
       range,
       domain: filter?.type === "domain" ? filter.value : undefined,
@@ -188,7 +188,7 @@ export function QueriesOverTimeChart({
         </div>
       </CardHeader>
       <CardContent>
-        {isFetching ? (
+        {isLoading ? (
           <Skeleton className="h-[250px] w-full" />
         ) : (
           <ChartContainer config={chartConfig} className="h-[250px] w-full">

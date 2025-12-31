@@ -14,7 +14,7 @@ Added support for Blocky's `csv-client` logging format, which stores logs in sep
 
 To enable, set in your environment:
 
-```
+```bash
 QUERY_LOG_TYPE=csv-client
 QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
 ```

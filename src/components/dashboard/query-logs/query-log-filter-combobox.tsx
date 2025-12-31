@@ -62,6 +62,7 @@ export function QueryLogFilterCombobox({
     }
 
     if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
+      // Forward navigation keys to Command since Input is outside its scope
       commandRef.current?.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: e.key,
