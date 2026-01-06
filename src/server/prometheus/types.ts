@@ -30,10 +30,5 @@ export interface BlockyMetrics {
   blocked: number;
   cacheHits: number;
   cacheMisses: number;
-  cacheEntries: number;
-  errors: number;
   denylistEntries: Array<{ group: string; count: number }>;
-  allowlistEntries: Array<{ group: string; count: number }>;
-  buildInfo: { version: string; buildTime: string } | null;
-  blockingEnabled: boolean | null;
 }

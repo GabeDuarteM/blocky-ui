@@ -40,43 +40,9 @@ export const statsRouter = createTRPCRouter({
       blocked,
       blockedPercentage,
       cacheHitRate,
-      cacheEntries: metrics.cacheEntries,
       listedDomains: totalDenylistEntries,
-      errors: metrics.errors,
       hasLogProvider: !!ctx.logProvider,
     };
-  }),
-
-  listStatus: publicProcedure.query(async () => {
-    const parsed = await fetchPrometheusMetrics();
-    if (!parsed) return null;
-
-    const metrics = extractBlockyMetrics(parsed);
-    const groups = metrics.denylistEntries.map((deny) => {
-      const allow = metrics.allowlistEntries.find(
-        (a) => a.group === deny.group,
-      );
-      return {
-        name: deny.group,
-        denylistCount: deny.count,
-        allowlistCount: allow?.count ?? 0,
-      };
-    });
-
-    const total = groups.reduce(
-      (sum, g) => sum + g.denylistCount + g.allowlistCount,
-      0,
-    );
-
-    return { groups, total };
-  }),
-
-  buildInfo: publicProcedure.query(async () => {
-    const parsed = await fetchPrometheusMetrics();
-    if (!parsed) return null;
-
-    const metrics = extractBlockyMetrics(parsed);
-    return metrics.buildInfo;
   }),
 
   queriesOverTime: publicProcedure
