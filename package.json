@@ -20,7 +20,8 @@
     "changeset": "pnpx @changesets/cli",
     "ci": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
     "generate:csv": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1",
-    "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5"
+    "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5",
+    "knip": "SKIP_ENV_VALIDATION=true knip"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -68,6 +69,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.1.1",
     "eslint-plugin-drizzle": "^0.2.3",
+    "knip": "^5.80.0",
     "msw": "^2.12.7",
     "postcss": "^8.5.3",
     "prettier": "^3.7.4",
