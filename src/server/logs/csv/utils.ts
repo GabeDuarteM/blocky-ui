@@ -2,7 +2,7 @@ import * as fs from "fs";
 import * as readline from "readline";
 import type { LogEntry } from "../types";
 
-export function parseLogLine(line: string): LogEntry | null {
+function parseLogLine(line: string): LogEntry | null {
   try {
     const trimmed = line.trim();
     if (!trimmed) return null;

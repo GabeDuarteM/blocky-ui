@@ -174,12 +174,12 @@ function SelectScrollDownButton({
 export {
   Select,
   SelectContent,
-  SelectGroup,
+  /** @knipignore */ SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
+  /** @knipignore */ SelectLabel,
+  /** @knipignore */ SelectScrollDownButton,
+  /** @knipignore */ SelectScrollUpButton,
+  /** @knipignore */ SelectSeparator,
   SelectTrigger,
   SelectValue,
 }

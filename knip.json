@@ -1,8 +1,10 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["scripts/generate_querylog_csv.ts", "src/trpc/server.ts"],
   "ignoreExportsUsedInFile": {
     "interface": true,
     "type": true
   },
-  "tags": ["-knipignore"]
+  "tags": ["-knipignore"],
+  "ignoreDependencies": ["server-only"]
 }

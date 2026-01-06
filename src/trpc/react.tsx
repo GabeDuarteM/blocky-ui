@@ -27,6 +27,7 @@ export const api = createTRPCReact<AppRouter>();
 /**
  * Inference helper for inputs.
  *
+ * @knipignore
  * @example type HelloInput = RouterInputs['example']['hello']
  */
 export type RouterInputs = inferRouterInputs<AppRouter>;
@@ -34,6 +35,7 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
 /**
  * Inference helper for outputs.
  *
+ * @knipignore
  * @example type HelloOutput = RouterOutputs['example']['hello']
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;

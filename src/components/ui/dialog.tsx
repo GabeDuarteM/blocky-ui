@@ -131,13 +131,13 @@ function DialogDescription({
 
 export {
   Dialog,
-  DialogClose,
+  /** @knipignore */ DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
+  /** @knipignore */ DialogFooter,
   DialogHeader,
-  DialogOverlay,
-  DialogPortal,
+  /** @knipignore */ DialogOverlay,
+  /** @knipignore */ DialogPortal,
   DialogTitle,
-  DialogTrigger,
+  /** @knipignore */ DialogTrigger,
 }

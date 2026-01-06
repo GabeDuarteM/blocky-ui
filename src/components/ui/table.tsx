@@ -108,9 +108,9 @@ export {
   Table,
   TableHeader,
   TableBody,
-  TableFooter,
+  /** @knipignore */ TableFooter,
   TableHead,
   TableRow,
   TableCell,
-  TableCaption,
+  /** @knipignore */ TableCaption,
 }

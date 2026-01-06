@@ -352,6 +352,6 @@ export {
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-  ChartLegendContent,
-  ChartStyle,
+  /** @knipignore */ ChartLegendContent,
+  /** @knipignore */ ChartStyle,
 }

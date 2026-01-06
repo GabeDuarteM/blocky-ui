@@ -173,12 +173,12 @@ function CommandShortcut({
 
 export {
   Command,
-  CommandDialog,
+  /** @knipignore */ CommandDialog,
   CommandInput,
   CommandList,
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  CommandShortcut,
-  CommandSeparator,
+  /** @knipignore */ CommandShortcut,
+  /** @knipignore */ CommandSeparator,
 }

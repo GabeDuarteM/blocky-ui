@@ -86,7 +86,7 @@ export {
   CardHeader,
   CardFooter,
   CardTitle,
-  CardAction,
+  /** @knipignore */ CardAction,
   CardDescription,
   CardContent,
 }
