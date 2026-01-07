@@ -103,7 +103,24 @@ export const columns: ColumnDef<LogEntry>[] = [
     header: "Duration",
     cell: ({ row }) => {
       const duration = row.original.durationMs;
-      if (!duration) return null;
+      const responseType = row.original.responseType;
+      const isLocalResponse =
+        responseType === "CACHED" ||
+        responseType === "HOSTSFILE" ||
+        responseType === "CUSTOMDNS" ||
+        responseType === "BLOCKED" ||
+        responseType === "SPECIAL" ||
+        responseType === "FILTERED" ||
+        responseType === "NOTFQDN";
+
+      if (duration == null) {
+        return null;
+      }
+
+      if (duration === 0 && isLocalResponse) {
+        return <span className="text-muted-foreground">—</span>;
+      }
+
       return `${duration}ms`;
     },
   },

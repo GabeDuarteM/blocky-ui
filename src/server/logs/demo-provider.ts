@@ -1,5 +1,10 @@
 import { type TimeRange } from "~/lib/constants";
-import type { LogEntry, StatsResult } from "./types";
+import type {
+  LogEntry,
+  StatsResult,
+  QueryLogsOptions,
+  QueryLogsResult,
+} from "./types";
 import { getTimeRangeConfig } from "./aggregation-utils";
 import { BaseMemoryLogProvider } from "./base-provider";
 
@@ -8,13 +13,7 @@ import { BaseMemoryLogProvider } from "./base-provider";
  * Used when DEMO_MODE is enabled
  */
 export class DemoLogProvider extends BaseMemoryLogProvider {
-  async getQueryLogs(options: {
-    limit: number;
-    offset: number;
-    search?: string;
-    responseType?: string;
-    client?: string;
-  }): Promise<{ items: LogEntry[]; totalCount: number }> {
+  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
 
     let filteredLogs = logEntryMock.toSorted((item1, item2) => {
@@ -42,6 +41,12 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
     if (options.client) {
       filteredLogs = filteredLogs.filter((log) =>
         log.clientName?.toLowerCase().includes(options.client!.toLowerCase()),
+      );
+    }
+
+    if (options.questionType) {
+      filteredLogs = filteredLogs.filter(
+        (log) => log.questionType === options.questionType,
       );
     }
 

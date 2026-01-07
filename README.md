@@ -61,6 +61,10 @@ services:
       # from CSV per-client files (multiple files per day):
       # - QUERY_LOG_TYPE=csv-client
       # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
+
+      # Uncomment to display an instance name in the browser tab title
+      # Useful when running multiple BlockyUI instances
+      # - INSTANCE_NAME=blocky-vm2
 ```
 
 2. Start the container:

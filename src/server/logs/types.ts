@@ -58,17 +58,22 @@ export interface SearchClientEntry {
   count: number;
 }
 
+export interface QueryLogsOptions {
+  limit: number;
+  offset: number;
+  search?: string;
+  responseType?: string;
+  client?: string;
+  questionType?: string;
+}
+
+export interface QueryLogsResult {
+  items: LogEntry[];
+  totalCount: number;
+}
+
 export interface LogProvider {
-  getQueryLogs(options: {
-    limit: number;
-    offset: number;
-    search?: string;
-    responseType?: string;
-    client?: string;
-  }): Promise<{
-    items: LogEntry[];
-    totalCount: number;
-  }>;
+  getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult>;
 
   getStats24h(): Promise<StatsResult>;
 

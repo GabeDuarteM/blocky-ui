@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as readline from "readline";
-import type { LogEntry } from "../types";
+import type { LogEntry, QueryLogsOptions } from "../types";
 
 function parseLogLine(line: string): LogEntry | null {
   try {
@@ -85,11 +85,12 @@ export function streamAndParseEntries(
   });
 }
 
-export function createFilterFn(options: {
-  search?: string;
-  responseType?: string;
-  client?: string;
-}): (entry: LogEntry) => boolean {
+export function createFilterFn(
+  options: Pick<
+    QueryLogsOptions,
+    "search" | "responseType" | "client" | "questionType"
+  >,
+): (entry: LogEntry) => boolean {
   const searchLower = options.search?.toLowerCase();
   const clientLower = options.client?.toLowerCase();
 
@@ -97,12 +98,16 @@ export function createFilterFn(options: {
     const passesSearch =
       !searchLower ||
       entry.questionName?.toLowerCase().includes(searchLower) === true;
-    const passesType =
+    const passesResponseType =
       !options.responseType || entry.responseType === options.responseType;
     const passesClient =
       !clientLower ||
       entry.clientName?.toLowerCase().includes(clientLower) === true;
-    return passesSearch && passesType && passesClient;
+    const passesQuestionType =
+      !options.questionType || entry.questionType === options.questionType;
+    return (
+      passesSearch && passesResponseType && passesClient && passesQuestionType
+    );
   };
 }
 

@@ -8,7 +8,6 @@ import { type TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "../aggregation-utils";
 import type {
   LogProvider,
-  LogEntry,
   StatsResult,
   QueriesOverTimeEntry,
   TopDomainEntry,
@@ -16,6 +15,8 @@ import type {
   QueryTypeEntry,
   SearchDomainEntry,
   SearchClientEntry,
+  QueryLogsOptions,
+  QueryLogsResult,
 } from "../types";
 
 const schema = { logEntries };
@@ -58,13 +59,7 @@ export class MySQLLogProvider implements LogProvider {
     return { filters, getTotalCount };
   }
 
-  async getQueryLogs(options: {
-    limit: number;
-    offset: number;
-    search?: string;
-    responseType?: string;
-    client?: string;
-  }): Promise<{ items: LogEntry[]; totalCount: number }> {
+  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
     const filters = [];
 
     if (options.search) {
@@ -81,6 +76,10 @@ export class MySQLLogProvider implements LogProvider {
       filters.push(
         sql`LOWER(${logEntries.clientName}) LIKE LOWER(${`%${options.client}%`})`,
       );
+    }
+
+    if (options.questionType) {
+      filters.push(eq(logEntries.questionType, options.questionType));
     }
 
     const countQuery = this.db
