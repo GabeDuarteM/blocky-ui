@@ -9,6 +9,19 @@ import {
 
 const timeRangeSchema = z.enum(TIME_RANGES);
 
+const paginatedRangeSchema = z.object({
+  range: timeRangeSchema,
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
+  filter: z.enum(["all", "blocked"]).default("all"),
+});
+
+const searchSchema = z.object({
+  range: timeRangeSchema,
+  query: z.string().min(1),
+  limit: z.number().min(1).max(50).default(10),
+});
+
 export const statsRouter = createTRPCRouter({
   prometheusStatus: publicProcedure.query(async () => {
     const available = await checkPrometheusAvailable();
@@ -59,28 +72,14 @@ export const statsRouter = createTRPCRouter({
     }),
 
   topDomains: publicProcedure
-    .input(
-      z.object({
-        range: timeRangeSchema,
-        limit: z.number().min(1).max(100).default(10),
-        offset: z.number().min(0).default(0),
-        filter: z.enum(["all", "blocked"]).default("all"),
-      }),
-    )
+    .input(paginatedRangeSchema)
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
       return ctx.logProvider.getTopDomains(input);
     }),
 
   topClients: publicProcedure
-    .input(
-      z.object({
-        range: timeRangeSchema,
-        limit: z.number().min(1).max(100).default(10),
-        offset: z.number().min(0).default(0),
-        filter: z.enum(["all", "blocked"]).default("all"),
-      }),
-    )
+    .input(paginatedRangeSchema)
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
       return ctx.logProvider.getTopClients(input);
@@ -94,26 +93,14 @@ export const statsRouter = createTRPCRouter({
     }),
 
   searchDomains: publicProcedure
-    .input(
-      z.object({
-        range: timeRangeSchema,
-        query: z.string().min(1),
-        limit: z.number().min(1).max(50).default(10),
-      }),
-    )
+    .input(searchSchema)
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
       return ctx.logProvider.searchDomains(input);
     }),
 
   searchClients: publicProcedure
-    .input(
-      z.object({
-        range: timeRangeSchema,
-        query: z.string().min(1),
-        limit: z.number().min(1).max(50).default(10),
-      }),
-    )
+    .input(searchSchema)
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
       return ctx.logProvider.searchClients(input);

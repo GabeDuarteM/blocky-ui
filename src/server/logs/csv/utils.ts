@@ -105,3 +105,18 @@ export function createFilterFn(options: {
     return passesSearch && passesType && passesClient;
   };
 }
+
+export function createTimeFilter(since: Date): (entry: LogEntry) => boolean {
+  return (entry: LogEntry): boolean => {
+    if (!entry.requestTs) return false;
+    return new Date(entry.requestTs) >= since;
+  };
+}
+
+export function computeStats(entries: LogEntry[]): {
+  totalQueries: number;
+  blocked: number;
+} {
+  const blocked = entries.filter((e) => e.responseType === "BLOCKED").length;
+  return { totalQueries: entries.length, blocked };
+}

@@ -1,44 +1,25 @@
 import * as fs from "fs";
 import * as path from "path";
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogProvider,
-  LogEntry,
-  StatsResult,
-  QueriesOverTimeEntry,
-  TopDomainEntry,
-  TopClientEntry,
-  QueryTypeEntry,
-  SearchDomainEntry,
-  SearchClientEntry,
-} from "../types";
+import type { LogEntry, StatsResult } from "../types";
+import { getTimeRangeConfig } from "../aggregation-utils";
+import { BaseMemoryLogProvider } from "../base-provider";
 import {
-  getTimeRangeConfig,
-  aggregateQueriesOverTime,
-  aggregateTopDomains,
-  aggregateTopClients,
-  aggregateQueryTypes,
-  searchDomainsInEntries,
-  searchClientsInEntries,
-} from "../aggregation-utils";
-import { streamAndParseEntries, createFilterFn } from "./utils";
-
-interface CacheEntry {
-  promise: Promise<LogEntry[]>;
-  timestamp: number;
-}
-
-const CACHE_TTL_MS = 5000; // 5 seconds
+  streamAndParseEntries,
+  createFilterFn,
+  createTimeFilter,
+  computeStats,
+} from "./utils";
 
 /**
  * CSV file-based log provider
  * Reads directly from the latest log file on each request using buffered streaming
  */
-export class CsvLogProvider implements LogProvider {
+export class CsvLogProvider extends BaseMemoryLogProvider {
   private readonly directory: string;
-  private readonly entriesCache = new Map<TimeRange, CacheEntry>();
 
   constructor(options: { directory: string }) {
+    super();
     this.directory = options.directory;
   }
 
@@ -106,7 +87,7 @@ export class CsvLogProvider implements LogProvider {
     try {
       const filterFn = createFilterFn(options);
       const filteredEntries = await streamAndParseEntries(filePath, filterFn);
-      filteredEntries.reverse(); // to show most recent first
+      filteredEntries.reverse();
 
       const totalCount = filteredEntries.length;
       const paginatedEntries = filteredEntries.slice(
@@ -126,138 +107,28 @@ export class CsvLogProvider implements LogProvider {
 
   async getStats24h(): Promise<StatsResult> {
     const logFile = await this.findLatestLogFile();
-
     if (!logFile) {
       return { totalQueries: 0, blocked: 0 };
     }
 
     try {
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-      const isWithin24h = (entry: LogEntry): boolean => {
-        if (!entry.requestTs) return false;
-        const entryDate = new Date(entry.requestTs);
-        return entryDate >= oneDayAgo;
-      };
-
-      const entries = await streamAndParseEntries(logFile, isWithin24h);
-      const blocked = entries.filter(
-        (e) => e.responseType === "BLOCKED",
-      ).length;
-
-      return {
-        totalQueries: entries.length,
-        blocked,
-      };
+      const entries = await streamAndParseEntries(
+        logFile,
+        createTimeFilter(oneDayAgo),
+      );
+      return computeStats(entries);
     } catch (error) {
       console.error(`Error getting stats:`, error);
       return { totalQueries: 0, blocked: 0 };
     }
   }
 
-  private getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
-    const cached = this.entriesCache.get(range);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.promise;
-    }
-
-    const promise = this.fetchEntriesInRange(range);
-    promise.catch(() => {
-      const current = this.entriesCache.get(range);
-      if (current?.promise === promise) {
-        this.entriesCache.delete(range);
-      }
-    });
-    this.entriesCache.set(range, { promise, timestamp: Date.now() });
-
-    return promise;
-  }
-
-  private async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+  protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
     const logFile = await this.findLatestLogFile();
     if (!logFile) return [];
 
     const { startTime } = getTimeRangeConfig(range);
-
-    const isInRange = (entry: LogEntry): boolean => {
-      if (!entry.requestTs) return false;
-      const entryDate = new Date(entry.requestTs);
-      return entryDate >= startTime;
-    };
-
-    return streamAndParseEntries(logFile, isInRange);
-  }
-
-  async getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]> {
-    let entries = await this.getEntriesInRange(options.range);
-
-    if (options.domain) {
-      const domainLower = options.domain.toLowerCase();
-      entries = entries.filter((e) =>
-        e.questionName?.toLowerCase().includes(domainLower),
-      );
-    }
-
-    if (options.client) {
-      const clientLower = options.client.toLowerCase();
-      entries = entries.filter((e) =>
-        e.clientName?.toLowerCase().includes(clientLower),
-      );
-    }
-
-    return aggregateQueriesOverTime(entries, options.range);
-  }
-
-  async getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    let entries = await this.getEntriesInRange(options.range);
-    if (options.filter === "blocked") {
-      entries = entries.filter((e) => e.responseType === "BLOCKED");
-    }
-    return aggregateTopDomains(entries, options.limit, options.offset);
-  }
-
-  async getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    let entries = await this.getEntriesInRange(options.range);
-    if (options.filter === "blocked") {
-      entries = entries.filter((e) => e.responseType === "BLOCKED");
-    }
-    return aggregateTopClients(entries, options.limit, options.offset);
-  }
-
-  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
-    const entries = await this.getEntriesInRange(range);
-    return aggregateQueryTypes(entries);
-  }
-
-  async searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchDomainsInEntries(entries, options.query, options.limit);
-  }
-
-  async searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchClientsInEntries(entries, options.query, options.limit);
+    return streamAndParseEntries(logFile, createTimeFilter(startTime));
   }
 }

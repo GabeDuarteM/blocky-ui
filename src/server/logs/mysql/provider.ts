@@ -22,12 +22,40 @@ const schema = { logEntries };
 
 type DbType = MySql2Database<typeof schema>;
 
+type SqlFilter = ReturnType<typeof eq>;
+
 export class MySQLLogProvider implements LogProvider {
   private readonly db: DbType;
 
   constructor(options: { connectionUri: string }) {
     const conn = createPool({ uri: options.connectionUri });
     this.db = drizzle(conn, { schema, mode: "default" });
+  }
+
+  private buildFiltersAndGetTotalCount(options: {
+    range: TimeRange;
+    filter: "all" | "blocked";
+  }): {
+    filters: SqlFilter[];
+    getTotalCount: () => Promise<number>;
+  } {
+    const { startTime } = getTimeRangeConfig(options.range);
+    const filters: SqlFilter[] = [
+      gte(logEntries.requestTs, startTime.toISOString()),
+    ];
+    if (options.filter === "blocked") {
+      filters.push(eq(logEntries.responseType, "BLOCKED"));
+    }
+
+    const getTotalCount = async () => {
+      const result = await this.db
+        .select({ count: sql<number>`count(*)` })
+        .from(logEntries)
+        .where(and(...filters));
+      return Number(result[0]?.count ?? 0);
+    };
+
+    return { filters, getTotalCount };
   }
 
   async getQueryLogs(options: {
@@ -139,18 +167,9 @@ export class MySQLLogProvider implements LogProvider {
     offset: number;
     filter: "all" | "blocked";
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    const { startTime } = getTimeRangeConfig(options.range);
-
-    const filters = [gte(logEntries.requestTs, startTime.toISOString())];
-    if (options.filter === "blocked") {
-      filters.push(eq(logEntries.responseType, "BLOCKED"));
-    }
-
-    const totalQueriesResult = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(logEntries)
-      .where(and(...filters));
-    const totalQueriesCount = Number(totalQueriesResult[0]?.count ?? 0);
+    const { filters, getTotalCount } =
+      this.buildFiltersAndGetTotalCount(options);
+    const totalQueriesCount = await getTotalCount();
 
     const uniqueDomainsResult = await this.db
       .select({
@@ -193,18 +212,9 @@ export class MySQLLogProvider implements LogProvider {
     offset: number;
     filter: "all" | "blocked";
   }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    const { startTime } = getTimeRangeConfig(options.range);
-
-    const filters = [gte(logEntries.requestTs, startTime.toISOString())];
-    if (options.filter === "blocked") {
-      filters.push(eq(logEntries.responseType, "BLOCKED"));
-    }
-
-    const totalQueriesResult = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(logEntries)
-      .where(and(...filters));
-    const totalQueriesCount = Number(totalQueriesResult[0]?.count ?? 0);
+    const { filters, getTotalCount } =
+      this.buildFiltersAndGetTotalCount(options);
+    const totalQueriesCount = await getTotalCount();
 
     const uniqueClientsResult = await this.db
       .select({ count: sql<number>`count(distinct ${logEntries.clientName})` })

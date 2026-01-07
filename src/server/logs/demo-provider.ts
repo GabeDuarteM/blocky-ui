@@ -1,30 +1,13 @@
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogEntry,
-  LogProvider,
-  StatsResult,
-  QueriesOverTimeEntry,
-  TopDomainEntry,
-  TopClientEntry,
-  QueryTypeEntry,
-  SearchDomainEntry,
-  SearchClientEntry,
-} from "./types";
-import {
-  getTimeRangeConfig,
-  aggregateQueriesOverTime,
-  aggregateTopDomains,
-  aggregateTopClients,
-  aggregateQueryTypes,
-  searchDomainsInEntries,
-  searchClientsInEntries,
-} from "./aggregation-utils";
+import type { LogEntry, StatsResult } from "./types";
+import { getTimeRangeConfig } from "./aggregation-utils";
+import { BaseMemoryLogProvider } from "./base-provider";
 
 /**
  * Demo log provider that uses mock data.
  * Used when DEMO_MODE is enabled
  */
-export class DemoLogProvider implements LogProvider {
+export class DemoLogProvider extends BaseMemoryLogProvider {
   async getQueryLogs(options: {
     limit: number;
     offset: number;
@@ -93,7 +76,7 @@ export class DemoLogProvider implements LogProvider {
     };
   }
 
-  private async getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+  protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
     const { startTime } = getTimeRangeConfig(range);
 
@@ -103,76 +86,8 @@ export class DemoLogProvider implements LogProvider {
     });
   }
 
-  async getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]> {
-    let entries = await this.getEntriesInRange(options.range);
-
-    if (options.domain) {
-      const domainLower = options.domain.toLowerCase();
-      entries = entries.filter((e) =>
-        e.questionName?.toLowerCase().includes(domainLower),
-      );
-    }
-
-    if (options.client) {
-      const clientLower = options.client.toLowerCase();
-      entries = entries.filter((e) =>
-        e.clientName?.toLowerCase().includes(clientLower),
-      );
-    }
-
-    return aggregateQueriesOverTime(entries, options.range);
-  }
-
-  async getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    let entries = await this.getEntriesInRange(options.range);
-    if (options.filter === "blocked") {
-      entries = entries.filter((log) => log.responseType === "BLOCKED");
-    }
-    return aggregateTopDomains(entries, options.limit, options.offset);
-  }
-
-  async getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    let entries = await this.getEntriesInRange(options.range);
-    if (options.filter === "blocked") {
-      entries = entries.filter((log) => log.responseType === "BLOCKED");
-    }
-    return aggregateTopClients(entries, options.limit, options.offset);
-  }
-
-  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
-    const entries = await this.getEntriesInRange(range);
-    return aggregateQueryTypes(entries);
-  }
-
-  async searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchDomainsInEntries(entries, options.query, options.limit);
-  }
-
-  async searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchClientsInEntries(entries, options.query, options.limit);
+  // Override to bypass caching - demo provider should always return fresh mock data
+  protected getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+    return this.fetchEntriesInRange(range);
   }
 }

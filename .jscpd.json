@@ -1,0 +1,20 @@
+{
+  "pattern": "src/**",
+  "format": ["javascript", "typescript"],
+  "minLines": 5,
+  "minTokens": 70,
+  "threshold": 0,
+  "reporters": ["console"],
+  "output": "./.reports/jscpd",
+  "gitignore": true,
+  "ignore": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/*.d.ts",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ]
+}
