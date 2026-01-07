@@ -2,7 +2,10 @@ import { z } from "zod";
 import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import ky from "ky";
-import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
+import {
+  BLOCKY_DNS_RECORD_TYPES,
+  BLOCKY_RESPONSE_TYPES,
+} from "~/lib/constants";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -135,7 +138,7 @@ export const blockyRouter = createTRPCRouter({
           limit: z.number().min(1).max(100).default(50),
           offset: z.number().min(0).default(0),
           search: z.string().optional(),
-          responseType: z.string().optional(),
+          responseType: z.enum(BLOCKY_RESPONSE_TYPES).optional(),
           client: z.string().optional(),
           questionType: z.enum(BLOCKY_DNS_RECORD_TYPES).optional(),
         })

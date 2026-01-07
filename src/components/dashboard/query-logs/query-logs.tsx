@@ -31,6 +31,7 @@ import {
   BLOCKY_RESPONSE_TYPES,
   BLOCKY_DNS_RECORD_TYPES,
   isDnsRecordType,
+  isResponseType,
 } from "~/lib/constants";
 import {
   QueryLogFilterCombobox,
@@ -66,7 +67,9 @@ export function QueryLogs() {
     client: filter?.type === "client" ? filter.value : undefined,
     limit: pageSize,
     offset: pageIndex * pageSize,
-    responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
+    responseType: isResponseType(responseTypeFilter)
+      ? responseTypeFilter
+      : undefined,
     questionType: isDnsRecordType(questionTypeFilter)
       ? questionTypeFilter
       : undefined,

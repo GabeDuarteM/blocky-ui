@@ -36,6 +36,11 @@ export const BLOCKY_RESPONSE_TYPES = [
   "FILTERED",
   "NOTFQDN",
 ] as const;
+export type ResponseType = (typeof BLOCKY_RESPONSE_TYPES)[number];
+
+export function isResponseType(value: string): value is ResponseType {
+  return BLOCKY_RESPONSE_TYPES.includes(value as ResponseType);
+}
 
 export const TIME_RANGES = ["1h", "24h", "7d", "30d"] as const;
 export type TimeRange = (typeof TIME_RANGES)[number];
