@@ -27,7 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { BLOCKY_RESPONSE_TYPES } from "~/lib/constants";
+import {
+  BLOCKY_RESPONSE_TYPES,
+  BLOCKY_DNS_RECORD_TYPES,
+} from "~/lib/constants";
 import {
   QueryLogFilterCombobox,
   type QueryLogFilter,
@@ -38,6 +41,7 @@ export function QueryLogs() {
   const [filter, setFilter] = useState<QueryLogFilter>(null);
   const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
+  const [questionTypeFilter, setQuestionTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
@@ -51,12 +55,18 @@ export function QueryLogs() {
     setPageIndex(0);
   };
 
+  const handleQuestionTypeChange = (value: string) => {
+    setQuestionTypeFilter(value);
+    setPageIndex(0);
+  };
+
   const searchParams = {
     search: filter?.type === "domain" ? filter.value : undefined,
     client: filter?.type === "client" ? filter.value : undefined,
     limit: pageSize,
     offset: pageIndex * pageSize,
     responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
+    questionType: questionTypeFilter !== "ALL" ? questionTypeFilter : undefined,
   };
 
   const {
@@ -170,11 +180,27 @@ export function QueryLogs() {
             onValueChange={handleResponseTypeChange}
           >
             <SelectTrigger className="w-36">
-              <SelectValue placeholder="Response Type" />
+              <SelectValue placeholder="Response" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Reasons</SelectItem>
+              {BLOCKY_RESPONSE_TYPES.map((type) => (
+                <SelectItem key={type} value={type}>
+                  {type}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={questionTypeFilter}
+            onValueChange={handleQuestionTypeChange}
+          >
+            <SelectTrigger className="w-28">
+              <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="ALL">All Types</SelectItem>
-              {BLOCKY_RESPONSE_TYPES.map((type) => (
+              {BLOCKY_DNS_RECORD_TYPES.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>

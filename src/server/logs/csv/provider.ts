@@ -1,7 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import { type TimeRange } from "~/lib/constants";
-import type { LogEntry, StatsResult } from "../types";
+import type {
+  LogEntry,
+  StatsResult,
+  QueryLogsOptions,
+  QueryLogsResult,
+} from "../types";
 import { getTimeRangeConfig } from "../aggregation-utils";
 import { BaseMemoryLogProvider } from "../base-provider";
 import {
@@ -23,13 +28,7 @@ export class CsvLogProvider extends BaseMemoryLogProvider {
     this.directory = options.directory;
   }
 
-  async getQueryLogs(options: {
-    limit: number;
-    offset: number;
-    search?: string;
-    responseType?: string;
-    client?: string;
-  }): Promise<{ items: LogEntry[]; totalCount: number }> {
+  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
     const logFile = await this.findLatestLogFile({ throwOnError: true });
 
     if (!logFile) {
@@ -84,14 +83,8 @@ export class CsvLogProvider extends BaseMemoryLogProvider {
 
   private async readLogFile(
     filePath: string,
-    options: {
-      limit: number;
-      offset: number;
-      search?: string;
-      responseType?: string;
-      client?: string;
-    },
-  ): Promise<{ items: LogEntry[]; totalCount: number }> {
+    options: QueryLogsOptions,
+  ): Promise<QueryLogsResult> {
     const filterFn = createFilterFn(options);
     const filteredEntries = await streamAndParseEntries(filePath, filterFn);
     filteredEntries.reverse();

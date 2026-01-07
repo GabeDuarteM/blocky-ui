@@ -137,6 +137,7 @@ export const blockyRouter = createTRPCRouter({
           search: z.string().optional(),
           responseType: z.string().optional(),
           client: z.string().optional(),
+          questionType: z.string().optional(),
         })
         .optional(),
     )
@@ -151,6 +152,7 @@ export const blockyRouter = createTRPCRouter({
         search: input?.search,
         responseType: input?.responseType,
         client: input?.client,
+        questionType: input?.questionType,
       });
     }),
 });
