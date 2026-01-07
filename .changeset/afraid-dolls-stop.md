@@ -19,7 +19,3 @@ The Duration column now better indicates when no external DNS lookup was needed:
 - **Xms**: Normal duration for any response that took measurable time
 
 ![Duration column showing dash for cached entries](https://i.imgur.com/ILTIDb6.png)
-
-#### Bug Fixes
-
-- CSV log provider errors now display in the UI instead of failing silently
