@@ -15,6 +15,8 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "~/components/ui/tooltip";
+import { Switch } from "~/components/ui/switch";
+import { Label } from "~/components/ui/label";
 import { useState, useEffect } from "react";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
@@ -37,6 +39,7 @@ export function QueryLogs() {
   const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const handleFilterChange = (value: QueryLogFilter) => {
     setFilter(value);
@@ -66,7 +69,16 @@ export function QueryLogs() {
       items: [],
       totalCount: previousData?.totalCount ?? 0,
     }),
+    refetchOnWindowFocus: autoRefresh,
+    refetchInterval: autoRefresh ? 30_000 : false,
   });
+
+  const handleAutoRefreshChange = (enabled: boolean) => {
+    setAutoRefresh(enabled);
+    if (enabled) {
+      void refetch();
+    }
+  };
 
   useEffect(() => {
     if (error) {
@@ -109,7 +121,29 @@ export function QueryLogs() {
               View the DNS query logs processed by the server
             </CardDescription>
           </div>
-          <div className="flex h-full items-center justify-center gap-2 pl-4">
+          <div className="flex h-full items-center justify-center gap-4 pl-4">
+            <div className="flex items-center gap-2">
+              <Label
+                htmlFor="auto-refresh"
+                className="text-muted-foreground text-sm"
+              >
+                Auto
+              </Label>
+              <Tooltip disableHoverableContent>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <Switch
+                      id="auto-refresh"
+                      checked={autoRefresh}
+                      onCheckedChange={handleAutoRefreshChange}
+                    />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent sideOffset={4}>
+                  Auto-refresh (every 30s)
+                </TooltipContent>
+              </Tooltip>
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
