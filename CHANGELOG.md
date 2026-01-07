@@ -1,5 +1,44 @@
 # blocky-ui
 
+## 1.5.0
+
+### Minor Changes
+
+- [#211](https://github.com/GabeDuarteM/blocky-ui/pull/211) [`86d08e4`](https://github.com/GabeDuarteM/blocky-ui/commit/86d08e4f4470ab2cd1765397eea84bee70e76b46) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Improve query logs with new filters, auto-refresh, and better duration display
+
+  #### New Filters and Auto-Refresh
+
+  You can now filter query logs by DNS record type (A, AAAA, CNAME, MX, etc.) and by all Blocky response types. A new auto-refresh toggle lets you enable or disable automatic refresh every 30 seconds.
+
+  ![Query logs filters and auto-refresh toggle](https://i.imgur.com/dh4cUQR.png)
+
+  #### Duration Column
+
+  The Duration column now better indicates when no external DNS lookup was needed:
+  - **Dash (—)**: Locally-resolved responses with 0ms duration (cached, blocked, hosts file, etc.)
+  - **0ms**: Externally-resolved responses that returned instantly (e.g., due to upstream caching)
+  - **Xms**: Normal duration for any response that took measurable time
+
+  ![Duration column showing dash for cached entries](https://i.imgur.com/ILTIDb6.png)
+
+- [#211](https://github.com/GabeDuarteM/blocky-ui/pull/211) [`86d08e4`](https://github.com/GabeDuarteM/blocky-ui/commit/86d08e4f4470ab2cd1765397eea84bee70e76b46) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Add optional instance name in browser tab title
+
+  #### Custom instance name
+
+  When running multiple BlockyUI instances, you can now set an `INSTANCE_NAME` environment variable to display a custom name in the browser tab title (e.g., "BlockyUI @ blocky-vm2").
+
+  To enable, add the environment variable to your configuration:
+
+  ```sh
+  INSTANCE_NAME=blocky-vm2
+  ```
+
+### Patch Changes
+
+- [#211](https://github.com/GabeDuarteM/blocky-ui/pull/211) [`86d08e4`](https://github.com/GabeDuarteM/blocky-ui/commit/86d08e4f4470ab2cd1765397eea84bee70e76b46) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Fix CSV log provider errors not showing in the UI
+
+  CSV log provider errors (such as permission issues or missing directories) now display in the UI instead of failing silently with an empty table.
+
 ## 1.4.0
 
 ### Minor Changes
