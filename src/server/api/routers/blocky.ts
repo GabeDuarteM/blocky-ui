@@ -137,7 +137,7 @@ export const blockyRouter = createTRPCRouter({
           search: z.string().optional(),
           responseType: z.string().optional(),
           client: z.string().optional(),
-          questionType: z.string().optional(),
+          questionType: z.enum(BLOCKY_DNS_RECORD_TYPES).optional(),
         })
         .optional(),
     )

@@ -30,6 +30,7 @@ import {
 import {
   BLOCKY_RESPONSE_TYPES,
   BLOCKY_DNS_RECORD_TYPES,
+  isDnsRecordType,
 } from "~/lib/constants";
 import {
   QueryLogFilterCombobox,
@@ -66,7 +67,9 @@ export function QueryLogs() {
     limit: pageSize,
     offset: pageIndex * pageSize,
     responseType: responseTypeFilter !== "ALL" ? responseTypeFilter : undefined,
-    questionType: questionTypeFilter !== "ALL" ? questionTypeFilter : undefined,
+    questionType: isDnsRecordType(questionTypeFilter)
+      ? questionTypeFilter
+      : undefined,
   };
 
   const {

@@ -5,6 +5,11 @@ export const BLOCKY_DNS_RECORD_TYPES = [
   "MX",
   "TXT",
 ] as const;
+export type DnsRecordType = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
+
+export function isDnsRecordType(value: string): value is DnsRecordType {
+  return BLOCKY_DNS_RECORD_TYPES.includes(value as DnsRecordType);
+}
 
 /**
  * Blocky DNS response types indicating how a query was handled.
