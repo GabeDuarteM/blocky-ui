@@ -15,7 +15,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "~/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import {
@@ -30,6 +30,7 @@ import {
   QueryLogFilterCombobox,
   type QueryLogFilter,
 } from "./query-log-filter-combobox";
+import { toast } from "sonner";
 
 export function QueryLogs() {
   const [filter, setFilter] = useState<QueryLogFilter>(null);
@@ -59,12 +60,24 @@ export function QueryLogs() {
     data: queryLogsData,
     isFetching: isFetchingLogs,
     refetch,
+    error,
   } = api.blocky.getQueryLogs.useQuery(searchParams, {
     placeholderData: (previousData) => ({
       items: [],
       totalCount: previousData?.totalCount ?? 0,
     }),
   });
+
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to fetch query logs", {
+        description: error.message,
+        id: "query-logs-error",
+      });
+    } else {
+      toast.dismiss("query-logs-error");
+    }
+  }, [error]);
 
   const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();

@@ -32,7 +32,7 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
     search?: string;
     responseType?: string;
   }): Promise<{ items: LogEntry[]; totalCount: number }> {
-    const logFiles = await this.findLatestDateFiles();
+    const logFiles = await this.findLatestDateFiles({ throwOnError: true });
 
     if (logFiles.length === 0) {
       return { items: [], totalCount: 0 };
@@ -41,10 +41,16 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
     return await this.readAndMergeLogFiles(logFiles, options);
   }
 
-  private async findLatestDateFiles(): Promise<string[]> {
+  private async findLatestDateFiles(options?: {
+    throwOnError?: boolean;
+  }): Promise<string[]> {
     try {
       if (!fs.existsSync(this.directory)) {
-        console.error(`Directory not found: ${this.directory}`);
+        const message = `CSV log directory not found: ${this.directory}`;
+        console.error(message);
+        if (options?.throwOnError) {
+          throw new Error(message);
+        }
         return [];
       }
 
@@ -52,7 +58,6 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
       const logFiles = files.filter((file) => file.endsWith(".log"));
 
       if (logFiles.length === 0) {
-        console.error(`No *.log files found in directory: ${this.directory}`);
         return [];
       }
 
@@ -69,9 +74,6 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
       }
 
       if (filesByDate.size === 0) {
-        console.error(
-          `No files matching YYYY-MM-DD_*.log pattern found in: ${this.directory}`,
-        );
         return [];
       }
 
@@ -84,7 +86,10 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
 
       return filesByDate.get(latestDate) ?? [];
     } catch (error) {
-      console.error(`Error finding latest date files:`, error);
+      console.error("Error finding latest date files:", error);
+      if (options?.throwOnError) {
+        throw error;
+      }
       return [];
     }
   }
@@ -98,35 +103,30 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
       responseType?: string;
     },
   ): Promise<{ items: LogEntry[]; totalCount: number }> {
-    try {
-      const filterFn = createFilterFn(options);
+    const filterFn = createFilterFn(options);
 
-      const entriesArrays = await Promise.all(
-        filePaths.map((filePath) => streamAndParseEntries(filePath, filterFn)),
-      );
+    const entriesArrays = await Promise.all(
+      filePaths.map((filePath) => streamAndParseEntries(filePath, filterFn)),
+    );
 
-      const allEntries = entriesArrays.flat();
+    const allEntries = entriesArrays.flat();
 
-      allEntries.sort((a, b) => {
-        const tsA = a.requestTs ?? "";
-        const tsB = b.requestTs ?? "";
-        return tsB.localeCompare(tsA);
-      });
+    allEntries.sort((a, b) => {
+      const tsA = a.requestTs ?? "";
+      const tsB = b.requestTs ?? "";
+      return tsB.localeCompare(tsA);
+    });
 
-      const totalCount = allEntries.length;
-      const paginatedEntries = allEntries.slice(
-        options.offset,
-        options.offset + options.limit,
-      );
+    const totalCount = allEntries.length;
+    const paginatedEntries = allEntries.slice(
+      options.offset,
+      options.offset + options.limit,
+    );
 
-      return {
-        items: paginatedEntries,
-        totalCount,
-      };
-    } catch (error) {
-      console.error(`Error reading log files:`, error);
-      return { items: [], totalCount: 0 };
-    }
+    return {
+      items: paginatedEntries,
+      totalCount,
+    };
   }
 
   async getStats24h(): Promise<StatsResult> {
@@ -143,7 +143,7 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
       );
       return computeStats(entriesArrays.flat());
     } catch (error) {
-      console.error(`Error getting stats:`, error);
+      console.error("Error getting stats:", error);
       return { totalQueries: 0, blocked: 0 };
     }
   }
