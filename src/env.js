@@ -14,6 +14,7 @@ export const env = createEnv({
     BLOCKY_API_URL: z.url().default("http://localhost:4000"),
     PROMETHEUS_PATH: z.string().startsWith("/").default("/metrics"),
     DEMO_MODE: z.boolean().default(false),
+    INSTANCE_NAME: z.string().optional(),
   },
 
   /**
@@ -39,6 +40,7 @@ export const env = createEnv({
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     PROMETHEUS_PATH: process.env.PROMETHEUS_PATH,
     DEMO_MODE: process.env.DEMO_MODE === "true",
+    INSTANCE_NAME: process.env.INSTANCE_NAME,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },
 

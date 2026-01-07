@@ -2,12 +2,13 @@ import { Geist, Jersey_15 } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "sonner";
 import { Pattern } from "~/components/dashboard/pattern";
+import { env } from "~/env";
 
 import "../styles/globals.css";
 import { cn } from "~/lib/utils";
 
 export const metadata = {
-  title: "BlockyUI",
+  title: env.INSTANCE_NAME ? `BlockyUI @ ${env.INSTANCE_NAME}` : "BlockyUI",
   description: "A modern UI for Blocky DNS",
   icons: {
     icon: [
