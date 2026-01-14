@@ -68,6 +68,7 @@ services:
     hostname: blocky
     restart: unless-stopped
     volumes:
+      - ./blocky/config.yml:/app/config.yml
       - /etc/localtime:/etc/localtime:ro
     ports:
       - 4000:4000
@@ -97,14 +98,14 @@ docker run -d \
 
 BlockyUI is configured via environment variables in all deployment methods.
 
-| Variable           | Required | Default          | Description                                                                                     |
-| ------------------ | -------- | ---------------- | ----------------------------------------------------------------------------------------------- |
-| `BLOCKY_API_URL`   | No       | `localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
-| `QUERY_LOG_TYPE`   | No       | None             | Enable query logging. Can be `mysql`, `csv`, or `csv-client`.                                   |
-| `QUERY_LOG_TARGET` | No       | None             | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
-| `INSTANCE_NAME`    | No       | None             | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
-| `PROMETHEUS_PATH`  | No       | `/metrics`       | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |
-| `DEMO_MODE`        | No       | `false`          | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks. |
+| Variable           | Required | Default                 | Description                                                                                     |
+| ------------------ | -------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
+| `BLOCKY_API_URL`   | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
+| `QUERY_LOG_TYPE`   | No       | None                    | Enable query logging. Can be `mysql`, `csv`, or `csv-client`.                                   |
+| `QUERY_LOG_TARGET` | No       | None                    | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
+| `INSTANCE_NAME`    | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
+| `PROMETHEUS_PATH`  | No       | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |
+| `DEMO_MODE`        | No       | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks. |
 
 ### Common Setups
 
