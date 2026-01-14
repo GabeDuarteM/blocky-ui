@@ -1,6 +1,6 @@
 # BlockyUI
 
-A modern web interface for managing and controlling your [Blocky DNS](https://github.com/0xERR0R/blocky) server.
+BlockyUI is a modern companion dashboard for your [Blocky DNS](https://github.com/0xERR0R/blocky) server. It connects to an existing Blocky instance to display statistics, query DNS records, and much more.
 
 ![BlockyUI Screenshot](docs/BlockyUI-Screenshot.png)
 
@@ -9,14 +9,18 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 - DNS blocking controls with optional timed disable presets
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
-- Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
-  - Supports MySQL, CSV and CSV-Client logging type from Blocky
+- Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky)
+  - Supports MySQL, CSV and CSV-Client logging types from Blocky
   - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
-- Statistic sections
-  - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on blocky)
-  - Queries over time chart, top domains, and top clients (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on blocky)
+- Statistics sections
+  - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on Blocky)
+  - Queries over time chart, top domains, and top clients (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky)
 
 ## 🏁 Getting Started
+
+### Prerequisites
+
+- A running Blocky server reachable by BlockyUI
 
 ### Using Docker Compose
 
@@ -24,28 +28,20 @@ A modern web interface for managing and controlling your [Blocky DNS](https://gi
 
 ```yaml
 services:
-  blocky:
-    image: spx01/blocky
-    container_name: blocky
-    hostname: blocky
-    restart: unless-stopped
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - 4000:4000
-      - 53:53/udp
   blocky-ui:
-    image: ghcr.io/gabeduartem/blocky-ui:latest
+    image: ghcr.io/gabeduartem/blocky-ui:latest # or for example `blocky-ui:1.5.0` if you prefer pinned versions
     container_name: blocky-ui
     restart: unless-stopped
     depends_on:
       - blocky
+
     ports:
       - 3000:3000
+
     environment:
       - BLOCKY_API_URL=http://blocky:4000
       # Uncomment to override the Prometheus metrics path (defaults to /metrics)
-      # Only use this if you've changed `prometheus.path` on your blocky's server config
+      # Only use this if you've changed `prometheus.path` on your Blocky's server config
       # - PROMETHEUS_PATH=/custom-metrics-path
 
       # Uncomment to enable query logging features
@@ -65,6 +61,17 @@ services:
       # Uncomment to display an instance name in the browser tab title
       # Useful when running multiple BlockyUI instances
       # - INSTANCE_NAME=blocky-vm2
+
+  blocky:
+    image: spx01/blocky
+    container_name: blocky
+    hostname: blocky
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 4000:4000
+      - 53:53/udp
 ```
 
 2. Start the container:
@@ -85,6 +92,25 @@ docker run -d \
   -e QUERY_LOG_TARGET="mysql://username:password@localhost:3306/blocky_query_log_table_name" \
   ghcr.io/gabeduartem/blocky-ui:latest
 ```
+
+## ⚙️ Configuration
+
+BlockyUI is configured via environment variables in all deployment methods.
+
+| Variable           | Required | Default          | Description                                                                                     |
+| ------------------ | -------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `BLOCKY_API_URL`   | No       | `localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
+| `QUERY_LOG_TYPE`   | No       | None             | Enable query logging. Can be `mysql`, `csv`, or `csv-client`.                                   |
+| `QUERY_LOG_TARGET` | No       | None             | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
+| `INSTANCE_NAME`    | No       | None             | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
+| `PROMETHEUS_PATH`  | No       | `/metrics`       | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |
+| `DEMO_MODE`        | No       | `false`          | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks. |
+
+### Common Setups
+
+- **Basic**: set only `BLOCKY_API_URL`. Only the server status, operations, and query tools will be visible.
+- **Blocky with Prometheus enabled**: Enables the statistics section.
+- **Query logging**: Enables the sections for query logging, top lists, queries over time, and a more detailed total queries/blocked panels, scoped by the last 24 hours.
 
 ### Local Development
 
