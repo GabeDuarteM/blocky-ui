@@ -1,15 +1,8 @@
 /**
  * Base class for SQL database log providers (MySQL, PostgreSQL, etc.)
  *
- * This provides shared logic for SQL-based query log providers. File-based providers
- * (CSV, JSON, etc.) should NOT use this base class - they have different access patterns.
- *
  * Subclasses must implement:
  * - getBucketExpression(range): Returns SQL expression for time bucketing
- *
- * Subclasses can optionally override:
- * - mapLogEntry(row): Maps a database row to LogEntry for schema differences like null id in postgres
- * - Any LogProvider method for database-specific optimizations
  */
 
 import { desc, sql, and, eq, gte, type SQL, type Column } from "drizzle-orm";
@@ -34,6 +27,7 @@ import type {
  * All SQL providers must have a table with at least these columns.
  */
 export interface LogEntriesColumns {
+  id?: Column;
   requestTs: Column;
   clientIp: Column;
   clientName: Column;
@@ -110,6 +104,28 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return { filters, getTotalCount };
   }
 
+  /**
+   * Maps a database row to a LogEntry object.
+   * Handles nullable fields and optional id.
+   */
+  protected mapRowToLogEntry(row: Record<string, unknown>): LogEntry {
+    return {
+      id: row.id != null ? Number(row.id) : undefined,
+      requestTs: row.requestTs as string | null,
+      clientIp: row.clientIp as string | null,
+      clientName: row.clientName as string | null,
+      durationMs: row.durationMs != null ? Number(row.durationMs) : null,
+      reason: row.reason as string | null,
+      questionName: row.questionName as string | null,
+      answer: row.answer as string | null,
+      responseCode: row.responseCode as string | null,
+      responseType: row.responseType as string | null,
+      questionType: row.questionType as string | null,
+      hostname: row.hostname as string | null,
+      effectiveTldp: row.effectiveTldp as string | null,
+    };
+  }
+
   async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
     const filters = [];
 
@@ -141,18 +157,40 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     const countResult = await countQuery;
     const count = countResult?.[0]?.count ?? 0;
 
+    const selectFields: Record<string, Column | SQL> = {
+      requestTs: this.columns.requestTs,
+      clientIp: this.columns.clientIp,
+      clientName: this.columns.clientName,
+      durationMs: this.columns.durationMs,
+      reason: this.columns.reason,
+      questionName: this.columns.questionName,
+      answer: this.columns.answer,
+      responseCode: this.columns.responseCode,
+      responseType: this.columns.responseType,
+      questionType: this.columns.questionType,
+      hostname: this.columns.hostname,
+      effectiveTldp: this.columns.effectiveTldp,
+    };
+
+    // Only include id if the table has it
+    if (this.columns.id) {
+      selectFields.id = this.columns.id;
+    }
+
     const query = this.db
-      .select()
+      .select(selectFields)
       .from(this.table)
       .orderBy(desc(this.columns.requestTs))
       .limit(options.limit)
       .offset(options.offset)
       .where(filters.length > 0 ? and(...filters) : undefined);
 
-    const logs = await query;
+    const rows = await query;
 
     return {
-      items: logs as LogEntry[],
+      items: rows.map((row: Record<string, unknown>) =>
+        this.mapRowToLogEntry(row),
+      ),
       totalCount: Number(count),
     };
   }

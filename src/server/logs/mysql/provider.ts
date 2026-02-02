@@ -15,6 +15,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
       db,
       table: logEntries,
       columns: {
+        id: logEntries.id,
         requestTs: logEntries.requestTs,
         clientIp: logEntries.clientIp,
         clientName: logEntries.clientName,
