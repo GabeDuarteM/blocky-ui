@@ -109,20 +109,29 @@ export abstract class BaseSqlLogProvider implements LogProvider {
    * Handles nullable fields and optional id.
    */
   protected mapRowToLogEntry(row: Record<string, unknown>): LogEntry {
+    const toNullableString = (value: unknown): string | null =>
+      typeof value === "string" ? value : null;
+
+    const toNullableNumber = (value: unknown): number | null => {
+      if (value == null) return null;
+      const num = typeof value === "number" ? value : Number(value);
+      return Number.isFinite(num) ? num : null;
+    };
+
     return {
       id: row.id != null ? Number(row.id) : undefined,
-      requestTs: row.requestTs as string | null,
-      clientIp: row.clientIp as string | null,
-      clientName: row.clientName as string | null,
-      durationMs: row.durationMs != null ? Number(row.durationMs) : null,
-      reason: row.reason as string | null,
-      questionName: row.questionName as string | null,
-      answer: row.answer as string | null,
-      responseCode: row.responseCode as string | null,
-      responseType: row.responseType as string | null,
-      questionType: row.questionType as string | null,
-      hostname: row.hostname as string | null,
-      effectiveTldp: row.effectiveTldp as string | null,
+      requestTs: toNullableString(row.requestTs),
+      clientIp: toNullableString(row.clientIp),
+      clientName: toNullableString(row.clientName),
+      durationMs: toNullableNumber(row.durationMs),
+      reason: toNullableString(row.reason),
+      questionName: toNullableString(row.questionName),
+      answer: toNullableString(row.answer),
+      responseCode: toNullableString(row.responseCode),
+      responseType: toNullableString(row.responseType),
+      questionType: toNullableString(row.questionType),
+      hostname: toNullableString(row.hostname),
+      effectiveTldp: toNullableString(row.effectiveTldp),
     };
   }
 
