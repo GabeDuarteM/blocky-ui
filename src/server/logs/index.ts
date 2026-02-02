@@ -1,10 +1,10 @@
 import { env } from "~/env";
-import { MySQLLogProvider } from "./mysql/provider";
-import { PostgreSQLLogProvider } from "./postgres/provider";
-import { DemoLogProvider } from "./demo-provider";
-import { CsvLogProvider } from "./csv/provider";
-import { CsvClientLogProvider } from "./csv/client-provider";
-import type { LogProvider } from "./types";
+import { MySQLLogProvider } from "~/server/logs/mysql/provider";
+import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
+import { DemoLogProvider } from "~/server/logs/demo-provider";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
+import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import type { LogProvider } from "~/server/logs/types";
 
 /**
  * Cache the log provider in development.
