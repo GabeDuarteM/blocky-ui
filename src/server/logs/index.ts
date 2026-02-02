@@ -1,5 +1,6 @@
 import { env } from "~/env";
 import { MySQLLogProvider } from "./mysql/provider";
+import { PostgreSQLLogProvider } from "./postgres/provider";
 import { DemoLogProvider } from "./demo-provider";
 import { CsvLogProvider } from "./csv/provider";
 import { CsvClientLogProvider } from "./csv/client-provider";
@@ -64,6 +65,17 @@ export function createLogProvider(): LogProvider | undefined {
       }
 
       provider = new MySQLLogProvider({
+        connectionUri: logTarget,
+      });
+    } else if (logType === "postgres") {
+      console.log("Using log provider type: postgres");
+      if (!logTarget) {
+        throw new Error(
+          "QUERY_LOG_TARGET (PostgreSQL connection URI) is required when using QUERY_LOG_TYPE == 'postgres'",
+        );
+      }
+
+      provider = new PostgreSQLLogProvider({
         connectionUri: logTarget,
       });
     }
