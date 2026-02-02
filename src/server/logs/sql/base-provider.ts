@@ -14,7 +14,7 @@
 
 import { desc, sql, and, eq, gte, type SQL, type Column } from "drizzle-orm";
 import { type TimeRange } from "~/lib/constants";
-import { getTimeRangeConfig } from "../aggregation-utils";
+import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import type {
   LogProvider,
   LogEntry,
@@ -27,7 +27,7 @@ import type {
   SearchClientEntry,
   QueryLogsOptions,
   QueryLogsResult,
-} from "../types";
+} from "~/server/logs/types";
 
 /**
  * Interface for the log_entries table columns.

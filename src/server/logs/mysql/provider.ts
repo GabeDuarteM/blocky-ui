@@ -2,9 +2,9 @@ import { sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 
-import { logEntries } from "./schema";
+import { logEntries } from "~/server/logs/mysql/schema";
 import { type TimeRange } from "~/lib/constants";
-import { BaseSqlLogProvider } from "../sql/base-provider";
+import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class MySQLLogProvider extends BaseSqlLogProvider {
   constructor(options: { connectionUri: string }) {
