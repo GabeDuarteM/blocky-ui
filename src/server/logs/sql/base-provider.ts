@@ -84,13 +84,6 @@ export abstract class BaseSqlLogProvider implements LogProvider {
    */
   protected abstract getBucketExpression(range: TimeRange): SQL;
 
-  /**
-   * Maps a raw database row to a LogEntry.
-   */
-  protected mapLogEntry(row: Record<string, unknown>): LogEntry {
-    return row as unknown as LogEntry;
-  }
-
   private buildFiltersAndGetTotalCount(options: {
     range: TimeRange;
     filter: "all" | "blocked";
@@ -159,7 +152,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     const logs = await query;
 
     return {
-      items: logs.map((row: Record<string, unknown>) => this.mapLogEntry(row)),
+      items: logs as LogEntry[],
       totalCount: Number(count),
     };
   }

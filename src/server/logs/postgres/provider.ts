@@ -4,7 +4,6 @@ import postgres from "postgres";
 
 import { logEntries } from "./schema";
 import { type TimeRange } from "~/lib/constants";
-import type { LogEntry } from "../types";
 import { BaseSqlLogProvider } from "../sql/base-provider";
 
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
@@ -57,12 +56,5 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
           `TO_CHAR(DATE_TRUNC('day', ${col} AT TIME ZONE 'UTC'), 'YYYY-MM-DD')`,
         );
     }
-  }
-
-  /**
-   * Override to add id: null since the PostgreSQL schema doesn't have an id column.
-   */
-  protected mapLogEntry(row: Record<string, unknown>): LogEntry {
-    return { ...row, id: null } as LogEntry;
   }
 }
