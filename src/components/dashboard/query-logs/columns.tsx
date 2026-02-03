@@ -19,7 +19,7 @@ export const columns: ColumnDef<LogEntry>[] = [
       const timestamp = row.original.requestTs;
       if (!timestamp) return null;
       // Postgres stores all timestamps in UTC
-      // Display to browser's local timezone if possible
+      // Display in browser's local timezone if possible
       const date = new Date(timestamp);
       return date.toLocaleString(undefined, {
         year: "2-digit",

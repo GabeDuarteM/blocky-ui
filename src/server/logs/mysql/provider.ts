@@ -8,7 +8,10 @@ import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class MySQLLogProvider extends BaseSqlLogProvider {
   constructor(options: { connectionUri: string }) {
-    const conn = createPool({ uri: options.connectionUri });
+    const conn = createPool({
+      uri: options.connectionUri,
+      timezone: "+00:00",
+    });
     const db = drizzle(conn, { schema: { logEntries }, mode: "default" });
 
     super({
@@ -34,26 +37,24 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
 
   protected getBucketExpression(range: TimeRange): SQL {
     const col = logEntries.requestTs.name;
-    // Convert to UTC for consistent bucketing regardless of server timezone
-    const utcCol = `CONVERT_TZ(${col}, @@session.time_zone, '+00:00')`;
 
     switch (range) {
       case "1h":
-        // Round to 5-minute intervals in UTC
+        // Round to 5-minute intervals
         return sql.raw(
-          `CONCAT(DATE_FORMAT(${utcCol}, '%Y-%m-%d %H:'), LPAD(FLOOR(MINUTE(${utcCol})/5)*5, 2, '0'))`,
+          `CONCAT(DATE_FORMAT(${col}, '%Y-%m-%d %H:'), LPAD(FLOOR(MINUTE(${col})/5)*5, 2, '0'))`,
         );
       case "24h":
-        // Round to hourly intervals in UTC
-        return sql.raw(`DATE_FORMAT(${utcCol}, '%Y-%m-%d %H:00')`);
+        // Round to hourly intervals
+        return sql.raw(`DATE_FORMAT(${col}, '%Y-%m-%d %H:00')`);
       case "7d":
-        // Round to 6-hour intervals (0, 6, 12, 18) in UTC
+        // Round to 6-hour intervals (0, 6, 12, 18)
         return sql.raw(
-          `CONCAT(DATE_FORMAT(${utcCol}, '%Y-%m-%d '), LPAD(FLOOR(HOUR(${utcCol})/6)*6, 2, '0'), ':00')`,
+          `CONCAT(DATE_FORMAT(${col}, '%Y-%m-%d '), LPAD(FLOOR(HOUR(${col})/6)*6, 2, '0'), ':00')`,
         );
       case "30d":
-        // Round to daily intervals in UTC
-        return sql.raw(`DATE_FORMAT(${utcCol}, '%Y-%m-%d')`);
+        // Round to daily intervals
+        return sql.raw(`DATE_FORMAT(${col}, '%Y-%m-%d')`);
     }
   }
 }
