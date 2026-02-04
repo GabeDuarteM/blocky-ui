@@ -9,8 +9,8 @@ import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
   constructor(options: { connectionUri: string }) {
     const conn = postgres(options.connectionUri, {
-      onconnect: async (sql) => {
-        await sql.unsafe(`SET TIME ZONE 'UTC'`);
+      connection: {
+        timezone: "UTC",
       },
     });
     const db = drizzle(conn, { schema: { logEntries } });
