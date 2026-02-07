@@ -13,7 +13,8 @@ export interface LogEntry {
   questionType: string | null;
   hostname: string | null;
   effectiveTldp: string | null;
-  id: number | null;
+  /** Not present in Timescale */
+  id?: number | null;
 }
 
 export interface StatsResult {

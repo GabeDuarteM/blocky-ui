@@ -18,7 +18,17 @@ export const columns: ColumnDef<LogEntry>[] = [
     cell: ({ row }) => {
       const timestamp = row.original.requestTs;
       if (!timestamp) return null;
-      return timestamp.split(".")[0];
+      // Postgres stores all timestamps in UTC
+      // Display in browser's local timezone if possible
+      const date = new Date(timestamp);
+      return date.toLocaleString(undefined, {
+        year: "2-digit",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      });
     },
   },
   {
