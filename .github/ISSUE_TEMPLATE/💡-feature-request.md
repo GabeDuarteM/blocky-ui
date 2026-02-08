@@ -1,10 +1,9 @@
 ---
-name: "\U0001F6E0️ Feature request"
+name: "💡 Feature request or new ideas"
 about: Suggest an idea for this project
-title: "[Feature request]"
+title: "[Feature request] "
 labels: enhancement
-assignees: ''
-
+assignees: ""
 ---
 
 **Is your feature request related to a problem? Please describe.**
