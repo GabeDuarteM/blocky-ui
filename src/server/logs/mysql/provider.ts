@@ -1,4 +1,4 @@
-import { desc, sql, and, eq, gte } from "drizzle-orm";
+import { asc, desc, sql, and, eq, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import type { MySql2Database } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
@@ -27,10 +27,15 @@ type SqlFilter = ReturnType<typeof eq>;
 
 export class MySQLLogProvider implements LogProvider {
   private readonly db: DbType;
+  private readonly pool: ReturnType<typeof createPool>;
 
   constructor(options: { connectionUri: string }) {
-    const conn = createPool({ uri: options.connectionUri });
-    this.db = drizzle(conn, { schema, mode: "default" });
+    this.pool = createPool({ uri: options.connectionUri });
+    this.db = drizzle(this.pool, { schema, mode: "default" });
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
   }
 
   private buildFiltersAndGetTotalCount(options: {
@@ -172,7 +177,7 @@ export class MySQLLogProvider implements LogProvider {
 
     const uniqueDomainsResult = await this.db
       .select({
-        count: sql<number>`count(distinct ${logEntries.questionName})`,
+        count: sql<number>`count(distinct coalesce(${logEntries.questionName}, '__null__'))`,
       })
       .from(logEntries)
       .where(and(...filters));
@@ -187,7 +192,7 @@ export class MySQLLogProvider implements LogProvider {
       .from(logEntries)
       .where(and(...filters))
       .groupBy(logEntries.questionName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(logEntries.questionName))
       .limit(options.limit)
       .offset(options.offset);
 
@@ -216,7 +221,9 @@ export class MySQLLogProvider implements LogProvider {
     const totalQueriesCount = await getTotalCount();
 
     const uniqueClientsResult = await this.db
-      .select({ count: sql<number>`count(distinct ${logEntries.clientName})` })
+      .select({
+        count: sql<number>`count(distinct coalesce(${logEntries.clientName}, '__null__'))`,
+      })
       .from(logEntries)
       .where(and(...filters));
     const totalCount = Number(uniqueClientsResult[0]?.count ?? 0);
@@ -230,7 +237,7 @@ export class MySQLLogProvider implements LogProvider {
       .from(logEntries)
       .where(and(...filters))
       .groupBy(logEntries.clientName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(logEntries.clientName))
       .limit(options.limit)
       .offset(options.offset);
 
@@ -265,7 +272,7 @@ export class MySQLLogProvider implements LogProvider {
       .from(logEntries)
       .where(gte(logEntries.requestTs, startTime.toISOString()))
       .groupBy(logEntries.questionType)
-      .orderBy(desc(sql`count(*)`));
+      .orderBy(desc(sql`count(*)`), asc(logEntries.questionType));
 
     return result.map((row) => ({
       type: row.type ?? "unknown",
@@ -298,7 +305,7 @@ export class MySQLLogProvider implements LogProvider {
         ),
       )
       .groupBy(logEntries.questionName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(logEntries.questionName))
       .limit(options.limit);
 
     return result.map((row) => ({
@@ -331,7 +338,7 @@ export class MySQLLogProvider implements LogProvider {
         ),
       )
       .groupBy(logEntries.clientName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(logEntries.clientName))
       .limit(options.limit);
 
     return result.map((row) => ({
