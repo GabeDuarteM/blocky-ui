@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-This document provides guidelines for AI coding agents working in this repository.
+Guidelines for AI coding agents working in this repository.
 Blocky UI is a Next.js dashboard for the [Blocky DNS proxy](https://github.com/0xERR0R/blocky).
 
 ## Project Structure
@@ -19,13 +19,14 @@ src/
 ├── mocks/                 # MSW handlers for API mocking
 ├── server/
 │   ├── api/routers/       # tRPC routers
-│   └── logs/              # Query log providers (mysql, csv, demo)
+│   ├── logs/              # Query log providers (mysql, csv, csv-client, demo)
+│   └── prometheus/        # Prometheus metrics client and parser
 ├── styles/globals.css     # Global styles (Tailwind v4)
 ├── trpc/                  # tRPC client setup
 └── env.js                 # Environment validation (@t3-oss/env-nextjs)
 ```
 
-## Build, Lint, and Development Commands
+## Build, Lint, and Test Commands
 
 ```bash
 pnpm run dev                   # Start dev server (Next.js + Turbo)
@@ -38,24 +39,30 @@ pnpm run format:check          # Check Prettier formatting
 pnpm run format:write          # Auto-format with Prettier
 pnpm run typecheck             # TypeScript type checking
 pnpm run ci                    # Run all checks (lint + format + typecheck)
+pnpm run knip                  # Detect unused exports and dependencies
+pnpm run checkdupe             # Detect code duplication (jscpd)
+
+# Testing (Vitest + testcontainers — requires Docker or Podman)
+pnpm run test                           # Run all tests once
+pnpm run test:watch                     # Run tests in watch mode
+pnpm run test path/to/file              # Run a single test file
+pnpm run test -t "test name"            # Run a single test by name
+
+# Database (Drizzle)
 pnpm run db:generate           # Generate Drizzle migrations
 pnpm run db:migrate            # Run migrations
 pnpm run db:push               # Push schema changes
 pnpm run db:studio             # Open Drizzle Studio
 ```
 
-## Testing Guidelines
-
-No unit test runner is currently configured. After changing code, always validate your changes with `pnpm run ci` - Runs lint, format check, and typecheck
-
-Future tests should be colocated as `*.test.ts(x)`.
+After any code change, always run `pnpm run ci` to validate. We also have some integration tests in `src/server/logs/__tests__/` and use `testcontainers` for real database integration testing. If we change anything on those providers, please also run that to make sure we don't break anything.
 
 ## Code Style Guidelines
 
 ### TypeScript
 
-- Strict mode enabled with `noUncheckedIndexedAccess`
-- Use `type` imports: `import { type Foo } from "bar"`
+- Strict mode with `noUncheckedIndexedAccess` enabled
+- Use inline `type` imports: `import { type Foo } from "bar"`
 - Prefix unused parameters with underscore: `(_unused) => {}`
 - Never use `any`; prefer `unknown` when type is truly unknown
 - Do not use non-null assertions (`!`) or type casting to bypass errors
@@ -63,14 +70,22 @@ Future tests should be colocated as `*.test.ts(x)`.
 ### Imports
 
 - Use the `~/` path alias for all src imports: `import { cn } from "~/lib/utils"`
-- Prefer type imports: `import { type ComponentProps } from "react"`
-- Never import directly from `clsx`; use `cn` from `~/lib/utils` instead
+- Use inline type imports: `import { type ComponentProps } from "react"`
+- Never import directly from `clsx`; use `cn` from `~/lib/utils` (enforced by ESLint)
+
+### Naming Conventions
+
+- Component files: `kebab-case.tsx` (e.g., `server-status.tsx`, `query-tool.tsx`)
+- Component names: `PascalCase` (e.g., `export function ServerStatus()`)
+- Hook files: `use-*.ts` (kebab-case with `use-` prefix) in `src/hooks/`
+- Types/interfaces: `PascalCase` (e.g., `LogEntry`, `FilterValue`)
+- Constants: `UPPER_SNAKE_CASE` for arrays/enums (e.g., `TIME_RANGES`)
 
 ### React Components
 
-- File naming: `PascalCase.tsx` for components
+- Use function declarations with named exports (not `React.FC` or arrow functions)
 - Add `"use client"` directive only when needed (hooks, browser APIs, event handlers)
-- Destructure props in function signature
+- Destructure props in the function signature
 
 ```tsx
 // Good
@@ -84,17 +99,11 @@ export const MyComponent: React.FC<MyComponentProps> = (props) => {
 };
 ```
 
-### Hooks
-
-- File naming: `use-*.ts` (kebab-case with `use-` prefix)
-- Custom hooks should be in `src/hooks/`
-
 ### Styling
 
-- Use Tailwind CSS classes exclusively
-- Use `cn()` for conditional class merging
-- Tailwind classes are auto-sorted by Prettier plugin
-- Tailwind v4 is in use (CSS-based config in `globals.css`)
+- Use Tailwind CSS classes exclusively (v4, CSS-based config in `globals.css`)
+- Use `cn()` from `~/lib/utils` for conditional class merging
+- Tailwind classes are auto-sorted by `prettier-plugin-tailwindcss`
 
 ### tRPC
 
@@ -114,31 +123,42 @@ const mutation = api.blocky.blockingEnable.useMutation({
 
 - Use try/catch for async operations that may fail
 - Provide user-friendly error messages
-- Use `toast` from `sonner` for user notifications
+- Use `toast` from `sonner` for user notifications (`toast.success()`, `toast.error()`)
 
 ### shadcn/ui Components
 
-Components in `src/components/ui/` are generated by shadcn CLI. Ask for permission first before editing.
-If a component exists in shadcn, add it instead of creating a new component. To add new shadcn components: `pnpm dlx shadcn@latest add <component-name>`
+Components in `src/components/ui/` are generated by shadcn CLI. Ask for permission before editing.
+If a component exists in shadcn, add it instead of creating one manually:
 
-## Environment Variables
+```bash
+pnpm dlx shadcn@latest add <component-name>
+```
 
-Validated via `@t3-oss/env-nextjs` in `src/env.js`.
-
-Never commit secrets. Use `.env` for local development.
+When doing so, be careful with the --overwrite flag, since some components may have manual changes, which would break by replacing them with that flag.
 
 ## Formatting & Linting Rules
 
 - 2-space indentation, LF line endings
-- No semicolons (handled by Prettier defaults)
-- Drizzle: Always use `where` clause with `delete` and `update`
+- Drizzle: always use `where` clause with `delete` and `update` (enforced by ESLint). Don't use raw queries, unless absolutely necessary, prefer using the ORM functions.
 - Report unused ESLint disable directives
+
+## Environment Variables
+
+Validated via `@t3-oss/env-nextjs` in `src/env.js`. Key variables:
+
+- `BLOCKY_API_URL` — Blocky API URL (default: `http://localhost:4000`)
+- `QUERY_LOG_TYPE` — Log provider: `mysql`, `csv`, or `csv-client`
+- `QUERY_LOG_TARGET` — DB connection string or directory path
+- `DEMO_MODE` — Enables MSW mock data (boolean, default: `false`)
+- `PROMETHEUS_PATH` — Metrics endpoint path (default: `/metrics`)
+
+Never commit secrets. Use `.env` for local development. Use `SKIP_ENV_VALIDATION=true` for builds that don't need runtime env vars.
 
 ## Git Workflow
 
 CI runs on all PRs to main:
 
-1. Install dependencies with pnpm
-2. Run `pnpm run ci` (lint + format + typecheck)
+1. **CI job**: `pnpm run ci` (lint + format + typecheck)
+2. **Integration Tests job**: `pnpm run test` (Vitest with testcontainers, 15min timeout)
 
 Ensure `pnpm run ci` passes before pushing.
