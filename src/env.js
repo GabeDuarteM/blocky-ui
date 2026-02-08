@@ -8,7 +8,9 @@ export const env = createEnv({
    */
   server: {
     DATABASE_URL: z.string().optional().meta({ deprecated: true }),
-    QUERY_LOG_TYPE: z.enum(["mysql", "postgres", "csv", "csv-client"]).optional(),
+    QUERY_LOG_TYPE: z
+      .enum(["mysql", "postgres", "csv", "csv-client"])
+      .optional(),
     QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.url().default("http://localhost:4000"),

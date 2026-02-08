@@ -5,7 +5,16 @@
  * - getBucketExpression(range): Returns SQL expression for time bucketing
  */
 
-import { desc, sql, and, eq, gte, type SQL, type Column } from "drizzle-orm";
+import {
+  asc,
+  desc,
+  sql,
+  and,
+  eq,
+  gte,
+  type SQL,
+  type Column,
+} from "drizzle-orm";
 import { type TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import type {
@@ -270,7 +279,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
 
     const uniqueDomainsResult = await this.db
       .select({
-        count: sql<number>`count(distinct ${this.columns.questionName})`,
+        count: sql<number>`count(distinct coalesce(${this.columns.questionName}, '__null__'))`,
       })
       .from(this.table)
       .where(and(...filters));
@@ -285,7 +294,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .from(this.table)
       .where(and(...filters))
       .groupBy(this.columns.questionName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(this.columns.questionName))
       .limit(options.limit)
       .offset(options.offset);
 
@@ -317,7 +326,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
 
     const uniqueClientsResult = await this.db
       .select({
-        count: sql<number>`count(distinct ${this.columns.clientName})`,
+        count: sql<number>`count(distinct coalesce(${this.columns.clientName}, '__null__'))`,
       })
       .from(this.table)
       .where(and(...filters));
@@ -332,7 +341,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .from(this.table)
       .where(and(...filters))
       .groupBy(this.columns.clientName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(this.columns.clientName))
       .limit(options.limit)
       .offset(options.offset);
 
@@ -369,7 +378,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .from(this.table)
       .where(gte(this.columns.requestTs, startTime.toISOString()))
       .groupBy(this.columns.questionType)
-      .orderBy(desc(sql`count(*)`));
+      .orderBy(desc(sql`count(*)`), asc(this.columns.questionType));
 
     return result.map((row: { type: string | null; count: number }) => ({
       type: row.type ?? "unknown",
@@ -402,7 +411,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         ),
       )
       .groupBy(this.columns.questionName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(this.columns.questionName))
       .limit(options.limit);
 
     return result.map((row: { domain: string | null; count: number }) => ({
@@ -435,7 +444,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         ),
       )
       .groupBy(this.columns.clientName)
-      .orderBy(desc(sql`count(*)`))
+      .orderBy(desc(sql`count(*)`), asc(this.columns.clientName))
       .limit(options.limit);
 
     return result.map((row: { client: string | null; count: number }) => ({

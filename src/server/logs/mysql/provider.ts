@@ -7,12 +7,14 @@ import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class MySQLLogProvider extends BaseSqlLogProvider {
+  private readonly pool: ReturnType<typeof createPool>;
+
   constructor(options: { connectionUri: string }) {
-    const conn = createPool({
+    const pool = createPool({
       uri: options.connectionUri,
       timezone: "+00:00",
     });
-    const db = drizzle(conn, { schema: { logEntries }, mode: "default" });
+    const db = drizzle(pool, { schema: { logEntries }, mode: "default" });
 
     super({
       db,
@@ -33,6 +35,12 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
         hostname: logEntries.hostname,
       },
     });
+
+    this.pool = pool;
+  }
+
+  async close(): Promise<void> {
+    await this.pool.end();
   }
 
   protected getBucketExpression(range: TimeRange): SQL {

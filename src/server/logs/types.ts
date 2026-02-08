@@ -74,6 +74,8 @@ export interface QueryLogsResult {
 }
 
 export interface LogProvider {
+  close?(): Promise<void>;
+
   getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult>;
 
   getStats24h(): Promise<StatsResult>;

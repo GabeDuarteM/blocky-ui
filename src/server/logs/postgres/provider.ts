@@ -7,6 +7,8 @@ import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
+  private readonly conn: ReturnType<typeof postgres>;
+
   constructor(options: { connectionUri: string }) {
     const conn = postgres(options.connectionUri, {
       connection: {
@@ -33,6 +35,12 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
         hostname: logEntries.hostname,
       },
     });
+
+    this.conn = conn;
+  }
+
+  async close(): Promise<void> {
+    await this.conn.end();
   }
 
   protected getBucketExpression(range: TimeRange): SQL {
