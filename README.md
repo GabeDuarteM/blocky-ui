@@ -143,6 +143,10 @@ pnpm dev
 
 Visit `http://localhost:3000` to access BlockyUI.
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=gabeduartem/blocky-ui&type=date&legend=top-left)](https://www.star-history.com/#gabeduartem/blocky-ui&type=date&legend=top-left)
+
 ## 🤝 Contributing
 
 We welcome contributions! Whether it's bug fixes, new features, or documentation
