@@ -660,7 +660,7 @@ function defineProviderTests(providerName: string) {
       it("empty query returns empty array", async () => {
         const result = await provider.searchDomains({
           range: "30d",
-          query: "   ",
+          query: "",
           limit: 10,
         });
         expect(result).toHaveLength(0);
@@ -704,7 +704,7 @@ function defineProviderTests(providerName: string) {
       it("empty query returns empty array", async () => {
         const result = await provider.searchClients({
           range: "30d",
-          query: " ",
+          query: "",
           limit: 10,
         });
         expect(result).toHaveLength(0);

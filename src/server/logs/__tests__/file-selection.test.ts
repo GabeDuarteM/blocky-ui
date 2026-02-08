@@ -11,7 +11,11 @@ describe("csv provider: file selection", () => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "csv-empty-"));
 
     try {
-      fs.writeFileSync(path.join(directory, "readme.txt"), "not a log file");
+      const fakeEntry = makeEntry({ questionName: "should-not-appear.com" });
+      fs.writeFileSync(
+        path.join(directory, "data.txt"),
+        entryToCsvLine(fakeEntry),
+      );
 
       const provider = new CsvLogProvider({ directory });
       const result = await provider.getQueryLogs({ limit: 100, offset: 0 });
@@ -40,12 +44,12 @@ describe("csv provider: file selection", () => {
         durationMs: 10,
       });
 
-      const oldFile = path.join(directory, "old.log");
+      const oldFile = path.join(directory, "aaa-old.log");
       fs.writeFileSync(oldFile, entryToCsvLine(oldEntry));
       const pastTime = Date.now() - 10_000;
       fs.utimesSync(oldFile, pastTime / 1000, pastTime / 1000);
 
-      const newFile = path.join(directory, "new.log");
+      const newFile = path.join(directory, "zzz-new.log");
       fs.writeFileSync(newFile, entryToCsvLine(newEntry));
 
       const provider = new CsvLogProvider({ directory });
