@@ -1,0 +1,99 @@
+# Worktrunk Project Configuration
+# Copy to: <repo>/.config/wt.toml
+#
+# Project-specific hooks that run automatically during worktree operations.
+# Check this file into git to share hooks across all developers.
+
+# ============================================================================
+# Hook Formats
+# ============================================================================
+# All hooks support two formats:
+#
+# Single command:
+#   post-create = "npm install"
+#
+# Named table (multiple commands):
+#   [post-create]
+#   deps = "npm install"
+#   build = "npm run build"
+#
+# Named commands appear in output, making it easier to identify failures.
+
+# ============================================================================
+# Template Variables — see https://worktrunk.dev/hook/#template-variables
+# ============================================================================
+# Common variables:
+#   {{ repo }}               - Repository directory name (e.g., "myproject")
+#   {{ branch }}             - Branch name (e.g., "feature/auth")
+#   {{ worktree_path }}      - Absolute path to worktree
+#   {{ primary_worktree_path }} - Main worktree (or default branch worktree for bare repos)
+#   {{ default_branch }}     - Default branch name (e.g., "main")
+#   {{ target }}             - Target branch (merge hooks only)
+#
+# Filters:
+#   {{ branch | sanitize }}     - Replace / and \ with - (e.g., "feature-auth")
+#   {{ branch | sanitize_db }}  - Database-safe identifier with hash suffix (e.g., "feature_auth_x7k")
+#   {{ branch | hash_port }}    - Deterministic port 10000-19999
+
+# ============================================================================
+# Hooks
+# ============================================================================
+
+# Post-Create: Runs after worktree creation, BLOCKS until complete
+# Use for: installing dependencies, setting up databases, copying configs
+#
+[post-create]
+deps = "pnpm install"
+env = "cp {{ primary_worktree_path }}/.env .env"
+
+# Post-Start: Runs in BACKGROUND after worktree creation (parallel)
+# Use for: dev servers, file watchers, background builds
+# Output logged to .git/wt-logs/{branch}-project-post-start-{name}.log
+#
+# [post-start]
+# server = "npm run dev -- --port {{ branch | hash_port }}"
+# watch = "npm run watch"
+
+# Post-Switch: Runs in BACKGROUND after every switch (parallel)
+# Use for: terminal tab naming, tmux window titles, IDE notifications
+#
+# post-switch = "echo -ne '\\033]0;{{ branch }}\\007'"
+
+# Pre-Commit: Runs before committing during merge, BLOCKS (fail-fast)
+# Use for: formatters, linters, quick checks
+#
+# [pre-commit]
+# format = "npm run format:check"
+# lint = "npm run lint"
+
+# Pre-Merge: Runs before merging to target, BLOCKS (fail-fast)
+# Use for: tests, build verification
+#
+# [pre-merge]
+# test = "npm test"
+# build = "npm run build"
+
+# Post-Merge: Runs after successful merge, BLOCKS
+# Use for: deployment, notifications
+#
+# post-merge = "echo 'Merged {{ branch }} to {{ target }}'"
+
+# Pre-Remove: Runs before worktree removal, BLOCKS (fail-fast)
+# Use for: cleanup, stopping services
+#
+# pre-remove = "docker compose down"
+
+# ============================================================================
+# Dev Server URL (shown in `wt list`)
+# ============================================================================
+# [list]
+# url = "http://localhost:{{ branch | hash_port }}"
+
+# ============================================================================
+# CI Platform Override
+# ============================================================================
+# Override CI platform detection for GitHub Enterprise or self-hosted GitLab
+# with custom domains where URL detection fails.
+#
+# [ci]
+# platform = "github"  # or "gitlab"
