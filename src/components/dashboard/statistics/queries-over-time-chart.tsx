@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { type ReactNode, useState, useCallback, useMemo } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { format } from "date-fns";
 import {
@@ -145,7 +145,7 @@ export function QueriesOverTimeChart({
   );
 
   const formatTooltipLabel = useCallback(
-    (value: string, payload: { payload?: { time?: string } }[]) => {
+    (value: ReactNode, payload: readonly { payload?: { time?: string } }[]) => {
       const time = payload[0]?.payload?.time;
       if (!time) return value;
       return format(new Date(time), timeRangeConfig[range].tooltipFormat);
