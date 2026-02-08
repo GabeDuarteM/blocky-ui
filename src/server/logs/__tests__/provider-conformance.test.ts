@@ -23,7 +23,10 @@ function normalizeTimestamp(ts: string | null | undefined): string {
   if (!ts) {
     return "";
   }
-  return ts.replace("T", " ").replace("Z", "");
+  return ts
+    .replace("T", " ")
+    .replace("Z", "")
+    .replace(/[+-]\d{2}$/, "");
 }
 
 function entriesInRange(range: "1h" | "24h" | "7d" | "30d"): LogEntry[] {
@@ -711,11 +714,12 @@ function defineProviderTests(providerName: string) {
 }
 
 defineProviderTests("mysql");
+defineProviderTests("postgres");
 defineProviderTests("csv");
 defineProviderTests("csv-client");
 
 describe("cross-provider consistency", () => {
-  const providerNames = ["mysql", "csv", "csv-client"] as const;
+  const providerNames = ["mysql", "postgres", "csv", "csv-client"] as const;
 
   async function queryAllProviders<T>(
     fn: (provider: LogProvider) => Promise<T>,

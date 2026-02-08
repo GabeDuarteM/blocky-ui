@@ -120,6 +120,9 @@ importers:
       '@testcontainers/mysql':
         specifier: ^11.11.0
         version: 11.11.0
+      '@testcontainers/postgresql':
+        specifier: ^11.11.0
+        version: 11.11.0
       '@types/node':
         specifier: ^24.10.4
         version: 24.10.11
@@ -1686,6 +1689,9 @@ packages:
 
   '@testcontainers/mysql@11.11.0':
     resolution: {integrity: sha512-2EfFhUDEvEdwBwez+F/NhqP+h2rFzLzHYbRX0N/9/Lgdlq8TbsYWZ9SaWL9V0f1FWX89XnyZrT3i/j7m8MIESg==}
+
+  '@testcontainers/postgresql@11.11.0':
+    resolution: {integrity: sha512-Og64I/h5LKLVvUTkAcLeTXfFcMhh3dCHCypN3Uzd+tQMd70SpCfQ0LCP9v/U+MS7JBRzU9EmqhUFkTOm4hyZWw==}
 
   '@trpc/client@11.8.1':
     resolution: {integrity: sha512-L/SJFGanr9xGABmuDoeXR4xAdHJmsXsiF9OuH+apecJ+8sUITzVT1EPeqp0ebqA6lBhEl5pPfg3rngVhi/h60Q==}
@@ -6059,6 +6065,15 @@ snapshots:
   '@tanstack/table-core@8.21.3': {}
 
   '@testcontainers/mysql@11.11.0':
+    dependencies:
+      testcontainers: 11.11.0
+    transitivePeerDependencies:
+      - bare-abort-controller
+      - bare-buffer
+      - react-native-b4a
+      - supports-color
+
+  '@testcontainers/postgresql@11.11.0':
     dependencies:
       testcontainers: 11.11.0
     transitivePeerDependencies:

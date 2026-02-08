@@ -5,9 +5,18 @@ import {
   MySqlContainer,
   type StartedMySqlContainer,
 } from "@testcontainers/mysql";
+import {
+  PostgreSqlContainer,
+  type StartedPostgreSqlContainer,
+} from "@testcontainers/postgresql";
 import { createConnection } from "mysql2/promise";
+import postgres from "postgres";
+import { sql } from "drizzle-orm";
+import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
+import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
+import { logEntries as pgLogEntries } from "~/server/logs/postgres/schema";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { type LogEntry, type LogProvider } from "~/server/logs/types";
@@ -139,6 +148,67 @@ async function setupMysql(entries: LogEntry[]): Promise<{
   }
 }
 
+async function setupPostgres(entries: LogEntry[]): Promise<{
+  provider: PostgreSQLLogProvider;
+  container: StartedPostgreSqlContainer;
+}> {
+  const container = await new PostgreSqlContainer("postgres:16")
+    .withDatabase("test_db")
+    .start();
+
+  try {
+    const connectionUri = container.getConnectionUri();
+    const conn = postgres(connectionUri);
+    const db = drizzlePg(conn);
+
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS log_entries (
+          request_ts TIMESTAMPTZ NULL,
+          client_ip TEXT NULL,
+          client_name TEXT NULL,
+          duration_ms BIGINT NULL,
+          reason TEXT NULL,
+          response_type TEXT NULL,
+          question_type TEXT NULL,
+          question_name TEXT NULL,
+          effective_tldp TEXT NULL,
+          answer TEXT NULL,
+          response_code TEXT NULL,
+          hostname TEXT NULL
+        )
+      `);
+
+      if (entries.length > 0) {
+        await db.insert(pgLogEntries).values(
+          entries.map((entry) => ({
+            requestTs: entry.requestTs,
+            clientIp: entry.clientIp,
+            clientName: entry.clientName,
+            durationMs: entry.durationMs,
+            reason: entry.reason,
+            responseType: entry.responseType,
+            questionType: entry.questionType,
+            questionName: entry.questionName,
+            effectiveTldp: entry.effectiveTldp,
+            answer: entry.answer,
+            responseCode: entry.responseCode,
+            hostname: entry.hostname,
+          })),
+        );
+      }
+    } finally {
+      await conn.end();
+    }
+
+    const provider = new PostgreSQLLogProvider({ connectionUri });
+    return { provider, container };
+  } catch (error) {
+    await container.stop();
+    throw error;
+  }
+}
+
 function setupCsv(entries: LogEntry[]): {
   provider: CsvLogProvider;
   directory: string;
@@ -189,14 +259,17 @@ export async function setupProviders(): Promise<{
 }> {
   const seedData = createSeedData();
 
-  const [mysqlResult, csvResult, csvClientResult] = await Promise.all([
-    setupMysql(seedData),
-    Promise.resolve(setupCsv(seedData)),
-    Promise.resolve(setupCsvClient(seedData)),
-  ]);
+  const [mysqlResult, postgresResult, csvResult, csvClientResult] =
+    await Promise.all([
+      setupMysql(seedData),
+      setupPostgres(seedData),
+      Promise.resolve(setupCsv(seedData)),
+      Promise.resolve(setupCsvClient(seedData)),
+    ]);
 
   const providers = new Map<string, LogProvider>([
     ["mysql", mysqlResult.provider],
+    ["postgres", postgresResult.provider],
     ["csv", csvResult.provider],
     ["csv-client", csvClientResult.provider],
   ]);
@@ -204,6 +277,8 @@ export async function setupProviders(): Promise<{
   const cleanup = async () => {
     await mysqlResult.provider.close?.();
     await mysqlResult.container.stop();
+    await postgresResult.provider.close?.();
+    await postgresResult.container.stop();
     fs.rmSync(csvResult.directory, { recursive: true, force: true });
     fs.rmSync(csvClientResult.directory, { recursive: true, force: true });
   };
