@@ -18,7 +18,7 @@ function startPodmanSocket(uid: number): string | null {
   const socketPath = `/run/user/${uid}/podman/podman.sock`;
 
   try {
-    execSync("podman system service --time=0 &", {
+    execSync("podman system service --time=120 &", {
       shell: "/bin/sh",
       stdio: "ignore",
       timeout: 5000,

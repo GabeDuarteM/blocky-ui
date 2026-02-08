@@ -116,22 +116,27 @@ async function setupMysql(entries: LogEntry[]): Promise<{
     .withDatabase("test_db")
     .start();
 
-  const connectionUri = container.getConnectionUri();
-  const connection = await createConnection(connectionUri);
-
   try {
-    await connection.execute(CREATE_TABLE_SQL);
+    const connectionUri = container.getConnectionUri();
+    const connection = await createConnection(connectionUri);
 
-    if (entries.length > 0) {
-      const rows = entries.map(entryToMysqlRow);
-      await connection.query(INSERT_SQL, [rows]);
+    try {
+      await connection.execute(CREATE_TABLE_SQL);
+
+      if (entries.length > 0) {
+        const rows = entries.map(entryToMysqlRow);
+        await connection.query(INSERT_SQL, [rows]);
+      }
+    } finally {
+      await connection.end();
     }
-  } finally {
-    await connection.end();
-  }
 
-  const provider = new MySQLLogProvider({ connectionUri });
-  return { provider, container };
+    const provider = new MySQLLogProvider({ connectionUri });
+    return { provider, container };
+  } catch (error) {
+    await container.stop();
+    throw error;
+  }
 }
 
 function setupCsv(entries: LogEntry[]): {
@@ -179,14 +184,15 @@ function setupCsvClient(entries: LogEntry[]): {
 
 export async function setupProviders(): Promise<{
   providers: Map<string, LogProvider>;
+  seedData: LogEntry[];
   cleanup: () => Promise<void>;
 }> {
-  const entries = createSeedData();
+  const seedData = createSeedData();
 
   const [mysqlResult, csvResult, csvClientResult] = await Promise.all([
-    setupMysql(entries),
-    Promise.resolve(setupCsv(entries)),
-    Promise.resolve(setupCsvClient(entries)),
+    setupMysql(seedData),
+    Promise.resolve(setupCsv(seedData)),
+    Promise.resolve(setupCsvClient(seedData)),
   ]);
 
   const providers = new Map<string, LogProvider>([
@@ -202,5 +208,5 @@ export async function setupProviders(): Promise<{
     fs.rmSync(csvClientResult.directory, { recursive: true, force: true });
   };
 
-  return { providers, cleanup };
+  return { providers, seedData, cleanup };
 }

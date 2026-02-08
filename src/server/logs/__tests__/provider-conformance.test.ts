@@ -2,7 +2,7 @@ import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { type LogEntry, type LogProvider } from "~/server/logs/types";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import { setupProviders } from "./setup";
-import { createSeedData, countEntriesInRange } from "./seed-data";
+import { countEntriesInRange } from "./seed-data";
 
 let providers: Map<string, LogProvider>;
 let cleanup: () => Promise<void> = async () => {};
@@ -12,7 +12,7 @@ beforeAll(async () => {
   const result = await setupProviders();
   providers = result.providers;
   cleanup = result.cleanup;
-  seedData = createSeedData();
+  seedData = result.seedData;
 });
 
 afterAll(async () => {
@@ -23,10 +23,7 @@ function normalizeTimestamp(ts: string | null | undefined): string {
   if (!ts) {
     return "";
   }
-  return ts
-    .replace("T", " ")
-    .replace("Z", "")
-    .replace(/\.000$/, ".000");
+  return ts.replace("T", " ").replace("Z", "");
 }
 
 function entriesInRange(range: "1h" | "24h" | "7d" | "30d"): LogEntry[] {
