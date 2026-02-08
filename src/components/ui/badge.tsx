@@ -45,4 +45,4 @@ function Badge({
   )
 }
 
-export { Badge, /** @knipignore */ badgeVariants }
+export { Badge, badgeVariants }

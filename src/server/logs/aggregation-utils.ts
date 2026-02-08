@@ -96,7 +96,7 @@ export function aggregateTopDomains(
 
   const totalQueriesCount = entries.length;
   const sortedDomains = Array.from(domainStats.entries()).sort(
-    (a, b) => b[1].count - a[1].count,
+    (a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]),
   );
 
   return {
@@ -129,7 +129,7 @@ export function aggregateTopClients(
 
   const totalQueriesCount = entries.length;
   const sortedClients = Array.from(clientStats.entries()).sort(
-    (a, b) => b[1].total - a[1].total,
+    (a, b) => b[1].total - a[1].total || a[0].localeCompare(b[0]),
   );
 
   return {
@@ -155,7 +155,7 @@ export function aggregateQueryTypes(entries: LogEntry[]): QueryTypeEntry[] {
 
   const totalCount = entries.length;
   return Array.from(typeCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([type, count]) => ({
       type,
       count,
@@ -182,7 +182,7 @@ export function searchDomainsInEntries(
   }
 
   return Array.from(domainCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, limit)
     .map(([domain, count]) => ({ domain, count }));
 }
@@ -206,7 +206,7 @@ export function searchClientsInEntries(
   }
 
   return Array.from(clientCounts.entries())
-    .sort((a, b) => b[1] - a[1])
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, limit)
     .map(([client, count]) => ({ client, count }));
 }
