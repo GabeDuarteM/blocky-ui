@@ -13,11 +13,11 @@ beforeAll(async () => {
   providers = result.providers;
   cleanup = result.cleanup;
   seedData = result.seedData;
-});
+}, 60_000);
 
 afterAll(async () => {
   await cleanup();
-});
+}, 60_000);
 
 function normalizeTimestamp(ts: string | null | undefined): string {
   if (!ts) {
