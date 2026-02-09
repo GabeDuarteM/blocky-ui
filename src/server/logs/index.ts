@@ -67,11 +67,11 @@ export function createLogProvider(): LogProvider | undefined {
       provider = new MySQLLogProvider({
         connectionUri: logTarget,
       });
-    } else if (logType === "postgres") {
-      console.log("Using log provider type: postgres");
+    } else if (logType === "postgresql" || logType === "timescale") {
+      console.log(`Using log provider type: ${logType}`);
       if (!logTarget) {
         throw new Error(
-          "QUERY_LOG_TARGET (PostgreSQL connection URI) is required when using QUERY_LOG_TYPE == 'postgres'",
+          `QUERY_LOG_TARGET (PostgreSQL connection URI) is required when using QUERY_LOG_TYPE == '${logType}'`,
         );
       }
 
