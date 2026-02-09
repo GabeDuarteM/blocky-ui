@@ -26,8 +26,8 @@ include a human-written description.
 <!-- Link to related issues, discussions, or previous PRs -->
 <!-- If reopening something previously closed, explain why this should be reconsidered -->
 
-Fixes #
-Discussed in:
+<!-- Fixes # -->
+<!-- Discussed in: -->
 
 ## Testing
 
@@ -41,8 +41,7 @@ Discussed in:
 
 <!-- AI-assisted PRs are welcomed if properly reviewed and tested beforehand. Just let us know so we can review it appropriately as well (and please, be honest about it). -->
 
-- [ ] No AI was used in this PR
-- [ ] AI was used (please describe below)
+- [ ] AI was used in this PR (please describe below)
 
 **If AI was used:**
 

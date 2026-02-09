@@ -2,6 +2,8 @@
 
 Thanks for your interest in contributing to BlockyUI! This guide walks you through the process of setting up the project and submitting changes.
 
+Please note that this project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to abide by its terms.
+
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (LTS version recommended)
