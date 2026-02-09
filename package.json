@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "next build",
+    "db:studio": "pnpm run db:studio:mysql",
+    "db:studio:mysql": "NODE_ENV=development drizzle-kit studio --config=drizzle.config.mysql.ts",
+    "db:studio:pg": "NODE_ENV=development drizzle-kit studio --config=drizzle.config.postgresql.ts",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
@@ -66,6 +69,7 @@
     "@types/node": "^24.10.4",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "drizzle-kit": "^0.31.9",
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.1.1",
     "eslint-plugin-drizzle": "^0.2.3",
