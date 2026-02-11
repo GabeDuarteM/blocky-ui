@@ -1,5 +1,20 @@
 # blocky-ui
 
+## 1.6.0
+
+### Minor Changes
+
+- [#242](https://github.com/GabeDuarteM/blocky-ui/pull/242) [`d2b3960`](https://github.com/GabeDuarteM/blocky-ui/commit/d2b39600f7adeef0ea3e902764b62b74b2d0e67a) Thanks [@aclerici38](https://github.com/aclerici38)! - Add PostgreSQL and TimescaleDB query log support
+
+  #### Configuration
+
+  Set `QUERY_LOG_TYPE` to `postgresql` or `timescale` and `QUERY_LOG_TARGET` to a PostgreSQL connection URI:
+
+  ```env
+  QUERY_LOG_TYPE=postgresql
+  QUERY_LOG_TARGET=postgresql://username:password@localhost:5432/blocky_query_log
+  ```
+
 ## 1.5.0
 
 ### Minor Changes
