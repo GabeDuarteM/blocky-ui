@@ -1,0 +1,26 @@
+name: Fix Release Notes
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  fix-collaborator-handles:
+    name: Fix Collaborator Handles
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Replace markdown handle links with raw handles
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          body=$(gh release view "$TAG" --json body --jq '.body')
+          # Replace [@handle](https://github.com/handle) with just @handle
+          updated=$(echo "$body" | sed -E 's/\[@([a-zA-Z0-9_-]+)\]\(https:\/\/github\.com\/\1\)/@\1/g')
+          if [ "$body" != "$updated" ]; then
+            echo "Updating release notes for $TAG"
+            gh release edit "$TAG" --notes "$updated"
+          fi
