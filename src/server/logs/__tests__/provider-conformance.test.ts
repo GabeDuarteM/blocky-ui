@@ -23,10 +23,19 @@ function normalizeTimestamp(ts: string | null | undefined): string {
   if (!ts) {
     return "";
   }
-  return ts
+  const normalized = ts
     .replace("T", " ")
     .replace("Z", "")
     .replace(/[+-]\d{2}$/, "");
+
+  // Pad fractional seconds to 3 digits for consistent comparison.
+  // PostgreSQL strips trailing zeros (e.g. ".160" → ".16", ".000" → omitted)
+  // while MySQL and CSV always return 3 fractional digits.
+  const dotIndex = normalized.lastIndexOf(".");
+  if (dotIndex === -1) {
+    return `${normalized}.000`;
+  }
+  return normalized.padEnd(dotIndex + 4, "0");
 }
 
 function entriesInRange(range: "1h" | "24h" | "7d" | "30d"): LogEntry[] {

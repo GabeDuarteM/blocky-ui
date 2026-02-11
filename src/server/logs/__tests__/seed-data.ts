@@ -551,7 +551,10 @@ function createTemplates(): EntryTemplate[] {
 }
 
 export function createSeedData(): LogEntry[] {
-  const now = Date.now();
+  // Truncate milliseconds so all timestamps end in ".000". This avoids
+  // cross-provider mismatches caused by PostgreSQL stripping trailing
+  // fractional-second zeros (e.g. ".160" → ".16").
+  const now = Math.floor(Date.now() / 1000) * 1000;
   const templates = createTemplates();
 
   const entries = templates.map((template) => buildEntry(template, now));
