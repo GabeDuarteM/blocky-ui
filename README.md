@@ -10,7 +10,7 @@ BlockyUI is a modern companion dashboard for your [Blocky DNS](https://github.co
 - DNS query tool to test domain blocking and filtering rules
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky)
-  - Supports MySQL, CSV and CSV-Client logging types from Blocky
+  - Supports MySQL, PostgreSQL (including Timescale), CSV and CSV-Client logging types from Blocky
   - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
 - Statistics sections
   - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on Blocky)
@@ -48,7 +48,15 @@ services:
 
       # from a MySQL/MariaDB database:
       # - QUERY_LOG_TYPE=mysql
-      # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log_table_name
+      # - QUERY_LOG_TARGET=username:password@tcp(localhost:3306)/blocky_query_log
+
+      # from a PostgreSQL database:
+      # - QUERY_LOG_TYPE=postgresql
+      # - QUERY_LOG_TARGET=postgresql://username:password@localhost:5432/blocky_query_log
+       
+      # from a Postgres database with Timescale configured (in postgres AND blocky):
+      # - QUERY_LOG_TYPE=timescale
+      # - QUERY_LOG_TARGET=postgresql://username:password@localhost:5432/blocky_query_log
 
       # from a CSV file (single daily file):
       # - QUERY_LOG_TYPE=csv
@@ -101,7 +109,7 @@ BlockyUI is configured via environment variables in all deployment methods.
 | Variable           | Required | Default                 | Description                                                                                     |
 | ------------------ | -------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
 | `BLOCKY_API_URL`   | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
-| `QUERY_LOG_TYPE`   | No       | None                    | Enable query logging. Can be `mysql`, `csv`, or `csv-client`.                                   |
+| `QUERY_LOG_TYPE`   | No       | None                    | Enable query logging. Can be `mysql`, `postgresql`, `timescale`, `csv`, or `csv-client`.                       |
 | `QUERY_LOG_TARGET` | No       | None                    | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
 | `INSTANCE_NAME`    | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
 | `PROMETHEUS_PATH`  | No       | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |

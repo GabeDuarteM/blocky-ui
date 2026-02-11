@@ -1,26 +1,26 @@
 import { sql, type SQL } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import { createPool } from "mysql2/promise";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-import { logEntries } from "~/server/logs/mysql/schema";
+import { logEntries } from "~/server/logs/postgres/schema";
 import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
-export class MySQLLogProvider extends BaseSqlLogProvider {
-  private readonly pool: ReturnType<typeof createPool>;
+export class PostgreSQLLogProvider extends BaseSqlLogProvider {
+  private readonly conn: ReturnType<typeof postgres>;
 
   constructor(options: { connectionUri: string }) {
-    const pool = createPool({
-      uri: options.connectionUri,
-      timezone: "+00:00",
+    const conn = postgres(options.connectionUri, {
+      connection: {
+        timezone: "UTC",
+      },
     });
-    const db = drizzle(pool, { schema: { logEntries }, mode: "default" });
+    const db = drizzle(conn, { schema: { logEntries } });
 
     super({
       db,
       table: logEntries,
       columns: {
-        id: logEntries.id,
         requestTs: logEntries.requestTs,
         clientIp: logEntries.clientIp,
         clientName: logEntries.clientName,
@@ -36,11 +36,11 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
       },
     });
 
-    this.pool = pool;
+    this.conn = conn;
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    await this.conn.end();
   }
 
   protected getBucketExpression(range: TimeRange): SQL {
@@ -50,19 +50,21 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
       case "1h":
         // Round to 5-minute intervals
         return sql.raw(
-          `CONCAT(DATE_FORMAT(${col}, '%Y-%m-%d %H:'), LPAD(FLOOR(MINUTE(${col})/5)*5, 2, '0'))`,
+          `TO_CHAR(DATE_TRUNC('hour', ${col}) + INTERVAL '5 min' * FLOOR(EXTRACT(MINUTE FROM ${col}) / 5), 'YYYY-MM-DD HH24:MI')`,
         );
       case "24h":
         // Round to hourly intervals
-        return sql.raw(`DATE_FORMAT(${col}, '%Y-%m-%d %H:00')`);
+        return sql.raw(
+          `TO_CHAR(DATE_TRUNC('hour', ${col}), 'YYYY-MM-DD HH24:00')`,
+        );
       case "7d":
         // Round to 6-hour intervals (0, 6, 12, 18)
         return sql.raw(
-          `CONCAT(DATE_FORMAT(${col}, '%Y-%m-%d '), LPAD(FLOOR(HOUR(${col})/6)*6, 2, '0'), ':00')`,
+          `TO_CHAR(DATE_TRUNC('day', ${col}) + INTERVAL '6 hours' * FLOOR(EXTRACT(HOUR FROM ${col}) / 6), 'YYYY-MM-DD HH24:00')`,
         );
       case "30d":
         // Round to daily intervals
-        return sql.raw(`DATE_FORMAT(${col}, '%Y-%m-%d')`);
+        return sql.raw(`TO_CHAR(DATE_TRUNC('day', ${col}), 'YYYY-MM-DD')`);
     }
   }
 }
