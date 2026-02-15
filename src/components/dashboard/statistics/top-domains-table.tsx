@@ -71,7 +71,7 @@ export function TopDomainsTable({ range, limit }: TopDomainsTableProps) {
   };
 
   return (
-    <Card className="bg-muted/30 flex flex-col border-0 shadow-none">
+    <Card className="bg-muted/30 flex min-w-0 flex-col border-0 shadow-none">
       <CardHeader>
         <div className="flex w-full flex-row items-center justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
