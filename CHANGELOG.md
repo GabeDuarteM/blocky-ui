@@ -1,5 +1,13 @@
 # blocky-ui
 
+## 1.6.1
+
+### Patch Changes
+
+- [#260](https://github.com/GabeDuarteM/blocky-ui/pull/260) [`7ad8467`](https://github.com/GabeDuarteM/blocky-ui/commit/7ad846766fc56567eed2aa9ce907fa4274b58375) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Fix layout overflow on mobile when domain or client names are long
+
+  Long domain names in the Top Domains and Top Clients lists no longer push the layout wider than the screen on mobile devices. Names are now properly truncated with an ellipsis.
+
 ## 1.6.0
 
 ### Minor Changes
