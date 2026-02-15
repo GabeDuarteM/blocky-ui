@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "db:studio": "pnpm run db:studio:mysql",
+    "db:studio": "bun run db:studio:mysql",
     "db:studio:mysql": "NODE_ENV=development drizzle-kit studio --config=drizzle.config.mysql.ts",
     "db:studio:pg": "NODE_ENV=development drizzle-kit studio --config=drizzle.config.postgresql.ts",
     "dev": "next dev --turbo",
@@ -16,10 +16,10 @@
     "preview": "next build && next start",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "changeset": "pnpx @changesets/cli",
-    "ci": "pnpm run lint && pnpm run format:check && pnpm run typecheck",
-    "generate:csv": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1",
-    "generate:csv-client": "pnpx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5",
+    "changeset": "bunx @changesets/cli",
+    "verify": "bun run --parallel lint format:check typecheck",
+    "generate:csv": "bunx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1",
+    "generate:csv-client": "bunx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5",
     "knip": "SKIP_ENV_VALIDATION=true knip",
     "checkdupe": "jscpd",
     "test": "vitest run",
@@ -87,5 +87,5 @@
   "ct3aMetadata": {
     "initVersion": "7.39.3"
   },
-  "packageManager": "pnpm@10.6.3"
+  "packageManager": "bun@1.3.9"
 }

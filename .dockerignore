@@ -1,6 +1,6 @@
 # Dependencies
 node_modules
-.pnpm-store
+.bun
 .npm
 .yarn
 
@@ -16,7 +16,7 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
+.bun-debug.log*
 
 # Local env files
 .env

@@ -2,28 +2,20 @@ ARG BUILDER_PLATFORM=linux/amd64
 
 # 1) base image for the final container (native, multi-arch)
 FROM node:22-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
 WORKDIR /app
 
 # 2) builder base (FORCED to amd64 due to nextjs build issues on armv6/v7)
-FROM --platform=${BUILDER_PLATFORM} node:22-alpine AS base-build
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
+FROM --platform=${BUILDER_PLATFORM} oven/bun:1-alpine AS base-build
 WORKDIR /app
 
 # 3) deps + build, all on amd64 still
 FROM base-build AS deps-build
-COPY package.json pnpm-lock.yaml ./
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-  pnpm install --frozen-lockfile
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 FROM deps-build AS builder
 COPY . .
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-  pnpm build
+RUN bun run build
 
 # 4) the runner stage, multi-arch from now on
 FROM base AS runner

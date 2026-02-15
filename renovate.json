@@ -3,12 +3,12 @@
   "extends": ["config:recommended"],
   "packageRules": [
     {
-      "matchPackageNames": ["pnpm"],
+      "matchPackageNames": ["bun"],
       "matchUpdateTypes": ["minor", "patch"],
       "enabled": false
     },
     {
-      "matchPackageNames": ["pnpm"],
+      "matchPackageNames": ["bun"],
       "matchUpdateTypes": ["major"]
     },
     {

@@ -43,7 +43,7 @@
 # Use for: installing dependencies, setting up databases, copying configs
 #
 [post-create]
-deps = "pnpm install"
+deps = "bun install"
 env = "cp {{ primary_worktree_path }}/.env .env"
 
 # Post-Start: Runs in BACKGROUND after worktree creation (parallel)
