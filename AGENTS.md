@@ -38,7 +38,7 @@ bun run lint:fix               # Run ESLint with auto-fix
 bun run format:check           # Check Prettier formatting
 bun run format:write           # Auto-format with Prettier
 bun run typecheck              # TypeScript type checking
-bun run ci                     # Run all checks (lint + format + typecheck)
+bun run verify                 # Run all checks (lint + format + typecheck)
 bun run knip                   # Detect unused exports and dependencies
 bun run checkdupe              # Detect code duplication (jscpd)
 
@@ -55,7 +55,7 @@ bun run db:push                # Push schema changes
 bun run db:studio              # Open Drizzle Studio
 ```
 
-After any code change, always run `bun run ci` to validate. We also have some integration tests in `src/server/logs/__tests__/` and use `testcontainers` for real database integration testing. If we change anything on those providers, please also run that to make sure we don't break anything.
+After any code change, always run `bun run verify` to validate. We also have some integration tests in `src/server/logs/__tests__/` and use `testcontainers` for real database integration testing. If we change anything on those providers, please also run that to make sure we don't break anything.
 
 ## Code Style Guidelines
 
@@ -158,7 +158,7 @@ Never commit secrets. Use `.env` for local development. Use `SKIP_ENV_VALIDATION
 
 CI runs on all PRs to main:
 
-1. **CI job**: `bun run ci` (lint + format + typecheck)
+1. **CI job**: `bun run verify` (lint + format + typecheck)
 2. **Integration Tests job**: `bun run test` (Vitest with testcontainers, 15min timeout)
 
-Ensure `bun run ci` passes before pushing.
+Ensure `bun run verify` passes before pushing.

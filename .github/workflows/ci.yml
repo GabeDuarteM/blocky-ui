@@ -26,7 +26,7 @@ jobs:
         run: bun install
 
       - name: Run the CI script
-        run: bun run ci
+        run: bun run verify
 
   integration-tests:
     name: Integration Tests

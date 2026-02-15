@@ -54,7 +54,7 @@ git checkout -b my-change
 3. Run the full check suite before pushing:
 
 ```bash
-bun run ci
+bun run verify
 ```
 
 This runs linting, formatting checks, and type checking in one command.
@@ -98,7 +98,7 @@ git push origin my-change
 2. Open a pull request against `main` on [GabeDuarteM/blocky-ui](https://github.com/GabeDuarteM/blocky-ui).
 
 3. CI will automatically run:
-   - **CI job** — linting, formatting, and type checking (`bun run ci`)
+   - **CI job** — linting, formatting, and type checking (`bun run verify`)
    - **Integration tests** — Vitest with testcontainers (`bun run test`)
 
    Both checks must pass before your PR can be merged.

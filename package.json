@@ -17,7 +17,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "changeset": "bunx @changesets/cli",
-    "ci": "bun run --parallel lint format:check typecheck",
+    "verify": "bun run --parallel lint format:check typecheck",
     "generate:csv": "bunx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1",
     "generate:csv-client": "bunx tsx scripts/generate_querylog_csv.ts --output ./generated-logs --rows 10000 --days 1 --type csv-client --clients 5",
     "knip": "SKIP_ENV_VALIDATION=true knip",
