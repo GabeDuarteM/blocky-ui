@@ -7,7 +7,7 @@ Please note that this project follows a [Code of Conduct](CODE_OF_CONDUCT.md). B
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (LTS version recommended)
-- [pnpm](https://pnpm.io/) (v10+) — the project enforces pnpm via `packageManager` in `package.json`
+- [Bun](https://bun.sh/) — the project enforces bun via `packageManager` in `package.json`
 - [Docker](https://www.docker.com/) or [Podman](https://podman.io/) — required for running integration tests (testcontainers)
 
 ## Development Setup
@@ -22,7 +22,7 @@ cd blocky-ui
 2. Install dependencies:
 
 ```bash
-pnpm install
+bun install
 ```
 
 3. Set up environment variables:
@@ -36,7 +36,7 @@ Edit `.env` with appropriate values for your setup. You can set `DEMO_MODE=true`
 4. Start the development server:
 
 ```bash
-pnpm dev
+bun dev
 ```
 
 The app will be available at `http://localhost:3000`.
@@ -54,7 +54,7 @@ git checkout -b my-change
 3. Run the full check suite before pushing:
 
 ```bash
-pnpm run ci
+bun run ci
 ```
 
 This runs linting, formatting checks, and type checking in one command.
@@ -62,7 +62,7 @@ This runs linting, formatting checks, and type checking in one command.
 4. If your changes affect the query log providers (`src/server/logs/`), also run the integration tests:
 
 ```bash
-pnpm run test
+bun run test
 ```
 
 Integration tests use testcontainers and require Docker or Podman to be running.
@@ -72,7 +72,7 @@ Integration tests use testcontainers and require Docker or Podman to be running.
 This project uses [Changesets](https://github.com/changesets/changesets) for versioning. When your PR introduces user-facing changes (bug fixes, new features, etc.), you can include a changeset with
 
 ```bash
-pnpm changeset
+bun changeset
 ```
 
 This will prompt you to:
@@ -98,8 +98,8 @@ git push origin my-change
 2. Open a pull request against `main` on [GabeDuarteM/blocky-ui](https://github.com/GabeDuarteM/blocky-ui).
 
 3. CI will automatically run:
-   - **CI job** — linting, formatting, and type checking (`pnpm run ci`)
-   - **Integration tests** — Vitest with testcontainers (`pnpm run test`)
+   - **CI job** — linting, formatting, and type checking (`bun run ci`)
+   - **Integration tests** — Vitest with testcontainers (`bun run test`)
 
    Both checks must pass before your PR can be merged.
 
