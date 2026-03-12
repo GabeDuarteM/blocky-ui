@@ -147,6 +147,7 @@ When doing so, be careful with the --overwrite flag, since some components may h
 Validated via `@t3-oss/env-nextjs` in `src/env.js`. Key variables:
 
 - `BLOCKY_API_URL` — Blocky API URL (default: `http://localhost:4000`)
+- `BLOCKY_AUTH_HEADER` — Optional authentication header for Blocky API (e.g., `Bearer token`)
 - `QUERY_LOG_TYPE` — Log provider: `mysql`, `csv`, or `csv-client`
 - `QUERY_LOG_TARGET` — DB connection string or directory path
 - `DEMO_MODE` — Enables MSW mock data (boolean, default: `false`)
