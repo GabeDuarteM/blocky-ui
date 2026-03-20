@@ -74,7 +74,7 @@
     "eslint-config-next": "^16.1.1",
     "eslint-plugin-drizzle": "^0.2.3",
     "jscpd": "^4.0.5",
-    "knip": "^5.80.0",
+    "knip": "^6.0.0",
     "msw": "^2.12.7",
     "postcss": "^8.5.3",
     "prettier": "^3.7.4",
