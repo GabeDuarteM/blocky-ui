@@ -29,7 +29,7 @@ const api = ky.create({
   prefixUrl: env.BLOCKY_API_URL,
   headers: {
     "Content-Type": "application/json",
-    ...(env.BLOCKY_AUTH_HEADER && { Authorization: env.BLOCKY_AUTH_HEADER }),
+    ...env.BLOCKY_REQUEST_HEADERS,
   },
 });
 

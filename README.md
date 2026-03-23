@@ -40,8 +40,8 @@ services:
 
     environment:
       - BLOCKY_API_URL=http://blocky:4000
-      # Uncomment to add authentication to Blocky API requests
-      # - BLOCKY_AUTH_HEADER=Bearer your-token-here
+      # Uncomment to add custom headers to Blocky API requests (e.g. authentication)
+      # - BLOCKY_REQUEST_HEADERS={"Authorization":"Bearer your-token-here"}
       # Uncomment to override the Prometheus metrics path (defaults to /metrics)
       # Only use this if you've changed `prometheus.path` on your Blocky's server config
       # - PROMETHEUS_PATH=/custom-metrics-path
@@ -111,7 +111,7 @@ BlockyUI is configured via environment variables in all deployment methods.
 | Variable             | Required | Default                 | Description                                                                                     |
 | -------------------- | -------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
 | `BLOCKY_API_URL`     | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
-| `BLOCKY_AUTH_HEADER` | No       | None                    | Optional authentication header value for Blocky API requests (e.g., `Bearer token`, `Basic ...`). |
+| `BLOCKY_REQUEST_HEADERS` | No       | None                    | JSON object of custom headers for all Blocky API and Prometheus requests (e.g., `'{"Authorization":"Bearer token"}'`). |
 | `QUERY_LOG_TYPE`     | No       | None                    | Enable query logging. Can be `mysql`, `postgresql`, `timescale`, `csv`, or `csv-client`.        |
 | `QUERY_LOG_TARGET`   | No       | None                    | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
 | `INSTANCE_NAME`      | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |

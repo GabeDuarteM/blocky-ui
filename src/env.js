@@ -14,7 +14,10 @@ export const env = createEnv({
     QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.url().default("http://localhost:4000"),
-    BLOCKY_AUTH_HEADER: z.string().optional(),
+    BLOCKY_REQUEST_HEADERS: z
+      .string()
+      .transform((val) => JSON.parse(val))
+      .optional(),
     PROMETHEUS_PATH: z.string().startsWith("/").default("/metrics"),
     DEMO_MODE: z.boolean().default(false),
     INSTANCE_NAME: z.string().optional(),
@@ -41,7 +44,7 @@ export const env = createEnv({
     QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
-    BLOCKY_AUTH_HEADER: process.env.BLOCKY_AUTH_HEADER,
+    BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_REQUEST_HEADERS,
     PROMETHEUS_PATH: process.env.PROMETHEUS_PATH,
     DEMO_MODE: process.env.DEMO_MODE === "true",
     INSTANCE_NAME: process.env.INSTANCE_NAME,

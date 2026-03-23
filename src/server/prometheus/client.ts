@@ -17,9 +17,7 @@ export async function fetchPrometheusMetrics(): Promise<ParsedMetrics | null> {
     const text = await ky
       .get(getPrometheusUrl(), {
         timeout: 10000,
-        headers: env.BLOCKY_AUTH_HEADER
-          ? { Authorization: env.BLOCKY_AUTH_HEADER }
-          : undefined,
+        headers: env.BLOCKY_REQUEST_HEADERS,
       })
       .text();
     return parsePrometheusText(text);
@@ -32,9 +30,7 @@ export async function checkPrometheusAvailable(): Promise<boolean> {
   try {
     await ky.head(getPrometheusUrl(), {
       timeout: 5000,
-      headers: env.BLOCKY_AUTH_HEADER
-        ? { Authorization: env.BLOCKY_AUTH_HEADER }
-        : undefined,
+      headers: env.BLOCKY_REQUEST_HEADERS,
     });
     return true;
   } catch {
