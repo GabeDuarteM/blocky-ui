@@ -105,14 +105,63 @@ export class VictoriaLogsProvider implements LogProvider {
     };
   }
   async getStats24h(): Promise<StatsResult> {
-    throw new Error("Not implemented");
+    const [totalResult, blockedResult] = await Promise.all([
+      this.queryRaw("app:blocky AND prefix:queryLog | stats count() as total", {
+        start: "24h",
+      }),
+      this.queryRaw(
+        "app:blocky AND prefix:queryLog AND response_type:BLOCKED | stats count() as blocked",
+        { start: "24h" },
+      ),
+    ]);
+
+    return {
+      totalQueries: Number(totalResult[0]?.total ?? 0),
+      blocked: Number(blockedResult[0]?.blocked ?? 0),
+    };
   }
-  async getQueriesOverTime(_options: {
+  async getQueriesOverTime(options: {
     range: TimeRange;
     domain?: string;
     client?: string;
   }): Promise<QueriesOverTimeEntry[]> {
-    throw new Error("Not implemented");
+    const { range, domain, client } = options;
+    const start = rangeToVlStart(range);
+    const bucket = rangeToVlBucket(range);
+
+    const filters = ["app:blocky AND prefix:queryLog"];
+    if (domain) filters.push(`question_name:~"(?i)${domain}"`);
+    if (client) filters.push(`client_names:~"(?i)${client}"`);
+    const base = filters.join(" AND ");
+
+    const [totalRows, blockedRows, cachedRows] = await Promise.all([
+      this.queryRaw(
+        `${base} | stats by (_time:${bucket}) count() as total | sort by (_time asc)`,
+        { start },
+      ),
+      this.queryRaw(
+        `${base} AND response_type:BLOCKED | stats by (_time:${bucket}) count() as blocked | sort by (_time asc)`,
+        { start },
+      ),
+      this.queryRaw(
+        `${base} AND response_type:CACHED | stats by (_time:${bucket}) count() as cached | sort by (_time asc)`,
+        { start },
+      ),
+    ]);
+
+    const blockedByTime = new Map(
+      blockedRows.map((r) => [r._time, Number(r.blocked)]),
+    );
+    const cachedByTime = new Map(
+      cachedRows.map((r) => [r._time, Number(r.cached)]),
+    );
+
+    return totalRows.map((r) => ({
+      time: r._time!,
+      total: Number(r.total),
+      blocked: blockedByTime.get(r._time!) ?? 0,
+      cached: cachedByTime.get(r._time!) ?? 0,
+    }));
   }
   async getTopDomains(_options: {
     range: TimeRange;
