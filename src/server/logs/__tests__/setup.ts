@@ -263,7 +263,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   container: StartedTestContainer;
 }> {
   const container = await new GenericContainer(
-    "victoriametrics/victoria-logs:latest",
+    "victoriametrics/victoria-logs:v1.48.0-victorialogs",
   )
     .withExposedPorts(9428)
     .withCommand(["-retentionPeriod=365d"])
@@ -293,11 +293,16 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
     }),
   );
 
-  await fetch(`${url}/insert/jsonline`, {
+  const seedRes = await fetch(`${url}/insert/jsonline`, {
     method: "POST",
     body: lines.join("\n"),
     headers: { "Content-Type": "application/stream+json" },
   });
+  if (!seedRes.ok) {
+    throw new Error(
+      `VictoriaLogs seed failed: ${seedRes.status} ${await seedRes.text()}`,
+    );
+  }
 
   // VL indexing is async — poll until all entries are indexed (max 10s).
   const deadline = Date.now() + 10_000;
@@ -305,11 +310,13 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
     const resp = await fetch(
       `${url}/select/logsql/query?query=app%3Ablocky+AND+prefix%3AqueryLog+%7C+stats+count()+as+n`,
     );
-    const text = await resp.text();
-    const parsed = text.trim()
-      ? (JSON.parse(text.trim()) as { n?: string })
-      : null;
-    if (parsed && Number(parsed.n) >= entries.length) break;
+    if (resp.ok) {
+      const text = await resp.text();
+      const parsed = text.trim()
+        ? (JSON.parse(text.trim()) as { n?: string })
+        : null;
+      if (parsed && Number(parsed.n) >= entries.length) break;
+    }
     await new Promise((r) => setTimeout(r, 500));
   }
 

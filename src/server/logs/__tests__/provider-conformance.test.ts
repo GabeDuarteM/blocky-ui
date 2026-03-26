@@ -729,6 +729,10 @@ defineProviderTests("csv-client");
 defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
+  // VictoriaLogs is intentionally excluded from cross-provider consistency tests.
+  // It is seeded identically but aggregation results (timestamps, sort stability
+  // for ties) may differ subtly from SQL providers. Correctness is verified by
+  // the dedicated defineProviderTests("victorialogs") suite above.
   const providerNames = ["mysql", "postgres", "csv", "csv-client"] as const;
 
   async function queryAllProviders<T>(
