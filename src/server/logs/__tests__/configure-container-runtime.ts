@@ -42,17 +42,30 @@ if (!process.env["DOCKER_HOST"]) {
   const dockerSocket = "/var/run/docker.sock";
 
   if (!isSocketAccessible(dockerSocket)) {
-    const uid = process.getuid?.();
+    // Check for Colima (macOS Lima-based Docker runtime)
+    const home = process.env["HOME"] ?? "";
+    const colimaSocket = `${home}/.colima/default/docker.sock`;
 
-    if (uid !== undefined) {
-      const podmanSocket = `/run/user/${uid}/podman/podman.sock`;
+    if (isSocketAccessible(colimaSocket)) {
+      process.env["DOCKER_HOST"] = `unix://${colimaSocket}`;
+      // Ryuk bind-mounts the Docker socket into its own container using the path
+      // from DOCKER_HOST. The Colima socket lives at a non-standard host path that
+      // cannot be resolved from inside a container, so Ryuk fails to start.
+      // Disable it; containers are cleaned up by the afterAll hooks instead.
+      process.env["TESTCONTAINERS_RYUK_DISABLED"] = "true";
+    } else {
+      const uid = process.getuid?.();
 
-      const socket = isSocketAccessible(podmanSocket)
-        ? podmanSocket
-        : startPodmanSocket(uid);
+      if (uid !== undefined) {
+        const podmanSocket = `/run/user/${uid}/podman/podman.sock`;
 
-      if (socket) {
-        process.env["DOCKER_HOST"] = `unix://${socket}`;
+        const socket = isSocketAccessible(podmanSocket)
+          ? podmanSocket
+          : startPodmanSocket(uid);
+
+        if (socket) {
+          process.env["DOCKER_HOST"] = `unix://${socket}`;
+        }
       }
     }
   }

@@ -32,6 +32,10 @@ function rangeToVlBucket(range: TimeRange): string {
   }
 }
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export class VictoriaLogsProvider implements LogProvider {
   private readonly client: typeof ky;
 
@@ -59,7 +63,14 @@ export class VictoriaLogsProvider implements LogProvider {
       .trim()
       .split("\n")
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as Record<string, string>);
+      .flatMap((line) => {
+        try {
+          return [JSON.parse(line) as Record<string, string>];
+        } catch {
+          console.error("VictoriaLogs: failed to parse response line:", line);
+          return [];
+        }
+      });
   }
 
   private mapEntry(raw: Record<string, string>): LogEntry {
@@ -86,9 +97,9 @@ export class VictoriaLogsProvider implements LogProvider {
 
     const filters = ["app:blocky AND prefix:queryLog"];
     if (responseType) filters.push(`response_type:${responseType}`);
-    if (client) filters.push(`client_names:~"(?i)${client}"`);
+    if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
     if (questionType) filters.push(`question_type:${questionType}`);
-    if (search) filters.push(`question_name:~"(?i)${search}"`);
+    if (search) filters.push(`question_name:~"(?i)${escapeRegex(search)}"`);
 
     const baseQuery = filters.join(" AND ");
 
@@ -130,8 +141,8 @@ export class VictoriaLogsProvider implements LogProvider {
     const bucket = rangeToVlBucket(range);
 
     const filters = ["app:blocky AND prefix:queryLog"];
-    if (domain) filters.push(`question_name:~"(?i)${domain}"`);
-    if (client) filters.push(`client_names:~"(?i)${client}"`);
+    if (domain) filters.push(`question_name:~"(?i)${escapeRegex(domain)}"`);
+    if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
     const base = filters.join(" AND ");
 
     const [totalRows, blockedRows, cachedRows] = await Promise.all([
@@ -156,12 +167,17 @@ export class VictoriaLogsProvider implements LogProvider {
       cachedRows.map((r) => [r._time, Number(r.cached)]),
     );
 
-    return totalRows.map((r) => ({
-      time: r._time!,
-      total: Number(r.total),
-      blocked: blockedByTime.get(r._time!) ?? 0,
-      cached: cachedByTime.get(r._time!) ?? 0,
-    }));
+    return totalRows
+      .filter((r) => r._time != null)
+      .map((r) => {
+        const time = r._time!;
+        return {
+          time,
+          total: Number(r.total),
+          blocked: blockedByTime.get(time) ?? 0,
+          cached: cachedByTime.get(time) ?? 0,
+        };
+      });
   }
   async getTopDomains(options: {
     range: TimeRange;
@@ -307,9 +323,8 @@ export class VictoriaLogsProvider implements LogProvider {
   }): Promise<SearchDomainEntry[]> {
     if (!options.query.trim()) return [];
 
-    const escaped = options.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const rows = await this.queryRaw(
-      `app:blocky AND prefix:queryLog AND question_name:~"(?i)${escaped}" | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `app:blocky AND prefix:queryLog AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
@@ -324,9 +339,8 @@ export class VictoriaLogsProvider implements LogProvider {
   }): Promise<SearchClientEntry[]> {
     if (!options.query.trim()) return [];
 
-    const escaped = options.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const rows = await this.queryRaw(
-      `app:blocky AND prefix:queryLog AND client_names:~"(?i)${escaped}" | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `app:blocky AND prefix:queryLog AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
