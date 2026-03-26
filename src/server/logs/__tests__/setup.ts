@@ -14,11 +14,17 @@ import postgres from "postgres";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 
+import {
+  GenericContainer,
+  Wait,
+  type StartedTestContainer,
+} from "testcontainers";
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
 import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 import { logEntries as pgLogEntries } from "~/server/logs/postgres/schema";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 import { type LogEntry, type LogProvider } from "~/server/logs/types";
 import { createSeedData } from "./seed-data";
 
@@ -252,6 +258,65 @@ function setupCsvClient(entries: LogEntry[]): {
   return { provider, directory };
 }
 
+async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
+  provider: VictoriaLogsProvider;
+  container: StartedTestContainer;
+}> {
+  const container = await new GenericContainer(
+    "victoriametrics/victoria-logs:latest",
+  )
+    .withExposedPorts(9428)
+    .withCommand(["-retentionPeriod=365d"])
+    .withWaitStrategy(Wait.forHttp("/", 9428).forStatusCode(200))
+    .start();
+
+  const port = container.getMappedPort(9428);
+  const url = `http://localhost:${port}`;
+
+  // Seed entries via VL's JSON line insert API.
+  // Field names must match what fluent-bit produces from blocky stdout logs.
+  const lines = entries.map((entry) =>
+    JSON.stringify({
+      _time: entry.requestTs ?? new Date().toISOString(),
+      _msg: "seed",
+      app: "blocky",
+      prefix: "queryLog",
+      client_ip: entry.clientIp ?? "",
+      client_names: entry.clientName ?? "",
+      duration_ms: entry.durationMs != null ? String(entry.durationMs) : "",
+      response_reason: entry.reason ?? "",
+      question_name: entry.questionName ?? "",
+      answer: entry.answer ?? "",
+      response_code: entry.responseCode ?? "",
+      response_type: entry.responseType ?? "",
+      question_type: entry.questionType ?? "",
+    }),
+  );
+
+  await fetch(`${url}/insert/jsonline`, {
+    method: "POST",
+    body: lines.join("\n"),
+    headers: { "Content-Type": "application/stream+json" },
+  });
+
+  // VL indexing is async — poll until all entries are indexed (max 10s).
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const resp = await fetch(
+      `${url}/select/logsql/query?query=app%3Ablocky+AND+prefix%3AqueryLog+%7C+stats+count()+as+n`,
+    );
+    const text = await resp.text();
+    const parsed = text.trim()
+      ? (JSON.parse(text.trim()) as { n?: string })
+      : null;
+    if (parsed && Number(parsed.n) >= entries.length) break;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  const provider = new VictoriaLogsProvider({ url });
+  return { provider, container };
+}
+
 export async function setupProviders(): Promise<{
   providers: Map<string, LogProvider>;
   seedData: LogEntry[];
@@ -259,12 +324,13 @@ export async function setupProviders(): Promise<{
 }> {
   const seedData = createSeedData();
 
-  const [mysqlResult, postgresResult, csvResult, csvClientResult] =
+  const [mysqlResult, postgresResult, csvResult, csvClientResult, vlResult] =
     await Promise.all([
       setupMysql(seedData),
       setupPostgres(seedData),
       Promise.resolve(setupCsv(seedData)),
       Promise.resolve(setupCsvClient(seedData)),
+      setupVictoriaLogs(seedData),
     ]);
 
   const providers = new Map<string, LogProvider>([
@@ -272,6 +338,7 @@ export async function setupProviders(): Promise<{
     ["postgres", postgresResult.provider],
     ["csv", csvResult.provider],
     ["csv-client", csvClientResult.provider],
+    ["victorialogs", vlResult.provider],
   ]);
 
   const cleanup = async () => {
@@ -281,6 +348,7 @@ export async function setupProviders(): Promise<{
     await postgresResult.container.stop();
     fs.rmSync(csvResult.directory, { recursive: true, force: true });
     fs.rmSync(csvClientResult.directory, { recursive: true, force: true });
+    await vlResult.container.stop();
   };
 
   return { providers, seedData, cleanup };
