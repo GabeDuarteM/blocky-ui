@@ -42,8 +42,67 @@ export class VictoriaLogsProvider implements LogProvider {
     });
   }
 
-  async getQueryLogs(_options: QueryLogsOptions): Promise<QueryLogsResult> {
-    throw new Error("Not implemented");
+  private async queryRaw(
+    logql: string,
+    params: { start?: string; limit?: number } = {},
+  ): Promise<Record<string, string>[]> {
+    const searchParams = new URLSearchParams({ query: logql });
+    if (params.start) searchParams.set("start", params.start);
+    if (params.limit !== undefined)
+      searchParams.set("limit", String(params.limit));
+
+    const text = await this.client
+      .get("select/logsql/query", { searchParams })
+      .text();
+
+    return text
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .map((line) => JSON.parse(line) as Record<string, string>);
+  }
+
+  private mapEntry(raw: Record<string, string>): LogEntry {
+    return {
+      requestTs: raw._time ?? null,
+      clientIp: raw.client_ip || null,
+      clientName: raw.client_names || null,
+      durationMs: raw.duration_ms ? Number(raw.duration_ms) : null,
+      reason: raw.response_reason || null,
+      questionName: raw.question_name || null,
+      answer: raw.answer || null,
+      responseCode: raw.response_code || null,
+      responseType: raw.response_type || null,
+      questionType: raw.question_type || null,
+      hostname: null,
+      effectiveTldp: null,
+      id: null,
+    };
+  }
+
+  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
+    const { limit, offset, search, responseType, client, questionType } =
+      options;
+
+    const filters = ["app:blocky AND prefix:queryLog"];
+    if (responseType) filters.push(`response_type:${responseType}`);
+    if (client) filters.push(`client_names:~"(?i)${client}"`);
+    if (questionType) filters.push(`question_type:${questionType}`);
+    if (search) filters.push(`question_name:~"(?i)${search}"`);
+
+    const baseQuery = filters.join(" AND ");
+
+    const [entries, countResult] = await Promise.all([
+      this.queryRaw(`${baseQuery} | sort by (_time desc)`, {
+        limit: limit + offset,
+      }),
+      this.queryRaw(`${baseQuery} | stats count() as total`),
+    ]);
+
+    return {
+      items: entries.slice(offset).map((r) => this.mapEntry(r)),
+      totalCount: Number(countResult[0]?.total ?? 0),
+    };
   }
   async getStats24h(): Promise<StatsResult> {
     throw new Error("Not implemented");
