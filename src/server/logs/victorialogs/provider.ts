@@ -163,21 +163,127 @@ export class VictoriaLogsProvider implements LogProvider {
       cached: cachedByTime.get(r._time!) ?? 0,
     }));
   }
-  async getTopDomains(_options: {
+  async getTopDomains(options: {
     range: TimeRange;
     limit: number;
     offset: number;
     filter: "all" | "blocked";
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    throw new Error("Not implemented");
+    const { range, limit, offset, filter } = options;
+    const start = rangeToVlStart(range);
+    const base = "app:blocky AND prefix:queryLog";
+    const blockedBase = `${base} AND response_type:BLOCKED`;
+
+    if (filter === "blocked") {
+      const rows = await this.queryRaw(
+        `${blockedBase} | stats by (question_name) count() as count | sort by (count desc)`,
+        { start },
+      );
+      const totalQueries = rows.reduce((s, r) => s + Number(r.count), 0);
+      return {
+        totalCount: rows.length,
+        items: rows.slice(offset, offset + limit).map((r) => {
+          const count = Number(r.count);
+          return {
+            domain: r.question_name || "unknown",
+            count,
+            blocked: count,
+            percentage: totalQueries > 0 ? (count / totalQueries) * 100 : 0,
+          };
+        }),
+      };
+    }
+
+    const [allRows, blockedRows] = await Promise.all([
+      this.queryRaw(
+        `${base} | stats by (question_name) count() as count | sort by (count desc)`,
+        { start },
+      ),
+      this.queryRaw(
+        `${blockedBase} | stats by (question_name) count() as blocked`,
+        { start },
+      ),
+    ]);
+
+    const blockedByDomain = new Map(
+      blockedRows.map((r) => [r.question_name || "unknown", Number(r.blocked)]),
+    );
+    const totalQueries = allRows.reduce((s, r) => s + Number(r.count), 0);
+
+    return {
+      totalCount: allRows.length,
+      items: allRows.slice(offset, offset + limit).map((r) => {
+        const domain = r.question_name || "unknown";
+        const count = Number(r.count);
+        return {
+          domain,
+          count,
+          blocked: blockedByDomain.get(domain) ?? 0,
+          percentage: totalQueries > 0 ? (count / totalQueries) * 100 : 0,
+        };
+      }),
+    };
   }
-  async getTopClients(_options: {
+  async getTopClients(options: {
     range: TimeRange;
     limit: number;
     offset: number;
     filter: "all" | "blocked";
   }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    throw new Error("Not implemented");
+    const { range, limit, offset, filter } = options;
+    const start = rangeToVlStart(range);
+    const base = "app:blocky AND prefix:queryLog";
+    const blockedBase = `${base} AND response_type:BLOCKED`;
+
+    if (filter === "blocked") {
+      const rows = await this.queryRaw(
+        `${blockedBase} | stats by (client_names) count() as total | sort by (total desc)`,
+        { start },
+      );
+      const totalQueries = rows.reduce((s, r) => s + Number(r.total), 0);
+      return {
+        totalCount: rows.length,
+        items: rows.slice(offset, offset + limit).map((r) => {
+          const total = Number(r.total);
+          return {
+            client: r.client_names || "unknown",
+            total,
+            blocked: total,
+            percentage: totalQueries > 0 ? (total / totalQueries) * 100 : 0,
+          };
+        }),
+      };
+    }
+
+    const [allRows, blockedRows] = await Promise.all([
+      this.queryRaw(
+        `${base} | stats by (client_names) count() as total | sort by (total desc)`,
+        { start },
+      ),
+      this.queryRaw(
+        `${blockedBase} | stats by (client_names) count() as blocked`,
+        { start },
+      ),
+    ]);
+
+    const blockedByClient = new Map(
+      blockedRows.map((r) => [r.client_names || "unknown", Number(r.blocked)]),
+    );
+    const totalQueries = allRows.reduce((s, r) => s + Number(r.total), 0);
+
+    return {
+      totalCount: allRows.length,
+      items: allRows.slice(offset, offset + limit).map((r) => {
+        const client = r.client_names || "unknown";
+        const total = Number(r.total);
+        return {
+          client,
+          total,
+          blocked: blockedByClient.get(client) ?? 0,
+          percentage: totalQueries > 0 ? (total / totalQueries) * 100 : 0,
+        };
+      }),
+    };
   }
   async getQueryTypesBreakdown(_range: TimeRange): Promise<QueryTypeEntry[]> {
     throw new Error("Not implemented");
