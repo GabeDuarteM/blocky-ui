@@ -285,21 +285,53 @@ export class VictoriaLogsProvider implements LogProvider {
       }),
     };
   }
-  async getQueryTypesBreakdown(_range: TimeRange): Promise<QueryTypeEntry[]> {
-    throw new Error("Not implemented");
+  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
+    const rows = await this.queryRaw(
+      "app:blocky AND prefix:queryLog | stats by (question_type) count() as count | sort by (count desc)",
+      { start: rangeToVlStart(range) },
+    );
+    const totalCount = rows.reduce((s, r) => s + Number(r.count), 0);
+    return rows.map((r) => {
+      const count = Number(r.count);
+      return {
+        type: r.question_type || "unknown",
+        count,
+        percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
+      };
+    });
   }
-  async searchDomains(_options: {
+  async searchDomains(options: {
     range: TimeRange;
     query: string;
     limit: number;
   }): Promise<SearchDomainEntry[]> {
-    throw new Error("Not implemented");
+    if (!options.query.trim()) return [];
+
+    const escaped = options.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rows = await this.queryRaw(
+      `app:blocky AND prefix:queryLog AND question_name:~"(?i)${escaped}" | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
+      { start: rangeToVlStart(options.range) },
+    );
+    return rows.map((r) => ({
+      domain: r.question_name || "unknown",
+      count: Number(r.count),
+    }));
   }
-  async searchClients(_options: {
+  async searchClients(options: {
     range: TimeRange;
     query: string;
     limit: number;
   }): Promise<SearchClientEntry[]> {
-    throw new Error("Not implemented");
+    if (!options.query.trim()) return [];
+
+    const escaped = options.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const rows = await this.queryRaw(
+      `app:blocky AND prefix:queryLog AND client_names:~"(?i)${escaped}" | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
+      { start: rangeToVlStart(options.range) },
+    );
+    return rows.map((r) => ({
+      client: r.client_names || "unknown",
+      count: Number(r.count),
+    }));
   }
 }
