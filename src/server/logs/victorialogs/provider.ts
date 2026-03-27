@@ -95,13 +95,15 @@ export class VictoriaLogsProvider implements LogProvider {
     const { limit, offset, search, responseType, client, questionType } =
       options;
 
-    const filters = [
-      "prefix:queryLog AND question_name:* AND response_type:* AND question_type:*",
-    ];
+    // Build filters with regex conditions before field:* wildcards to avoid a
+    // VL parse error where "compound token cannot start with '\"'" when a
+    // field:* token immediately precedes a field:~"regex" token.
+    const filters = ["prefix:queryLog"];
     if (responseType) filters.push(`response_type:${responseType}`);
     if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
     if (questionType) filters.push(`question_type:${questionType}`);
     if (search) filters.push(`question_name:~"(?i)${escapeRegex(search)}"`);
+    filters.push("question_name:* AND response_type:* AND question_type:*");
 
     const baseQuery = filters.join(" AND ");
 
@@ -145,11 +147,11 @@ export class VictoriaLogsProvider implements LogProvider {
     const start = rangeToVlStart(range);
     const bucket = rangeToVlBucket(range);
 
-    const filters = [
-      "prefix:queryLog AND question_name:* AND response_type:* AND question_type:*",
-    ];
+    // Regex filters must come before field:* wildcards to avoid a VL parse error.
+    const filters = ["prefix:queryLog"];
     if (domain) filters.push(`question_name:~"(?i)${escapeRegex(domain)}"`);
     if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
+    filters.push("question_name:* AND response_type:* AND question_type:*");
     const base = filters.join(" AND ");
 
     const [totalRows, blockedRows, cachedRows] = await Promise.all([
@@ -333,7 +335,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `prefix:queryLog AND question_name:* AND response_type:* AND question_type:* AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `prefix:queryLog AND question_name:~"(?i)${escapeRegex(options.query)}" AND question_name:* AND response_type:* AND question_type:* | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
@@ -349,7 +351,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `prefix:queryLog AND question_name:* AND response_type:* AND question_type:* AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `prefix:queryLog AND client_names:~"(?i)${escapeRegex(options.query)}" AND question_name:* AND response_type:* AND question_type:* | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
