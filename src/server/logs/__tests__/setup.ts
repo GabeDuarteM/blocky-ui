@@ -263,7 +263,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   container: StartedTestContainer;
 }> {
   const container = await new GenericContainer(
-    "victoriametrics/victoria-logs:v1.48.0-victorialogs",
+    "victoriametrics/victoria-logs:v1.48.0",
   )
     .withExposedPorts(9428)
     .withCommand(["-retentionPeriod=365d"])

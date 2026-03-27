@@ -1,19 +1,24 @@
 import ky from "ky";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import type {
-  LogEntry,
-  LogProvider,
-  QueriesOverTimeEntry,
-  QueryLogsOptions,
-  QueryLogsResult,
-  QueryTypeEntry,
-  SearchClientEntry,
-  SearchDomainEntry,
-  StatsResult,
-  TopClientEntry,
-  TopDomainEntry,
+import {
+  type LogEntry,
+  type LogProvider,
+  type QueriesOverTimeEntry,
+  type QueryLogsOptions,
+  type QueryLogsResult,
+  type QueryTypeEntry,
+  type SearchClientEntry,
+  type SearchDomainEntry,
+  type StatsResult,
+  type TopClientEntry,
+  type TopDomainEntry,
 } from "~/server/logs/types";
-import type { TimeRange } from "~/lib/constants";
+import { type TimeRange } from "~/lib/constants";
+
+// Base filter that identifies blocky query-log entries in VictoriaLogs.
+// blocky sets prefix:"queryLog" on every DNS query log line it emits to stdout,
+// which distinguishes them from blocky's startup and operational messages.
+const BASE_FILTER = "prefix:queryLog";
 
 function rangeToVlStart(range: TimeRange): string {
   return getTimeRangeConfig(range).startTime.toISOString();
@@ -32,8 +37,17 @@ function rangeToVlBucket(range: TimeRange): string {
   }
 }
 
+// Escape user input for use inside a VL field:~"..." regex filter.
+// VictoriaLogs does not support backslash escape sequences inside its
+// double-quoted regex strings — e.g. \. causes a parse error when users
+// filter by IP address. Use RE2 bracket expressions ([.], [*], etc.) so
+// that no backslash characters appear in the produced pattern.
+// " is escaped as ["] to prevent closing the surrounding string literal.
+// [ is escaped as [[] (RE2 character class containing [).
+// ] and \ are left unescaped; they are never present in DNS names or IPs
+// and a stray ] or \ produces a benign regex error rather than injection.
 function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/["[.+*?^${}()|]/g, (c) => (c === "[" ? "[[]" : `[${c}]`));
 }
 
 export class VictoriaLogsProvider implements LogProvider {
@@ -67,7 +81,9 @@ export class VictoriaLogsProvider implements LogProvider {
         try {
           return [JSON.parse(line) as Record<string, string>];
         } catch {
-          console.error("VictoriaLogs: failed to parse response line:", line);
+          console.error(
+            `VictoriaLogs: failed to parse response line (${line.length} chars)`,
+          );
           return [];
         }
       });
@@ -95,15 +111,11 @@ export class VictoriaLogsProvider implements LogProvider {
     const { limit, offset, search, responseType, client, questionType } =
       options;
 
-    // Build filters with regex conditions before field:* wildcards to avoid a
-    // VL parse error where "compound token cannot start with '\"'" when a
-    // field:* token immediately precedes a field:~"regex" token.
-    const filters = ["prefix:queryLog"];
+    const filters = [BASE_FILTER];
     if (responseType) filters.push(`response_type:${responseType}`);
     if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
     if (questionType) filters.push(`question_type:${questionType}`);
     if (search) filters.push(`question_name:~"(?i)${escapeRegex(search)}"`);
-    filters.push("question_name:* AND response_type:* AND question_type:*");
 
     const baseQuery = filters.join(" AND ");
 
@@ -119,16 +131,14 @@ export class VictoriaLogsProvider implements LogProvider {
       totalCount: Number(countResult[0]?.total ?? 0),
     };
   }
+
   async getStats24h(): Promise<StatsResult> {
     const [totalResult, blockedResult] = await Promise.all([
+      this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
+        start: "24h",
+      }),
       this.queryRaw(
-        "prefix:queryLog AND question_name:* AND response_type:* AND question_type:* | stats count() as total",
-        {
-          start: "24h",
-        },
-      ),
-      this.queryRaw(
-        "prefix:queryLog AND question_name:* AND response_type:* AND question_type:* AND response_type:BLOCKED | stats count() as blocked",
+        `${BASE_FILTER} AND response_type:BLOCKED | stats count() as blocked`,
         { start: "24h" },
       ),
     ]);
@@ -138,6 +148,7 @@ export class VictoriaLogsProvider implements LogProvider {
       blocked: Number(blockedResult[0]?.blocked ?? 0),
     };
   }
+
   async getQueriesOverTime(options: {
     range: TimeRange;
     domain?: string;
@@ -147,11 +158,9 @@ export class VictoriaLogsProvider implements LogProvider {
     const start = rangeToVlStart(range);
     const bucket = rangeToVlBucket(range);
 
-    // Regex filters must come before field:* wildcards to avoid a VL parse error.
-    const filters = ["prefix:queryLog"];
+    const filters = [BASE_FILTER];
     if (domain) filters.push(`question_name:~"(?i)${escapeRegex(domain)}"`);
     if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
-    filters.push("question_name:* AND response_type:* AND question_type:*");
     const base = filters.join(" AND ");
 
     const [totalRows, blockedRows, cachedRows] = await Promise.all([
@@ -177,9 +186,11 @@ export class VictoriaLogsProvider implements LogProvider {
     );
 
     return totalRows
-      .filter((r) => r._time != null)
+      .filter(
+        (r): r is Record<string, string> & { _time: string } => r._time != null,
+      )
       .map((r) => {
-        const time = r._time!;
+        const time = r._time;
         return {
           time,
           total: Number(r.total),
@@ -188,6 +199,7 @@ export class VictoriaLogsProvider implements LogProvider {
         };
       });
   }
+
   async getTopDomains(options: {
     range: TimeRange;
     limit: number;
@@ -196,9 +208,7 @@ export class VictoriaLogsProvider implements LogProvider {
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const { range, limit, offset, filter } = options;
     const start = rangeToVlStart(range);
-    const base =
-      "prefix:queryLog AND question_name:* AND response_type:* AND question_type:*";
-    const blockedBase = `${base} AND response_type:BLOCKED`;
+    const blockedBase = `${BASE_FILTER} AND response_type:BLOCKED`;
 
     if (filter === "blocked") {
       const rows = await this.queryRaw(
@@ -222,7 +232,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     const [allRows, blockedRows] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (question_name) count() as count | sort by (count desc)`,
+        `${BASE_FILTER} | stats by (question_name) count() as count | sort by (count desc)`,
         { start },
       ),
       this.queryRaw(
@@ -250,6 +260,7 @@ export class VictoriaLogsProvider implements LogProvider {
       }),
     };
   }
+
   async getTopClients(options: {
     range: TimeRange;
     limit: number;
@@ -258,9 +269,7 @@ export class VictoriaLogsProvider implements LogProvider {
   }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
     const { range, limit, offset, filter } = options;
     const start = rangeToVlStart(range);
-    const base =
-      "prefix:queryLog AND question_name:* AND response_type:* AND question_type:*";
-    const blockedBase = `${base} AND response_type:BLOCKED`;
+    const blockedBase = `${BASE_FILTER} AND response_type:BLOCKED`;
 
     if (filter === "blocked") {
       const rows = await this.queryRaw(
@@ -284,7 +293,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     const [allRows, blockedRows] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (client_names) count() as total | sort by (total desc)`,
+        `${BASE_FILTER} | stats by (client_names) count() as total | sort by (total desc)`,
         { start },
       ),
       this.queryRaw(
@@ -312,9 +321,10 @@ export class VictoriaLogsProvider implements LogProvider {
       }),
     };
   }
+
   async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
     const rows = await this.queryRaw(
-      "prefix:queryLog AND question_name:* AND response_type:* AND question_type:* | stats by (question_type) count() as count | sort by (count desc)",
+      `${BASE_FILTER} | stats by (question_type) count() as count | sort by (count desc)`,
       { start: rangeToVlStart(range) },
     );
     const totalCount = rows.reduce((s, r) => s + Number(r.count), 0);
@@ -327,6 +337,7 @@ export class VictoriaLogsProvider implements LogProvider {
       };
     });
   }
+
   async searchDomains(options: {
     range: TimeRange;
     query: string;
@@ -335,7 +346,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `prefix:queryLog AND question_name:~"(?i)${escapeRegex(options.query)}" AND question_name:* AND response_type:* AND question_type:* | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
@@ -343,6 +354,7 @@ export class VictoriaLogsProvider implements LogProvider {
       count: Number(r.count),
     }));
   }
+
   async searchClients(options: {
     range: TimeRange;
     query: string;
@@ -351,7 +363,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `prefix:queryLog AND client_names:~"(?i)${escapeRegex(options.query)}" AND question_name:* AND response_type:* AND question_type:* | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | sort by (count desc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
