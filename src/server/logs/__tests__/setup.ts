@@ -273,57 +273,71 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   const port = container.getMappedPort(9428);
   const url = `http://localhost:${port}`;
 
-  // Seed entries via VL's JSON line insert API.
-  // Field names match blocky's own JSON console log output (queryLog.type: console).
-  // The app label is intentionally omitted — the provider filters on blocky-native
-  // fields (prefix, question_name, response_type, question_type) rather than
-  // infrastructure labels so it works in any environment.
-  const lines = entries.map((entry) =>
-    JSON.stringify({
-      _time: entry.requestTs ?? new Date().toISOString(),
-      _msg: "seed",
-      prefix: "queryLog",
-      client_ip: entry.clientIp ?? "",
-      client_names: entry.clientName ?? "",
-      duration_ms: entry.durationMs != null ? String(entry.durationMs) : "",
-      response_reason: entry.reason ?? "",
-      question_name: entry.questionName ?? "",
-      answer: entry.answer ?? "",
-      response_code: entry.responseCode ?? "",
-      response_type: entry.responseType ?? "",
-      question_type: entry.questionType ?? "",
-    }),
-  );
-
-  const seedRes = await fetch(`${url}/insert/jsonline`, {
-    method: "POST",
-    body: lines.join("\n"),
-    headers: { "Content-Type": "application/stream+json" },
-  });
-  if (!seedRes.ok) {
-    throw new Error(
-      `VictoriaLogs seed failed: ${seedRes.status} ${await seedRes.text()}`,
+  try {
+    // Seed entries via VL's JSON line insert API.
+    // Field names match blocky's own JSON console log output (queryLog.type: console).
+    // The app label is intentionally omitted — the provider filters on the blocky-native
+    // prefix field rather than infrastructure labels so it works in any environment.
+    const lines = entries.map((entry) =>
+      JSON.stringify({
+        _time: entry.requestTs ?? new Date().toISOString(),
+        _msg: "seed",
+        prefix: "queryLog",
+        client_ip: entry.clientIp ?? "",
+        client_names: entry.clientName ?? "",
+        duration_ms: entry.durationMs != null ? String(entry.durationMs) : "",
+        response_reason: entry.reason ?? "",
+        question_name: entry.questionName ?? "",
+        answer: entry.answer ?? "",
+        response_code: entry.responseCode ?? "",
+        response_type: entry.responseType ?? "",
+        question_type: entry.questionType ?? "",
+      }),
     );
-  }
 
-  // VL indexing is async — poll until all entries are indexed (max 10s).
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    const resp = await fetch(
-      `${url}/select/logsql/query?query=prefix%3AqueryLog+AND+question_name%3A*+AND+response_type%3A*+AND+question_type%3A*+%7C+stats+count()+as+n`,
-    );
-    if (resp.ok) {
-      const text = await resp.text();
-      const parsed = text.trim()
-        ? (JSON.parse(text.trim()) as { n?: string })
-        : null;
-      if (parsed && Number(parsed.n) >= entries.length) break;
+    const seedRes = await fetch(`${url}/insert/jsonline`, {
+      method: "POST",
+      body: lines.join("\n"),
+      headers: { "Content-Type": "application/stream+json" },
+    });
+    if (!seedRes.ok) {
+      throw new Error(
+        `VictoriaLogs seed failed: ${seedRes.status} ${await seedRes.text()}`,
+      );
     }
-    await new Promise((r) => setTimeout(r, 500));
-  }
 
-  const provider = new VictoriaLogsProvider({ url });
-  return { provider, container };
+    // VL indexing is async — poll until all entries are indexed (max 10s).
+    // Query counts all prefix:queryLog entries (no field wildcards so that
+    // entries with empty/null fields are included in the count).
+    const deadline = Date.now() + 10_000;
+    let lastCount = 0;
+    while (Date.now() < deadline) {
+      const resp = await fetch(
+        `${url}/select/logsql/query?query=prefix%3AqueryLog+%7C+stats+count()+as+n`,
+      );
+      if (resp.ok) {
+        const text = await resp.text();
+        const parsed = text.trim()
+          ? (JSON.parse(text.trim()) as { n?: string })
+          : null;
+        lastCount = parsed ? Number(parsed.n) : 0;
+        if (lastCount >= entries.length) break;
+      }
+      await new Promise((r) => setTimeout(r, 500));
+    }
+
+    if (lastCount < entries.length) {
+      throw new Error(
+        `VictoriaLogs indexing timed out: expected ${entries.length} entries, got ${lastCount} after 10s (url: ${url})`,
+      );
+    }
+
+    const provider = new VictoriaLogsProvider({ url });
+    return { provider, container };
+  } catch (error) {
+    await container.stop();
+    throw error;
+  }
 }
 
 export async function setupProviders(): Promise<{
