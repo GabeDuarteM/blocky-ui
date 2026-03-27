@@ -274,12 +274,14 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   const url = `http://localhost:${port}`;
 
   // Seed entries via VL's JSON line insert API.
-  // Field names must match what fluent-bit produces from blocky stdout logs.
+  // Field names match blocky's own JSON console log output (queryLog.type: console).
+  // The app label is intentionally omitted — the provider filters on blocky-native
+  // fields (prefix, question_name, response_type, question_type) rather than
+  // infrastructure labels so it works in any environment.
   const lines = entries.map((entry) =>
     JSON.stringify({
       _time: entry.requestTs ?? new Date().toISOString(),
       _msg: "seed",
-      app: "blocky",
       prefix: "queryLog",
       client_ip: entry.clientIp ?? "",
       client_names: entry.clientName ?? "",
@@ -308,7 +310,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
     const resp = await fetch(
-      `${url}/select/logsql/query?query=app%3Ablocky+AND+prefix%3AqueryLog+%7C+stats+count()+as+n`,
+      `${url}/select/logsql/query?query=prefix%3AqueryLog+AND+question_name%3A*+AND+response_type%3A*+AND+question_type%3A*+%7C+stats+count()+as+n`,
     );
     if (resp.ok) {
       const text = await resp.text();
