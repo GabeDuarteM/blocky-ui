@@ -9,7 +9,14 @@ export const env = createEnv({
   server: {
     DATABASE_URL: z.string().optional().meta({ deprecated: true }),
     QUERY_LOG_TYPE: z
-      .enum(["mysql", "postgresql", "timescale", "csv", "csv-client"])
+      .enum([
+        "mysql",
+        "postgresql",
+        "timescale",
+        "csv",
+        "csv-client",
+        "victorialogs",
+      ])
       .optional(),
     QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),

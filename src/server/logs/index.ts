@@ -4,6 +4,7 @@ import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 import { DemoLogProvider } from "~/server/logs/demo-provider";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 import type { LogProvider } from "~/server/logs/types";
 
 /**
@@ -78,6 +79,14 @@ export function createLogProvider(): LogProvider | undefined {
       provider = new PostgreSQLLogProvider({
         connectionUri: logTarget,
       });
+    } else if (logType === "victorialogs") {
+      console.log("Using log provider type: victorialogs");
+      if (!logTarget) {
+        throw new Error(
+          "QUERY_LOG_TARGET (Victoria Logs base URL) is required when using QUERY_LOG_TYPE == 'victorialogs'",
+        );
+      }
+      provider = new VictoriaLogsProvider({ url: logTarget });
     }
   }
 

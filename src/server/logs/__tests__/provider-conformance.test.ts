@@ -666,6 +666,22 @@ function defineProviderTests(providerName: string) {
         expect(result.length).toBeLessThanOrEqual(2);
       });
 
+      it("query containing a dot matches correctly", async () => {
+        // Regression: dot in query must not produce backslash sequences that
+        // break VictoriaLogs' quoted regex string parser (field:~"go\.gle\.com").
+        const result = await provider.searchDomains({
+          range: "30d",
+          query: "google.com",
+          limit: 10,
+        });
+        const googleEntry = result.find((r) => r.domain === "google.com");
+        expect(googleEntry).toBeDefined();
+        const expectedCount = entriesInRange("30d").filter(
+          (e) => e.questionName === "google.com",
+        ).length;
+        expect(googleEntry?.count).toBe(expectedCount);
+      });
+
       it("empty query returns empty array", async () => {
         const result = await provider.searchDomains({
           range: "30d",
@@ -726,8 +742,13 @@ defineProviderTests("mysql");
 defineProviderTests("postgres");
 defineProviderTests("csv");
 defineProviderTests("csv-client");
+defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
+  // VictoriaLogs is intentionally excluded from cross-provider consistency tests.
+  // It is seeded identically but aggregation results (timestamps, sort stability
+  // for ties) may differ subtly from SQL providers. Correctness is verified by
+  // the dedicated defineProviderTests("victorialogs") suite above.
   const providerNames = ["mysql", "postgres", "csv", "csv-client"] as const;
 
   async function queryAllProviders<T>(
@@ -877,7 +898,7 @@ describe("cross-provider consistency", () => {
   });
 
   it("searchDomains returns identical results across all providers", async () => {
-    for (const query of ["google", "blocked", "GITHUB"]) {
+    for (const query of ["google", "blocked", "GITHUB", "google.com"]) {
       const results = await queryAllProviders((p) =>
         p.searchDomains({ range: "30d", query, limit: 100 }),
       );
