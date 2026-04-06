@@ -115,7 +115,7 @@ BlockyUI is configured via environment variables in all deployment methods.
 | ------------------ | -------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
 | `BLOCKY_API_URL`   | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
 | `QUERY_LOG_TYPE`            | No       | None                    | Enables query logging. Can be `mysql`, `postgresql`, `timescale`, `csv`, `csv-client`, or `console`. |
-| `QUERY_LOG_CONSOLE_PROVIDER` | No      | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`. |
+| `QUERY_LOG_CONSOLE_PROVIDER` | Conditional | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`. |
 | `QUERY_LOG_TARGET` | No       | None                    | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
 | `INSTANCE_NAME`    | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
 | `PROMETHEUS_PATH`  | No       | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |
