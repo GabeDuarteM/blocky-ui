@@ -745,11 +745,13 @@ defineProviderTests("csv-client");
 defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
-  // VictoriaLogs is intentionally excluded from cross-provider consistency tests.
-  // It is seeded identically but aggregation results (timestamps, sort stability
-  // for ties) may differ subtly from SQL providers. Correctness is verified by
-  // the dedicated defineProviderTests("victorialogs") suite above.
-  const providerNames = ["mysql", "postgres", "csv", "csv-client"] as const;
+  const providerNames = [
+    "mysql",
+    "postgres",
+    "csv",
+    "csv-client",
+    "victorialogs",
+  ] as const;
 
   async function queryAllProviders<T>(
     fn: (provider: LogProvider) => Promise<T>,
@@ -812,14 +814,37 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
-      expect(current.items.map((i) => i.domain)).toEqual(
-        baseline.items.map((i) => i.domain),
+
+      // Normalise before comparing: sort by (count desc, domain case-insensitive asc).
+      // When two domains share the same count, providers break ties differently —
+      // SQL engines typically sort case-insensitively while VictoriaLogs uses
+      // byte-order (uppercase < lowercase). Applying the same deterministic sort
+      // to both sides makes the comparison robust to that implementation detail.
+      const sortDomains = (
+        items: {
+          domain: string;
+          count: number;
+          blocked: number;
+          percentage: number;
+        }[],
+      ) =>
+        [...items].sort(
+          (a, b) =>
+            b.count - a.count ||
+            a.domain.toLowerCase().localeCompare(b.domain.toLowerCase()),
+        );
+
+      const sortedBaseline = sortDomains(baseline.items);
+      const sortedCurrent = sortDomains(current.items);
+
+      expect(sortedCurrent.map((i) => i.domain)).toEqual(
+        sortedBaseline.map((i) => i.domain),
       );
-      for (let j = 0; j < baseline.items.length; j++) {
-        expect(current.items[j]?.count).toBe(baseline.items[j]?.count);
-        expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
-        expect(current.items[j]?.percentage).toBeCloseTo(
-          baseline.items[j]?.percentage ?? 0,
+      for (let j = 0; j < sortedBaseline.length; j++) {
+        expect(sortedCurrent[j]?.count).toBe(sortedBaseline[j]?.count);
+        expect(sortedCurrent[j]?.blocked).toBe(sortedBaseline[j]?.blocked);
+        expect(sortedCurrent[j]?.percentage).toBeCloseTo(
+          sortedBaseline[j]?.percentage ?? 0,
           1,
         );
       }
@@ -833,14 +858,33 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
-      expect(current.items.map((i) => i.client)).toEqual(
-        baseline.items.map((i) => i.client),
+
+      // Same tie-breaking normalisation as getTopDomains above.
+      const sortClients = (
+        items: {
+          client: string;
+          total: number;
+          blocked: number;
+          percentage: number;
+        }[],
+      ) =>
+        [...items].sort(
+          (a, b) =>
+            b.total - a.total ||
+            a.client.toLowerCase().localeCompare(b.client.toLowerCase()),
+        );
+
+      const sortedBaseline = sortClients(baseline.items);
+      const sortedCurrent = sortClients(current.items);
+
+      expect(sortedCurrent.map((i) => i.client)).toEqual(
+        sortedBaseline.map((i) => i.client),
       );
-      for (let j = 0; j < baseline.items.length; j++) {
-        expect(current.items[j]?.total).toBe(baseline.items[j]?.total);
-        expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
-        expect(current.items[j]?.percentage).toBeCloseTo(
-          baseline.items[j]?.percentage ?? 0,
+      for (let j = 0; j < sortedBaseline.length; j++) {
+        expect(sortedCurrent[j]?.total).toBe(sortedBaseline[j]?.total);
+        expect(sortedCurrent[j]?.blocked).toBe(sortedBaseline[j]?.blocked);
+        expect(sortedCurrent[j]?.percentage).toBeCloseTo(
+          sortedBaseline[j]?.percentage ?? 0,
           1,
         );
       }

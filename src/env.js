@@ -15,9 +15,10 @@ export const env = createEnv({
         "timescale",
         "csv",
         "csv-client",
-        "victorialogs",
+        "console",
       ])
       .optional(),
+    QUERY_LOG_CONSOLE_PROVIDER: z.enum(["victorialogs"]).optional(),
     QUERY_LOG_TARGET: z.string().optional(),
     NODE_ENV: z.enum(["development", "test", "production"]),
     BLOCKY_API_URL: z.url().default("http://localhost:4000"),
@@ -44,6 +45,7 @@ export const env = createEnv({
     QUERY_LOG_TYPE:
       process.env.QUERY_LOG_TYPE ??
       (process.env.DATABASE_URL ? "mysql" : undefined),
+    QUERY_LOG_CONSOLE_PROVIDER: process.env.QUERY_LOG_CONSOLE_PROVIDER,
     QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
