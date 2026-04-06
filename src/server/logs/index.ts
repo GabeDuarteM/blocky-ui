@@ -79,13 +79,21 @@ export function createLogProvider(): LogProvider | undefined {
       provider = new PostgreSQLLogProvider({
         connectionUri: logTarget,
       });
-    } else if (logType === "victorialogs") {
-      console.log("Using log provider type: victorialogs");
-      if (!logTarget) {
+    } else if (logType === "console") {
+      const consoleProvider = env.QUERY_LOG_CONSOLE_PROVIDER;
+      if (!consoleProvider) {
         throw new Error(
-          "QUERY_LOG_TARGET (Victoria Logs base URL) is required when using QUERY_LOG_TYPE == 'victorialogs'",
+          "QUERY_LOG_CONSOLE_PROVIDER must be set when QUERY_LOG_TYPE == 'console' (supported values: 'victorialogs')",
         );
       }
+      if (!logTarget) {
+        throw new Error(
+          "QUERY_LOG_TARGET (provider base URL) is required when QUERY_LOG_TYPE == 'console'",
+        );
+      }
+      console.log(
+        `Using log provider type: console (${consoleProvider}), target: ${logTarget}`,
+      );
       provider = new VictoriaLogsProvider({ url: logTarget });
     }
   }
