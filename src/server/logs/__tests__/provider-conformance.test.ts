@@ -816,10 +816,14 @@ describe("cross-provider consistency", () => {
       expect(current.totalCount).toBe(baseline.totalCount);
 
       // Normalise before comparing: sort by (count desc, domain case-insensitive asc).
-      // When two domains share the same count, providers break ties differently —
-      // SQL engines typically sort case-insensitively while VictoriaLogs uses
-      // byte-order (uppercase < lowercase). Applying the same deterministic sort
-      // to both sides makes the comparison robust to that implementation detail.
+      //
+      // Why: SQL and VictoriaLogs order tied entries by byte value (uppercase < lowercase),
+      // while CSV providers use JavaScript's localeCompare (case-insensitive). In the 30d
+      // seed data, "GitHub.com" and "example.org" both appear 7 times. Byte-order puts
+      // "GitHub.com" first (G=71 < e=101), but localeCompare puts "example.org" first
+      // (e < g case-insensitively). The providers agree on all counts and blocked values —
+      // only the tie-breaking order differs. Re-sorting both sides with the same comparator
+      // confirms the data is consistent without masking real discrepancies.
       const sortDomains = (
         items: {
           domain: string;
@@ -859,7 +863,7 @@ describe("cross-provider consistency", () => {
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
 
-      // Same tie-breaking normalisation as getTopDomains above.
+      // Same tie-breaking normalisation as getTopDomains above — see comment there for rationale.
       const sortClients = (
         items: {
           client: string;
