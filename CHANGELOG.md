@@ -1,5 +1,11 @@
 # blocky-ui
 
+## 1.7.0
+
+### Minor Changes
+
+- [#272](https://github.com/GabeDuarteM/blocky-ui/pull/272) [`2786fc8`](https://github.com/GabeDuarteM/blocky-ui/commit/2786fc837c004a1a969212662873b57a481cba1e) Thanks [@mlhynfield](https://github.com/mlhynfield)! - Add optional BLOCKY_REQUEST_HEADERS environment variable supporting multiple custom request headers as a JSON object
+
 ## 1.6.1
 
 ### Patch Changes
