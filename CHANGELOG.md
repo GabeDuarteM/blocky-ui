@@ -1,5 +1,29 @@
 # blocky-ui
 
+## 1.7.0
+
+### Minor Changes
+
+- [#272](https://github.com/GabeDuarteM/blocky-ui/pull/272) [`2786fc8`](https://github.com/GabeDuarteM/blocky-ui/commit/2786fc837c004a1a969212662873b57a481cba1e) Thanks [@mlhynfield](https://github.com/mlhynfield)! - Add optional BLOCKY_REQUEST_HEADERS environment variable supporting multiple custom request headers as a JSON object
+
+### Patch Changes
+
+- [#285](https://github.com/GabeDuarteM/blocky-ui/pull/285) [`2094933`](https://github.com/GabeDuarteM/blocky-ui/commit/2094933c1b4ec02df2548a580572092eac4b4ba3) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Dramatically improve MySQL-backed dashboard performance on large query log tables
+
+  Statistics queries that could take tens of seconds now complete in sub-second time in typical cases. This makes the initial dashboard load, top domains, top clients, queries-over-time, and adjacent page prefetches much faster when using `QUERY_LOG_TYPE=mysql`.
+
+  #### Before and After
+
+  Measured locally against a large MySQL query log table:
+
+  | Query                       | Before |  After |
+  | --------------------------- | -----: | -----: |
+  | Top Clients                 |   ~60s | ~500ms |
+  | Top Domains                 |   ~20s | ~650ms |
+  | Queries Over Time           |    ~6s | ~400ms |
+  | Overview                    |    ~5s | ~500ms |
+  | Initial dashboard data load |   ~70s |    ~1s |
+
 ## 1.6.1
 
 ### Patch Changes
