@@ -382,6 +382,22 @@ function defineProviderTests(providerName: string) {
         expect(result.totalCount).toBe(uniqueDomains.size);
       });
 
+      it("out-of-range pagination returns empty items with totalCount", async () => {
+        const inRange = entriesInRange("30d");
+        const uniqueDomains = new Set(
+          inRange.map((e) => e.questionName ?? "unknown"),
+        );
+        const result = await provider.getTopDomains({
+          range: "30d",
+          limit: 10,
+          offset: uniqueDomains.size + 10,
+          filter: "all",
+        });
+
+        expect(result.items).toEqual([]);
+        expect(result.totalCount).toBe(uniqueDomains.size);
+      });
+
       it("percentage is correct", async () => {
         const inRange = entriesInRange("30d");
         const totalEntries = inRange.length;
@@ -508,6 +524,22 @@ function defineProviderTests(providerName: string) {
           offset: 0,
           filter: "all",
         });
+        expect(result.totalCount).toBe(uniqueClients.size);
+      });
+
+      it("out-of-range pagination returns empty items with totalCount", async () => {
+        const inRange = entriesInRange("30d");
+        const uniqueClients = new Set(
+          inRange.map((e) => e.clientName ?? "unknown"),
+        );
+        const result = await provider.getTopClients({
+          range: "30d",
+          limit: 10,
+          offset: uniqueClients.size + 10,
+          filter: "all",
+        });
+
+        expect(result.items).toEqual([]);
         expect(result.totalCount).toBe(uniqueClients.size);
       });
 

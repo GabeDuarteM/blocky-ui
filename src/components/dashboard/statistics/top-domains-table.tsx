@@ -17,6 +17,7 @@ import { FloatingCard } from "~/components/ui/floating-card";
 import { cn, formatCount } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import { type TimeRange } from "~/lib/constants";
+import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 
 interface TopDomainsTableProps {
   range: TimeRange;
@@ -43,26 +44,22 @@ export function TopDomainsTable({ range, limit }: TopDomainsTableProps) {
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / limit);
   const showPagination = totalPages > 1;
-
   const utils = api.useUtils();
 
-  if (page > 0) {
-    void utils.stats.topDomains.prefetch({
-      range,
-      limit,
-      offset: (page - 1) * limit,
-      filter,
-    });
-  }
+  usePrefetchAdjacentPages({
+    enabled: !isFetching && data !== undefined,
+    currentPage: page,
+    totalPages,
+    prefetchPage: (targetPage) => {
+      void utils.stats.topDomains.prefetch({
+        range,
+        limit,
+        offset: targetPage * limit,
+        filter,
+      });
+    },
+  });
 
-  if (page < totalPages - 1) {
-    void utils.stats.topDomains.prefetch({
-      range,
-      limit,
-      offset: (page + 1) * limit,
-      filter,
-    });
-  }
   const maxCount = items[0]?.count ?? 0;
 
   const handleFilterChange = (newFilter: FilterType) => {

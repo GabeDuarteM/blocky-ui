@@ -30,12 +30,12 @@ export function useFilterSuggestions(
   const hasSearch = debouncedSearch.length > 0;
 
   const { data: topDomains } = api.stats.topDomains.useQuery(
-    { range, limit: 5, filter: "all" },
+    { range, limit: 5, offset: 0, filter: "all" },
     { enabled: !hasSearch },
   );
 
   const { data: topClients } = api.stats.topClients.useQuery(
-    { range, limit: 5, filter: "all" },
+    { range, limit: 5, offset: 0, filter: "all" },
     { enabled: !hasSearch },
   );
 

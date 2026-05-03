@@ -17,7 +17,7 @@ import {
 } from "~/components/ui/tooltip";
 import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import {
@@ -38,6 +38,7 @@ import {
   type QueryLogFilter,
 } from "./query-log-filter-combobox";
 import { toast } from "sonner";
+import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 
 export function QueryLogs() {
   const [filter, setFilter] = useState<QueryLogFilter>(null);
@@ -62,17 +63,21 @@ export function QueryLogs() {
     setPageIndex(0);
   };
 
+  const search = filter?.type === "domain" ? filter.value : undefined;
+  const client = filter?.type === "client" ? filter.value : undefined;
+  const responseType = isResponseType(responseTypeFilter)
+    ? responseTypeFilter
+    : undefined;
+  const questionType = isDnsRecordType(questionTypeFilter)
+    ? questionTypeFilter
+    : undefined;
   const searchParams = {
-    search: filter?.type === "domain" ? filter.value : undefined,
-    client: filter?.type === "client" ? filter.value : undefined,
+    search,
+    client,
     limit: pageSize,
     offset: pageIndex * pageSize,
-    responseType: isResponseType(responseTypeFilter)
-      ? responseTypeFilter
-      : undefined,
-    questionType: isDnsRecordType(questionTypeFilter)
-      ? questionTypeFilter
-      : undefined,
+    responseType,
+    questionType,
   };
 
   const {
@@ -110,19 +115,21 @@ export function QueryLogs() {
   const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
   const utils = api.useUtils();
 
-  if (pageIndex > 0) {
-    void utils.blocky.getQueryLogs.prefetch({
-      ...searchParams,
-      offset: (pageIndex - 1) * pageSize,
-    });
-  }
-
-  if (pageIndex < pageCount - 1) {
-    void utils.blocky.getQueryLogs.prefetch({
-      ...searchParams,
-      offset: (pageIndex + 1) * pageSize,
-    });
-  }
+  usePrefetchAdjacentPages({
+    enabled: !isFetchingLogs && queryLogsData !== undefined,
+    currentPage: pageIndex,
+    totalPages: pageCount,
+    prefetchPage: (targetPage) => {
+      void utils.blocky.getQueryLogs.prefetch({
+        search,
+        client,
+        limit: pageSize,
+        offset: targetPage * pageSize,
+        responseType,
+        questionType,
+      });
+    },
+  });
 
   return (
     <Card>
