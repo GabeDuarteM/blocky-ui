@@ -50,7 +50,7 @@ services:
 
       # from a MySQL/MariaDB database:
       # - QUERY_LOG_TYPE=mysql
-      # - QUERY_LOG_TARGET=username:password@tcp(localhost:3306)/blocky_query_log
+      # - QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log
 
       # from a PostgreSQL database:
       # - QUERY_LOG_TYPE=postgresql
@@ -108,15 +108,15 @@ docker run -d \
 
 BlockyUI is configured via environment variables in all deployment methods.
 
-| Variable             | Required | Default                 | Description                                                                                     |
-| -------------------- | -------- | ----------------------- | ----------------------------------------------------------------------------------------------- |
-| `BLOCKY_API_URL`     | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                |
+| Variable                 | Required | Default                 | Description                                                                                                            |
+| ------------------------ | -------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `BLOCKY_API_URL`         | No       | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                                       |
 | `BLOCKY_REQUEST_HEADERS` | No       | None                    | JSON object of custom headers for all Blocky API and Prometheus requests (e.g., `'{"Authorization":"Bearer token"}'`). |
-| `QUERY_LOG_TYPE`     | No       | None                    | Enable query logging. Can be `mysql`, `postgresql`, `timescale`, `csv`, or `csv-client`.        |
-| `QUERY_LOG_TARGET`   | No       | None                    | Connection string or log folder path for query logs. Same as Blocky's `queryLog.target`.        |
-| `INSTANCE_NAME`      | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.         |
-| `PROMETHEUS_PATH`    | No       | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                |
-| `DEMO_MODE`          | No       | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks. |
+| `QUERY_LOG_TYPE`         | No       | None                    | Enable query logging. Can be `mysql`, `postgresql`, `timescale`, `csv`, or `csv-client`.                               |
+| `QUERY_LOG_TARGET`       | No       | None                    | Connection string or log folder path for the same database or directory as Blocky's `queryLog.target`.                 |
+| `INSTANCE_NAME`          | No       | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                |
+| `PROMETHEUS_PATH`        | No       | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                                       |
+| `DEMO_MODE`              | No       | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                        |
 
 ### Common Setups
 
