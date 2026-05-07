@@ -93,7 +93,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
   constructor({ url }: { url: string }) {
     this.client = ky.create({
-      prefixUrl: url.replace(/\/$/, ""),
+      baseUrl: url.replace(/\/$/, ""),
       timeout: 30_000,
     });
   }
