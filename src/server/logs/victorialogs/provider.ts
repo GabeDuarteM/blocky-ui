@@ -102,25 +102,29 @@ export class VictoriaLogsProvider implements LogProvider {
     logql: string,
     params: { start?: string; limit?: number } = {},
   ): Promise<Record<string, string>[]> {
-    const searchParams = new URLSearchParams({ query: logql });
-    if (params.start) searchParams.set("start", params.start);
-    if (params.limit !== undefined)
-      searchParams.set("limit", String(params.limit));
+    try {
+      const searchParams = new URLSearchParams({ query: logql });
+      if (params.start) searchParams.set("start", params.start);
+      if (params.limit !== undefined)
+        searchParams.set("limit", String(params.limit));
 
-    const text = await this.client
-      .get("select/logsql/query", { searchParams })
-      .text();
+      const text = await this.client
+        .get("select/logsql/query", { searchParams })
+        .text();
 
-    const lines = text.trim().split("\n").filter(Boolean);
-    return lines.map((line) => {
-      try {
-        return JSON.parse(line) as Record<string, string>;
-      } catch {
-        throw new Error(
-          `VictoriaLogs: failed to parse response line (${line.length} chars)`,
-        );
-      }
-    });
+      const lines = text.trim().split("\n").filter(Boolean);
+      return lines.map((line) => {
+        try {
+          return JSON.parse(line) as Record<string, string>;
+        } catch {
+          throw new Error(
+            `VictoriaLogs: failed to parse response line (${line.length} chars)`,
+          );
+        }
+      });
+    } catch (error) {
+      throw new Error("VictoriaLogs: queryRaw failed", { cause: error });
+    }
   }
 
   private mapEntry(raw: Record<string, string>): LogEntry {
