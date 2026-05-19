@@ -48,6 +48,8 @@ if (!process.env["DOCKER_HOST"]) {
 
     if (isSocketAccessible(colimaSocket)) {
       process.env["DOCKER_HOST"] = `unix://${colimaSocket}`;
+      process.env["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"] ??=
+        "/var/run/docker.sock";
     } else {
       const uid = process.getuid?.();
 
@@ -64,14 +66,4 @@ if (!process.env["DOCKER_HOST"]) {
       }
     }
   }
-}
-
-// When DOCKER_HOST points to a non-standard socket (e.g. Colima's host-side path),
-// Ryuk bind-mounts that path into its own container — but Colima's socket path
-// doesn't exist inside containers. Tell Ryuk to use the standard in-container path
-// instead. This is needed whether DOCKER_HOST was set above or already in the env.
-const dockerHost = process.env["DOCKER_HOST"];
-if (dockerHost && !dockerHost.endsWith("/var/run/docker.sock")) {
-  process.env["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"] ??=
-    "/var/run/docker.sock";
 }
