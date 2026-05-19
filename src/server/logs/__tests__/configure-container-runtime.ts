@@ -72,5 +72,6 @@ if (!process.env["DOCKER_HOST"]) {
 // instead. This is needed whether DOCKER_HOST was set above or already in the env.
 const dockerHost = process.env["DOCKER_HOST"];
 if (dockerHost && !dockerHost.endsWith("/var/run/docker.sock")) {
-  process.env["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"] ??= "/var/run/docker.sock";
+  process.env["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"] ??=
+    "/var/run/docker.sock";
 }
