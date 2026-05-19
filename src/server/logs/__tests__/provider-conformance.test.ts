@@ -698,9 +698,7 @@ function defineProviderTests(providerName: string) {
         expect(result.length).toBeLessThanOrEqual(2);
       });
 
-      it("query containing a dot matches correctly", async () => {
-        // Regression: dot in query must not produce backslash sequences that
-        // break VictoriaLogs' quoted regex string parser (field:~"go\.gle\.com").
+      it("query containing a dot must not produce backslash sequences that break VictoriaLogs", async () => {
         const result = await provider.searchDomains({
           range: "30d",
           query: "google.com",

@@ -42,7 +42,6 @@ if (!process.env["DOCKER_HOST"]) {
   const dockerSocket = "/var/run/docker.sock";
 
   if (!isSocketAccessible(dockerSocket)) {
-    // Check for Colima (macOS Lima-based Docker runtime)
     const home = process.env["HOME"] ?? "";
     const colimaSocket = `${home}/.colima/default/docker.sock`;
 

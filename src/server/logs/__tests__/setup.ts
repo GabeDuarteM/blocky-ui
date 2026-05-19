@@ -274,8 +274,6 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   const url = `http://localhost:${port}`;
 
   try {
-    // Seed entries via VL's JSON line insert API.
-    // Field names match blocky's own JSON console log output (queryLog.type: console).
     // The app label is intentionally omitted — the provider filters on the blocky-native
     // prefix field rather than infrastructure labels so it works in any environment.
     const lines = entries.map((entry) =>

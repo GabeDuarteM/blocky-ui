@@ -204,8 +204,6 @@ export class VictoriaLogsProvider implements LogProvider {
     if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
     const base = filters.join(" AND ");
 
-    // VictoriaLogs does not support conditional aggregation, so blocked and
-    // cached counts require separate queries run in parallel.
     const [totalRows, blockedRows, cachedRows] = await Promise.all([
       this.queryRaw(
         `${base} | stats by (_time:${bucket}) count() as total | sort by (_time asc)`,
@@ -281,7 +279,6 @@ export class VictoriaLogsProvider implements LogProvider {
         `${base} | stats by (question_name) count() | stats count() as total`,
         { start },
       ),
-      // Total query count (for percentage calculation, same as SQL's getTotalCount)
       this.queryRaw(`${base} | stats count() as n`, { start }),
     ]);
 
@@ -299,8 +296,6 @@ export class VictoriaLogsProvider implements LogProvider {
       };
     });
 
-    // For "all" filter, fetch per-domain blocked counts in a second pass
-    // (VL has no conditional aggregation). Only needed for the current page.
     if (filter === "all" && items.length > 0) {
       const blockedRows = await this.queryRaw(
         `${BASE_FILTER} AND response_type:BLOCKED | stats by (question_name) count() as blocked`,
