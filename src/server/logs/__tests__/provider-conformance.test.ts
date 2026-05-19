@@ -698,6 +698,20 @@ function defineProviderTests(providerName: string) {
         expect(result.length).toBeLessThanOrEqual(2);
       });
 
+      it("query containing a dot must not produce backslash sequences that break VictoriaLogs", async () => {
+        const result = await provider.searchDomains({
+          range: "30d",
+          query: "google.com",
+          limit: 10,
+        });
+        const googleEntry = result.find((r) => r.domain === "google.com");
+        expect(googleEntry).toBeDefined();
+        const expectedCount = entriesInRange("30d").filter(
+          (e) => e.questionName === "google.com",
+        ).length;
+        expect(googleEntry?.count).toBe(expectedCount);
+      });
+
       it("empty query returns empty array", async () => {
         const result = await provider.searchDomains({
           range: "30d",
@@ -758,9 +772,16 @@ defineProviderTests("mysql");
 defineProviderTests("postgres");
 defineProviderTests("csv");
 defineProviderTests("csv-client");
+defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
-  const providerNames = ["mysql", "postgres", "csv", "csv-client"] as const;
+  const providerNames = [
+    "mysql",
+    "postgres",
+    "csv",
+    "csv-client",
+    "victorialogs",
+  ] as const;
 
   async function queryAllProviders<T>(
     fn: (provider: LogProvider) => Promise<T>,
@@ -909,7 +930,7 @@ describe("cross-provider consistency", () => {
   });
 
   it("searchDomains returns identical results across all providers", async () => {
-    for (const query of ["google", "blocked", "GITHUB"]) {
+    for (const query of ["google", "blocked", "GITHUB", "google.com"]) {
       const results = await queryAllProviders((p) =>
         p.searchDomains({ range: "30d", query, limit: 100 }),
       );
