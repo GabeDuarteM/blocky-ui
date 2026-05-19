@@ -42,8 +42,10 @@
 # Post-Create: Runs after worktree creation, BLOCKS until complete
 # Use for: installing dependencies, setting up databases, copying configs
 #
-[post-create]
+[[pre-start]]
 deps = "bun install"
+
+[[pre-start]]
 env = "cp {{ primary_worktree_path }}/.env .env"
 
 # Post-Start: Runs in BACKGROUND after worktree creation (parallel)
