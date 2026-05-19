@@ -270,7 +270,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (question_name) count() as count | sort by (count desc, question_name asc) | offset ${offset} | limit ${limit}`,
+        `${base} | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | offset ${offset} | limit ${limit}`,
         { start },
       ),
       // Number of distinct domains (for pagination totalCount).
@@ -335,7 +335,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (client_names) count() as total | sort by (total desc, client_names asc) | offset ${offset} | limit ${limit}`,
+        `${base} | stats by (client_names) count() as total | format "<lc:client_names>" as __client_sort | sort by (total desc, __client_sort asc) | offset ${offset} | limit ${limit}`,
         { start },
       ),
       // Same chained-stats pattern as getTopDomains for null-entry inclusion.
@@ -381,7 +381,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
   async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
     const rows = await this.queryRaw(
-      `${BASE_FILTER} | stats by (question_type) count() as count | sort by (count desc, question_type asc)`,
+      `${BASE_FILTER} | stats by (question_type) count() as count | format "<lc:question_type>" as __qtype_sort | sort by (count desc, __qtype_sort asc)`,
       { start: rangeToVlStart(range) },
     );
     const totalCount = rows.reduce((s, r) => s + Number(r.count), 0);
@@ -403,7 +403,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `${BASE_FILTER} AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | sort by (count desc, question_name asc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
@@ -420,7 +420,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `${BASE_FILTER} AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | sort by (count desc, client_names asc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | format "<lc:client_names>" as __client_sort | sort by (count desc, __client_sort asc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({

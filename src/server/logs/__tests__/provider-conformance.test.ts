@@ -846,41 +846,14 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
-
-      // Normalise before comparing: sort by (count desc, domain case-insensitive asc).
-      //
-      // Why: SQL and VictoriaLogs order tied entries by byte value (uppercase < lowercase),
-      // while CSV providers use JavaScript's localeCompare (case-insensitive). In the 30d
-      // seed data, "GitHub.com" and "example.org" both appear 7 times. Byte-order puts
-      // "GitHub.com" first (G=71 < e=101), but localeCompare puts "example.org" first
-      // (e < g case-insensitively). The providers agree on all counts and blocked values —
-      // only the tie-breaking order differs. Re-sorting both sides with the same comparator
-      // confirms the data is consistent without masking real discrepancies.
-      const sortDomains = (
-        items: {
-          domain: string;
-          count: number;
-          blocked: number;
-          percentage: number;
-        }[],
-      ) =>
-        [...items].sort(
-          (a, b) =>
-            b.count - a.count ||
-            a.domain.toLowerCase().localeCompare(b.domain.toLowerCase()),
-        );
-
-      const sortedBaseline = sortDomains(baseline.items);
-      const sortedCurrent = sortDomains(current.items);
-
-      expect(sortedCurrent.map((i) => i.domain)).toEqual(
-        sortedBaseline.map((i) => i.domain),
+      expect(current.items.map((i) => i.domain)).toEqual(
+        baseline.items.map((i) => i.domain),
       );
-      for (let j = 0; j < sortedBaseline.length; j++) {
-        expect(sortedCurrent[j]?.count).toBe(sortedBaseline[j]?.count);
-        expect(sortedCurrent[j]?.blocked).toBe(sortedBaseline[j]?.blocked);
-        expect(sortedCurrent[j]?.percentage).toBeCloseTo(
-          sortedBaseline[j]?.percentage ?? 0,
+      for (let j = 0; j < baseline.items.length; j++) {
+        expect(current.items[j]?.count).toBe(baseline.items[j]?.count);
+        expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
+        expect(current.items[j]?.percentage).toBeCloseTo(
+          baseline.items[j]?.percentage ?? 0,
           1,
         );
       }
@@ -894,33 +867,14 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
-
-      // Same tie-breaking normalisation as getTopDomains above — see comment there for rationale.
-      const sortClients = (
-        items: {
-          client: string;
-          total: number;
-          blocked: number;
-          percentage: number;
-        }[],
-      ) =>
-        [...items].sort(
-          (a, b) =>
-            b.total - a.total ||
-            a.client.toLowerCase().localeCompare(b.client.toLowerCase()),
-        );
-
-      const sortedBaseline = sortClients(baseline.items);
-      const sortedCurrent = sortClients(current.items);
-
-      expect(sortedCurrent.map((i) => i.client)).toEqual(
-        sortedBaseline.map((i) => i.client),
+      expect(current.items.map((i) => i.client)).toEqual(
+        baseline.items.map((i) => i.client),
       );
-      for (let j = 0; j < sortedBaseline.length; j++) {
-        expect(sortedCurrent[j]?.total).toBe(sortedBaseline[j]?.total);
-        expect(sortedCurrent[j]?.blocked).toBe(sortedBaseline[j]?.blocked);
-        expect(sortedCurrent[j]?.percentage).toBeCloseTo(
-          sortedBaseline[j]?.percentage ?? 0,
+      for (let j = 0; j < baseline.items.length; j++) {
+        expect(current.items[j]?.total).toBe(baseline.items[j]?.total);
+        expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
+        expect(current.items[j]?.percentage).toBeCloseTo(
+          baseline.items[j]?.percentage ?? 0,
           1,
         );
       }
