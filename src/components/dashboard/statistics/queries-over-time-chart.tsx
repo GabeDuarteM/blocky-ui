@@ -123,14 +123,16 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isLoading } = api.stats.queriesOverTime.useQuery(
-    {
-      range,
-      domain: filter?.type === "domain" ? filter.value : undefined,
-      client: filter?.type === "client" ? filter.value : undefined,
-    },
-    { placeholderData: (prev) => prev },
-  );
+  const { data, isLoading, isPlaceholderData } =
+    api.stats.queriesOverTime.useQuery(
+      {
+        range,
+        domain: filter?.type === "domain" ? filter.value : undefined,
+        client: filter?.type === "client" ? filter.value : undefined,
+      },
+      { placeholderData: (prev) => prev },
+    );
+  const showLoading = isLoading || isPlaceholderData;
 
   const chartData = useMemo(
     () =>
@@ -188,7 +190,7 @@ export function QueriesOverTimeChart({
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {showLoading ? (
           <Skeleton className="h-[250px] w-full" />
         ) : (
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
