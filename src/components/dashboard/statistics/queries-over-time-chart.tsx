@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useCallback, useMemo } from "react";
+import { type ReactNode, useState, useCallback, useMemo, useId } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { format } from "date-fns";
 import {
@@ -19,7 +19,6 @@ import {
 } from "~/components/ui/card";
 import { BarChart3 } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import { Skeleton } from "~/components/ui/skeleton";
 import { type TimeRange } from "~/lib/constants";
 import { TimeRangeSelector } from "./time-range-selector";
 import {
@@ -57,6 +56,19 @@ const chartConfig = {
 
 type SeriesKey = keyof typeof chartConfig;
 const SERIES_KEYS: SeriesKey[] = ["total", "blocked", "cached"];
+const SKELETON_GRID_LINES = [32, 86, 140, 194] as const;
+const SKELETON_AXIS_LABELS = [
+  { x: 18, y: 28, width: 18 },
+  { x: 14, y: 82, width: 22 },
+  { x: 18, y: 136, width: 18 },
+  { x: 22, y: 190, width: 14 },
+] as const;
+const SKELETON_TIME_LABELS = [72, 220, 368, 516, 664] as const;
+const SKELETON_LEGEND_ITEMS = [
+  { key: "total", color: "var(--chart-1)", width: "w-9" },
+  { key: "blocked", color: "var(--chart-5-muted)", width: "w-12" },
+  { key: "cached", color: "var(--chart-2)", width: "w-11" },
+] as const;
 
 interface InteractiveLegendProps {
   visibleSeries: Set<SeriesKey>;
@@ -95,6 +107,98 @@ function InteractiveLegend({
   );
 }
 
+function ChartSkeleton() {
+  const rawSheenId = useId();
+  const sheenId = `chart-loading-sheen-${rawSheenId.replaceAll(":", "")}`;
+
+  return (
+    <div
+      className="text-muted-foreground relative h-[250px] w-full"
+      aria-hidden="true"
+    >
+      <svg
+        className="h-full w-full"
+        viewBox="0 0 800 250"
+        fill="none"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id={sheenId} x1="-120" x2="120" y1="0" y2="0">
+            <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+            <stop offset="0.5" stopColor="currentColor" stopOpacity="0.22" />
+            <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+            <animateTransform
+              attributeName="gradientTransform"
+              dur="1.4s"
+              from="-180 0"
+              repeatCount="indefinite"
+              to="900 0"
+              type="translate"
+            />
+          </linearGradient>
+        </defs>
+        {SKELETON_AXIS_LABELS.map((label) => (
+          <rect
+            key={`${label.x}-${label.y}`}
+            x={label.x}
+            y={label.y}
+            width={label.width}
+            height="8"
+            rx="4"
+            fill="currentColor"
+            fillOpacity="0.18"
+          />
+        ))}
+        {SKELETON_GRID_LINES.map((y) => (
+          <line
+            key={y}
+            x1="48"
+            y1={y}
+            x2="790"
+            y2={y}
+            stroke="currentColor"
+            strokeDasharray="3 5"
+            strokeOpacity="0.14"
+          />
+        ))}
+        <rect
+          x="48"
+          y="16"
+          width="742"
+          height="196"
+          rx="6"
+          fill={`url(#${sheenId})`}
+        />
+        {SKELETON_TIME_LABELS.map((x) => (
+          <rect
+            key={x}
+            x={x}
+            y="224"
+            width="34"
+            height="8"
+            rx="4"
+            fill="currentColor"
+            fillOpacity="0.18"
+          />
+        ))}
+      </svg>
+      <div className="absolute right-0 bottom-0 left-0 flex items-center justify-center gap-4">
+        {SKELETON_LEGEND_ITEMS.map((item) => (
+          <div key={item.key} className="flex items-center gap-1.5">
+            <div
+              className="h-2 w-2 shrink-0 rounded-[2px]"
+              style={{ backgroundColor: item.color }}
+            />
+            <div
+              className={cn("bg-muted-foreground/25 h-2 rounded", item.width)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface QueriesOverTimeChartProps {
   range: TimeRange;
   onRangeChange: (range: TimeRange) => void;
@@ -123,14 +227,16 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isLoading } = api.stats.queriesOverTime.useQuery(
-    {
-      range,
-      domain: filter?.type === "domain" ? filter.value : undefined,
-      client: filter?.type === "client" ? filter.value : undefined,
-    },
-    { placeholderData: (prev) => prev },
-  );
+  const { data, isLoading, isPlaceholderData } =
+    api.stats.queriesOverTime.useQuery(
+      {
+        range,
+        domain: filter?.type === "domain" ? filter.value : undefined,
+        client: filter?.type === "client" ? filter.value : undefined,
+      },
+      { placeholderData: (prev) => prev },
+    );
+  const showLoading = isLoading || isPlaceholderData;
 
   const chartData = useMemo(
     () =>
@@ -188,8 +294,8 @@ export function QueriesOverTimeChart({
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <Skeleton className="h-[250px] w-full" />
+        {showLoading ? (
+          <ChartSkeleton />
         ) : (
           <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <AreaChart

@@ -30,20 +30,22 @@ export function TopClientsTable({ range, limit }: TopClientsTableProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [page, setPage] = useState(0);
 
-  const { data, isFetching } = api.stats.topClients.useQuery(
-    {
-      range,
-      limit,
-      offset: page * limit,
-      filter,
-    },
-    { placeholderData: (prev) => prev },
-  );
+  const { data, isFetching, isLoading, isPlaceholderData } =
+    api.stats.topClients.useQuery(
+      {
+        range,
+        limit,
+        offset: page * limit,
+        filter,
+      },
+      { placeholderData: (prev) => prev },
+    );
 
   const items = data?.items ?? [];
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.ceil(totalCount / limit);
   const showPagination = totalPages > 1;
+  const showLoading = isLoading || isPlaceholderData;
   const utils = api.useUtils();
 
   usePrefetchAdjacentPages({
@@ -107,7 +109,7 @@ export function TopClientsTable({ range, limit }: TopClientsTableProps) {
         </div>
       </CardHeader>
       <CardContent className="flex-1">
-        {isFetching ? (
+        {showLoading ? (
           <div className="space-y-3">
             {Array.from({ length: limit }).map((_, i) => (
               <Skeleton key={i} className="h-8 w-full" />

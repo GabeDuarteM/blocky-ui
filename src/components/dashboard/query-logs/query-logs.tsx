@@ -83,13 +83,21 @@ export function QueryLogs() {
   const {
     data: queryLogsData,
     isFetching: isFetchingLogs,
+    isLoading: isLoadingLogs,
+    isPlaceholderData: isPlaceholderLogs,
     refetch,
     error,
   } = api.blocky.getQueryLogs.useQuery(searchParams, {
-    placeholderData: (previousData) => ({
-      items: [],
-      totalCount: previousData?.totalCount ?? 0,
-    }),
+    placeholderData: (previousData) => {
+      if (previousData === undefined) {
+        return undefined;
+      }
+
+      return {
+        items: [],
+        totalCount: previousData.totalCount,
+      };
+    },
     refetchOnWindowFocus: autoRefresh,
     refetchInterval: autoRefresh ? 30_000 : false,
   });
@@ -113,6 +121,7 @@ export function QueryLogs() {
   }, [error]);
 
   const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
+  const showLogsLoading = isLoadingLogs || isPlaceholderLogs;
   const utils = api.useUtils();
 
   usePrefetchAdjacentPages({
@@ -231,7 +240,7 @@ export function QueryLogs() {
           onPageChange={setPageIndex}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
-          isLoading={isFetchingLogs}
+          isLoading={showLogsLoading}
         />
       </CardContent>
     </Card>
