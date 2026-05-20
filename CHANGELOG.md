@@ -1,5 +1,29 @@
 # blocky-ui
 
+## 1.8.0
+
+### Minor Changes
+
+- [#277](https://github.com/GabeDuarteM/blocky-ui/pull/277) [`b3db3c2`](https://github.com/GabeDuarteM/blocky-ui/commit/b3db3c271d8daa4dad43c7345db8bb341fc9d684) Thanks [@bellorr](https://github.com/bellorr)! - Add VictoriaLogs query log support
+
+  #### Configuration
+
+  Set `QUERY_LOG_TYPE` to `console`, `QUERY_LOG_CONSOLE_PROVIDER` to `victorialogs`, and `QUERY_LOG_TARGET` to a VictoriaLogs base URL:
+
+  ```env
+  QUERY_LOG_TYPE=console
+  QUERY_LOG_CONSOLE_PROVIDER=victorialogs
+  QUERY_LOG_TARGET=http://victoria-logs-host:9428
+  ```
+
+### Patch Changes
+
+- [#293](https://github.com/GabeDuarteM/blocky-ui/pull/293) [`6dcb276`](https://github.com/GabeDuarteM/blocky-ui/commit/6dcb276f91460ce64afdddc3f58eb506295bb2bf) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Keep dashboard data visible during background refreshes.
+
+  Automatic query refreshes no longer replace query logs, top lists, or the queries-over-time chart with full loading states. Loading placeholders are now reserved for initial loads and uncached page or filter changes, and the queries-over-time chart uses an improved chart-shaped loading state.
+
+  ![Queries over time loading state](https://i.imgur.com/hzrRhvI.png)
+
 ## 1.7.0
 
 ### Minor Changes
