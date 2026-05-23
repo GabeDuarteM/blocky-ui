@@ -192,43 +192,45 @@ export function QueryLogs() {
             </Tooltip>
           </div>
         </div>
-        <div className="mt-4 flex flex-row items-center gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <QueryLogFilterCombobox
             value={filter}
             onChange={handleFilterChange}
           />
-          <Select
-            value={responseTypeFilter}
-            onValueChange={handleResponseTypeChange}
-          >
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Response" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Reasons</SelectItem>
-              {BLOCKY_RESPONSE_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={questionTypeFilter}
-            onValueChange={handleQuestionTypeChange}
-          >
-            <SelectTrigger className="w-28">
-              <SelectValue placeholder="Type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Types</SelectItem>
-              {BLOCKY_DNS_RECORD_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+            <Select
+              value={responseTypeFilter}
+              onValueChange={handleResponseTypeChange}
+            >
+              <SelectTrigger className="w-full sm:w-36">
+                <SelectValue placeholder="Response" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Reasons</SelectItem>
+                {BLOCKY_RESPONSE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={questionTypeFilter}
+              onValueChange={handleQuestionTypeChange}
+            >
+              <SelectTrigger className="w-full sm:w-28">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Types</SelectItem>
+                {BLOCKY_DNS_RECORD_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

@@ -72,7 +72,7 @@ export function TopDomainsTable({ range, limit }: TopDomainsTableProps) {
   return (
     <Card className="bg-muted/30 flex min-w-0 flex-col border-0 shadow-none">
       <CardHeader>
-        <div className="flex w-full flex-row items-center justify-between">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <CardTitle className="flex items-center gap-2 text-base font-medium">
               <Globe className="h-5 w-5" />
@@ -80,7 +80,7 @@ export function TopDomainsTable({ range, limit }: TopDomainsTableProps) {
             </CardTitle>
             <CardDescription>Most frequently queried domains</CardDescription>
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 sm:justify-end">
             <Button
               variant={filter === "all" ? "default" : "outline"}
               size="sm"
