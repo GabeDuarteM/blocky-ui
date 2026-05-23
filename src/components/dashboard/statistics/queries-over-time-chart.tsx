@@ -80,7 +80,7 @@ function InteractiveLegend({
   onToggle,
 }: InteractiveLegendProps) {
   return (
-    <div className="flex items-center justify-center gap-4 pt-3">
+    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
       {SERIES_KEYS.map((key) => {
         const config = chartConfig[key];
         const isVisible = visibleSeries.has(key);
@@ -113,7 +113,7 @@ function ChartSkeleton() {
 
   return (
     <div
-      className="text-muted-foreground relative h-[250px] w-full"
+      className="text-muted-foreground relative h-[220px] w-full sm:h-[250px]"
       aria-hidden="true"
     >
       <svg
@@ -253,7 +253,9 @@ export function QueriesOverTimeChart({
   const formatTooltipLabel = useCallback(
     (value: ReactNode, payload: readonly { payload?: { time?: string } }[]) => {
       const time = payload[0]?.payload?.time;
-      if (!time) return value;
+      if (!time) {
+        return value;
+      }
       return format(new Date(time), timeRangeConfig[range].tooltipFormat);
     },
     [range],
@@ -263,7 +265,7 @@ export function QueriesOverTimeChart({
     <Card>
       <CardHeader>
         <div className="flex w-full flex-col gap-3">
-          <div className="flex flex-row items-start justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <CardTitle className="flex items-center gap-2 text-base font-medium">
                 <BarChart3 className="h-5 w-5" />
@@ -273,7 +275,7 @@ export function QueriesOverTimeChart({
                 DNS query volume and blocking activity
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
               <ChartFilterCombobox
                 value={filter}
                 onChange={setFilter}
@@ -293,11 +295,14 @@ export function QueriesOverTimeChart({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-w-0">
         {showLoading ? (
           <ChartSkeleton />
         ) : (
-          <ChartContainer config={chartConfig} className="h-[250px] w-full">
+          <ChartContainer
+            config={chartConfig}
+            className="h-[220px] min-h-[220px] w-full min-w-0 sm:h-[250px]"
+          >
             <AreaChart
               data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -318,9 +323,12 @@ export function QueriesOverTimeChart({
                 fontSize={12}
                 width={50}
                 tickFormatter={(value: number) => {
-                  if (value >= 1000000)
+                  if (value >= 1000000) {
                     return `${(value / 1000000).toFixed(1)}M`;
-                  if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                  }
+                  if (value >= 1000) {
+                    return `${(value / 1000).toFixed(0)}K`;
+                  }
                   return value.toString();
                 }}
               />

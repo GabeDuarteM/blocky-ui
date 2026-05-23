@@ -12,12 +12,14 @@ export default function HomePage() {
   const showLogs = env.QUERY_LOG_TARGET ?? env.DEMO_MODE ?? false;
 
   return (
-    <main className="container mx-auto max-w-5xl p-4">
-      <h1 className="font-title mt-8 mb-16 text-6xl font-bold">
-        {"> "}BlockyUI
-      </h1>
+    <main className="container mx-auto max-w-5xl px-4 py-8 sm:py-10">
+      <header className="mb-8 sm:mb-10">
+        <h1 className="font-title text-5xl font-bold sm:text-6xl">
+          {"> "}BlockyUI
+        </h1>
+      </header>
 
-      <div className="space-y-6">
+      <div className="space-y-5 sm:space-y-6">
         <StatisticsOverview />
         <div className="grid gap-6 md:grid-cols-2">
           <ServerStatus />

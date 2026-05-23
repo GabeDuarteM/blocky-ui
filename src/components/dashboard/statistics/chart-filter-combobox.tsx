@@ -79,7 +79,7 @@ export function ChartFilterCombobox({
           <p>Filter by domain or client</p>
         </TooltipContent>
       </Tooltip>
-      <PopoverContent className="w-[300px] p-0" align="end">
+      <PopoverContent className="w-[300px] p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search domains or clients..."
