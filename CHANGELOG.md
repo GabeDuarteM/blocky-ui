@@ -1,5 +1,13 @@
 # blocky-ui
 
+## 1.8.1
+
+### Patch Changes
+
+- [#300](https://github.com/GabeDuarteM/blocky-ui/pull/300) [`2f2dbc7`](https://github.com/GabeDuarteM/blocky-ui/commit/2f2dbc7242563ca1162e69758ea9fe8d5e07f4d0) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Improve dashboard layout on narrow screens.
+
+  Dashboard controls now stack more cleanly on mobile, giving the queries-over-time controls, top list filters, and query log filters enough room on narrow screens.
+
 ## 1.8.0
 
 ### Minor Changes
