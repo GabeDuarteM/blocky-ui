@@ -53,7 +53,7 @@
         "eslint": "9.39.4",
         "eslint-config-next": "16.2.6",
         "eslint-plugin-drizzle": "0.2.3",
-        "jscpd": "4.2.3",
+        "jscpd": "4.2.4",
         "knip": "6.14.2",
         "msw": "2.14.6",
         "postcss": "8.5.15",
@@ -325,15 +325,15 @@
 
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
-    "@jscpd/badge-reporter": ["@jscpd/badge-reporter@4.2.3", "", { "dependencies": { "badgen": "^3.2.3", "colors": "^1.4.0", "fs-extra": "^11.2.0" } }, "sha512-yNvbwWl/NwogHT5XrHyqXgF9yVZeLWA2QOhGqYTopvgi7LsSbDumpOqOcJMHP9Z4RalhMfahh+dVXFSI7tMcaA=="],
+    "@jscpd/badge-reporter": ["@jscpd/badge-reporter@4.2.4", "", { "dependencies": { "badgen": "^3.2.3", "colors": "^1.4.0", "fs-extra": "^11.2.0" } }, "sha512-g5vu05u0lX9rcHA0k3CptLfpOiuMzxh5+mUe2iYRAznTwH3ks6JAVAf9aPi5mBFttMCRiJh2zSt3xnSadHtMGg=="],
 
-    "@jscpd/core": ["@jscpd/core@4.2.3", "", { "dependencies": { "eventemitter3": "^5.0.1" } }, "sha512-VQ2gH+tiI51ty3PBRD4HClNNgyX/VH9cs0dcFKuywxDzLQ64jYp7vhJPcqnyiVX9tVEIAa12sucRHQP/VHwugA=="],
+    "@jscpd/core": ["@jscpd/core@4.2.4", "", { "dependencies": { "eventemitter3": "^5.0.1" } }, "sha512-9V9YzmmhYg9682kFqi+n0KGOhXNSoqxHbuIP3i/l/oSd6upBOnnSeBWDZMGOenQRQnyKEtCIbnS9YFz+3B+siQ=="],
 
-    "@jscpd/finder": ["@jscpd/finder@4.2.3", "", { "dependencies": { "@jscpd/core": "4.2.3", "@jscpd/tokenizer": "4.2.3", "blamer": "^1.0.6", "bytes": "^3.1.2", "cli-table3": "^0.6.5", "colors": "^1.4.0", "fast-glob": "^3.3.2", "fs-extra": "^11.2.0", "markdown-table": "^2.0.0", "pug": "^3.0.3" } }, "sha512-ZpjviFAg6zLojQHS+owvrn8DG1OY1d4835Je4LUKzbMurndmQDhvRRFDkN9V6xPn6gvRaMVkJHN2tyljsnUjWA=="],
+    "@jscpd/finder": ["@jscpd/finder@4.2.4", "", { "dependencies": { "@jscpd/core": "4.2.4", "@jscpd/tokenizer": "4.2.4", "blamer": "^1.0.6", "bytes": "^3.1.2", "cli-table3": "^0.6.5", "colors": "^1.4.0", "fast-glob": "^3.3.2", "fs-extra": "^11.2.0", "markdown-table": "^2.0.0", "pug": "^3.0.3" } }, "sha512-4LLEuAAmAraud/TAAlB5BByVdWfy7SYiPKacj5yEggpkNs0qsw2kiZ5EyU3LonB+/vntJJEDDpJMmvOeS58e0A=="],
 
-    "@jscpd/html-reporter": ["@jscpd/html-reporter@4.2.3", "", { "dependencies": { "colors": "1.4.0", "fs-extra": "^11.2.0", "pug": "^3.0.3" } }, "sha512-kp1pqJXCKwyRu5mJK5IvXdFQEDHWQDb7svLFlbVXGI0dVH1y1XNl8mrIrSoRw+0AySxhDkuSyIlQOSDC2GRwQg=="],
+    "@jscpd/html-reporter": ["@jscpd/html-reporter@4.2.4", "", { "dependencies": { "colors": "1.4.0", "fs-extra": "^11.2.0", "pug": "^3.0.3" } }, "sha512-6UljCTVGf7O+o6D6fs1zNBG+vR1PTn47W2mSgb5hzSrvNw60rLrVoAMZMnr/TeIEdd/OEgAu+icbdvvVBfnvJw=="],
 
-    "@jscpd/tokenizer": ["@jscpd/tokenizer@4.2.3", "", { "dependencies": { "@jscpd/core": "4.2.3", "spark-md5": "^3.0.2" } }, "sha512-RvjD7/hwqtcQC9MWOl31odTti6kGCFxZ77DKEhwyMn+r6oVEUFbXgcGvzn0GC/wuTl7f3j5MF9JNMeTneOFwYA=="],
+    "@jscpd/tokenizer": ["@jscpd/tokenizer@4.2.4", "", { "dependencies": { "@jscpd/core": "4.2.4", "spark-md5": "^3.0.2" } }, "sha512-nM4kGyDvpcevt8t0zOsMQ82ShSc65c3LIQUHClTYwraiOGOmWgUQyen+JIiFCNF8eDCGR2Qa5iI5XBfGWYQzIg=="],
 
     "@kwsites/file-exists": ["@kwsites/file-exists@1.1.1", "", { "dependencies": { "debug": "^4.1.1" } }, "sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw=="],
 
@@ -1351,9 +1351,9 @@
 
     "js-yaml": ["js-yaml@4.1.1", "", { "dependencies": { "argparse": "2.0.1" }, "bin": { "js-yaml": "bin/js-yaml.js" } }, "sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA=="],
 
-    "jscpd": ["jscpd@4.2.3", "", { "dependencies": { "@jscpd/badge-reporter": "4.2.3", "@jscpd/core": "4.2.3", "@jscpd/finder": "4.2.3", "@jscpd/html-reporter": "4.2.3", "@jscpd/tokenizer": "4.2.3", "colors": "^1.4.0", "commander": "^5.0.0", "fs-extra": "^11.2.0", "jscpd-sarif-reporter": "4.2.3" }, "bin": { "jscpd": "bin/jscpd" } }, "sha512-/1BEga1E1cY56/sdQOzU/PFtnea+n1beqG8/Xx4HopG9c5rkUO8ptnu9En8Xf1ILGW6KSWidV4vLQTm2FGYvpw=="],
+    "jscpd": ["jscpd@4.2.4", "", { "dependencies": { "@jscpd/badge-reporter": "4.2.4", "@jscpd/core": "4.2.4", "@jscpd/finder": "4.2.4", "@jscpd/html-reporter": "4.2.4", "@jscpd/tokenizer": "4.2.4", "colors": "^1.4.0", "commander": "^5.0.0", "fs-extra": "^11.2.0", "jscpd-sarif-reporter": "4.2.4" }, "bin": { "jscpd": "bin/jscpd" } }, "sha512-PSo2U0G8OxULayGyQMv7T/0ZQ+c3PPltdMOz/57v9Xnmq5xSIhh4cnZ0oYZPKqejy10aFwAbMVxqAlo24+PQ3g=="],
 
-    "jscpd-sarif-reporter": ["jscpd-sarif-reporter@4.2.3", "", { "dependencies": { "colors": "^1.4.0", "fs-extra": "^11.2.0", "node-sarif-builder": "^3.4.0" } }, "sha512-rM0LM5S0kdASLCtDsr1s51rJOPf8nubaxaWQUTWVVPda1UMPymXbELG+A3Rgpoa4D4QFUFfXqz60Jn/W+vlFtA=="],
+    "jscpd-sarif-reporter": ["jscpd-sarif-reporter@4.2.4", "", { "dependencies": { "colors": "^1.4.0", "fs-extra": "^11.2.0", "node-sarif-builder": "^3.4.0" } }, "sha512-JtX79kFSyAhqJh5TdLUcvtYJtJd1F8UW8b4Miaga+EIgUn2/nR0N2zWL9mH5cRXgbzLuQbbsw9kReUVIECApwQ=="],
 
     "jsesc": ["jsesc@3.1.0", "", { "bin": { "jsesc": "bin/jsesc" } }, "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA=="],
 
