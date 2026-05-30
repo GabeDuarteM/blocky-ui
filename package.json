@@ -43,7 +43,7 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
-    "date-fns": "4.2.1",
+    "date-fns": "4.4.0",
     "drizzle-orm": "0.45.2",
     "ky": "2.0.2",
     "lucide-react": "1.16.0",
