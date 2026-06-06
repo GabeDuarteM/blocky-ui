@@ -47,7 +47,7 @@
     "drizzle-orm": "0.45.2",
     "ky": "2.0.2",
     "lucide-react": "1.16.0",
-    "mysql2": "3.22.3",
+    "mysql2": "3.22.5",
     "next": "16.2.6",
     "postgres": "3.4.9",
     "react": "19.2.5",
