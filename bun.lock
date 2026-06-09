@@ -53,7 +53,7 @@
         "eslint": "9.39.4",
         "eslint-config-next": "16.2.7",
         "eslint-plugin-drizzle": "0.2.3",
-        "jscpd": "5.0.4",
+        "jscpd": "5.0.5",
         "knip": "6.16.1",
         "msw": "2.14.6",
         "postcss": "8.5.15",
@@ -925,17 +925,17 @@
 
     "core-util-is": ["core-util-is@1.0.3", "", {}, "sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ=="],
 
-    "cpd-darwin-arm64": ["cpd-darwin-arm64@5.0.4", "", { "os": "darwin", "cpu": "arm64" }, "sha512-oqD0RVirv3QRuMjM1XdKfZR+b6qFWqR/J6Jia1wsiV+XJYLjeRLPvWwjhdPQzIY/lRMqDETWZ+8U5h7LXX5C/Q=="],
+    "cpd-darwin-arm64": ["cpd-darwin-arm64@5.0.5", "", { "os": "darwin", "cpu": "arm64" }, "sha512-Ebbdu8Pzqbpsf2r+tHcY1S5tx23iSYwUrpYb8eYqh6kFlPlPciHpd6rJNA2KrmsABmgiZt/NDcyIzpXhxElaKw=="],
 
-    "cpd-darwin-x64": ["cpd-darwin-x64@5.0.4", "", { "os": "darwin", "cpu": "x64" }, "sha512-I3wD3TrwK5vzqTO2ej+/t9Jugg6mGEx8jwIsqZXamxQoRW55UNI91wlrsThcp3mMp7ZLSsSnrFm6jcx3BPHafw=="],
+    "cpd-darwin-x64": ["cpd-darwin-x64@5.0.5", "", { "os": "darwin", "cpu": "x64" }, "sha512-7hZ8Rjr06933B/i1A7MSc5KpK47Lj5V7zxKMzd4iSMGchQLZtov9zJnaNOldHGmbkNM40O4cL/r7iJpWtlMxqg=="],
 
-    "cpd-linux-arm64-gnu": ["cpd-linux-arm64-gnu@5.0.4", "", { "os": "linux", "cpu": "arm64" }, "sha512-KvRHvlx12cGYTHNe1bTFdk4l6ILtdfwPr0hCJuFB7Q340o7UlWA2GX4SxW/1hE9Ts1id1W0iKGKkkp5LP5Aagg=="],
+    "cpd-linux-arm64-gnu": ["cpd-linux-arm64-gnu@5.0.5", "", { "os": "linux", "cpu": "arm64" }, "sha512-2w8enNvAZTYq+qT5zn+a8GT0hcUjLa460xl75XWggM4Y/I9f+/hbpP/o7iA4BRxa/bVK7q//KtKSasIidHRDag=="],
 
-    "cpd-linux-x64-gnu": ["cpd-linux-x64-gnu@5.0.4", "", { "os": "linux", "cpu": "x64" }, "sha512-vF4OI+1BZDomxKN3rVu9NuhX5gj0F7NWtofN6A2ApGOtyM0CmhOTYcitqF9jExiXkknr6uETBs4avEopOfcHPQ=="],
+    "cpd-linux-x64-gnu": ["cpd-linux-x64-gnu@5.0.5", "", { "os": "linux", "cpu": "x64" }, "sha512-m3V4s0FvrmFHCexqsjr1YpNr1/x0HKRMxg301SJcDkAm2CHYmpv0hz4JP5i6FnwJLzpJvpCRaESyMJFJzr6atw=="],
 
-    "cpd-linux-x64-musl": ["cpd-linux-x64-musl@5.0.4", "", { "os": "linux", "cpu": "x64" }, "sha512-dooVyen2ThTyNtpSIndo6SH/BDTM2Wazz6leJON244bZJ8JgCp8Suc54nK0RlWpHOZjYSqZu2k9bHFlBWrrAlg=="],
+    "cpd-linux-x64-musl": ["cpd-linux-x64-musl@5.0.5", "", { "os": "linux", "cpu": "x64" }, "sha512-8Qvk7otkGNpkc8I0+ti8/KzXqU+0WLNg5Lhxl7FzauG5fDo4dAgsZmjUoSc/nQNvQE7pw5i0Ai7AtQ/QNh+xYw=="],
 
-    "cpd-windows-x64-msvc": ["cpd-windows-x64-msvc@5.0.4", "", { "os": "win32", "cpu": "x64" }, "sha512-J3k4x4MHjgtsr2vLWpuK3imi6tLlFU9UADrgoS0BFzQI8BJpXtXen7Q7IMuYcAnvGR7I+Rf//5bGFIfQ+2PqhA=="],
+    "cpd-windows-x64-msvc": ["cpd-windows-x64-msvc@5.0.5", "", { "os": "win32", "cpu": "x64" }, "sha512-dwu4CjxNXilMFXVKpPeBSeDApjqAYMj4Y5j3gNADuN5eNIhy/8wPEsF3gexOVdesExBVJR4q8irF3hnseJWJvg=="],
 
     "cpu-features": ["cpu-features@0.0.10", "", { "dependencies": { "buildcheck": "0.0.7", "nan": "2.25.0" } }, "sha512-9IkYqtX3YHPCzoVg1Py+o9057a3i0fp7S530UWokCSaFVTc7CwXPRiOjRjBQQ18ZCNafx78YfnG+HALxtVmOGA=="],
 
@@ -1311,7 +1311,7 @@
 
     "js-yaml": ["js-yaml@4.1.1", "", { "dependencies": { "argparse": "2.0.1" }, "bin": { "js-yaml": "bin/js-yaml.js" } }, "sha512-qQKT4zQxXl8lLwBtHMWwaTcGfFOZviOJet3Oy/xmGk2gZH677CJM9EvtfdSkgWcATZhj/55JZ0rmy3myCT5lsA=="],
 
-    "jscpd": ["jscpd@5.0.4", "", { "optionalDependencies": { "cpd-darwin-arm64": "5.0.4", "cpd-darwin-x64": "5.0.4", "cpd-linux-arm64-gnu": "5.0.4", "cpd-linux-x64-gnu": "5.0.4", "cpd-linux-x64-musl": "5.0.4", "cpd-windows-x64-msvc": "5.0.4" }, "bin": { "jscpd": "run-jscpd.js" } }, "sha512-I1skFSqn6gpLeA62konLjtfJgZZcam3scIXHAXM+/1VRpBHXauWF/x2VOgeGbizR7vrxA8qSxsHfNwbBOAHedw=="],
+    "jscpd": ["jscpd@5.0.5", "", { "optionalDependencies": { "cpd-darwin-arm64": "5.0.5", "cpd-darwin-x64": "5.0.5", "cpd-linux-arm64-gnu": "5.0.5", "cpd-linux-x64-gnu": "5.0.5", "cpd-linux-x64-musl": "5.0.5", "cpd-windows-x64-msvc": "5.0.5" }, "bin": { "jscpd": "run-jscpd.js", "cpd": "run-jscpd.js" } }, "sha512-efwUuW4Uubf+uQ8z7c3rphFoO4Y1Uo4qtfEcqX945dwyuyaUKYmnFzLoNvW0T3y/0QSzn7iNvQxeqxHT4KMcrw=="],
 
     "jsesc": ["jsesc@3.1.0", "", { "bin": { "jsesc": "bin/jsesc" } }, "sha512-/sM3dO2FOzXjKQhJuo0Q173wf2KOo8t4I8vHy6lF9poUp7bKT0/NHE8fPX23PwfhnykfqnC2xRxOnVw5XuGIaA=="],
 
