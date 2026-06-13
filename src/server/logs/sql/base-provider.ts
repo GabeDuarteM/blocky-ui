@@ -323,6 +323,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionName)),
+        asc(this.columns.questionName),
       )
       .limit(options.limit)
       .offset(options.offset);
@@ -375,6 +376,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.clientName)),
+        asc(this.columns.clientName),
       )
       .limit(options.limit)
       .offset(options.offset);
@@ -429,6 +431,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionType)),
+        asc(this.columns.questionType),
       );
 
     return result.map((row: { type: string | null; count: number }) => ({
@@ -465,6 +468,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionName)),
+        asc(this.columns.questionName),
       )
       .limit(options.limit);
 
@@ -501,6 +505,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.clientName)),
+        asc(this.columns.clientName),
       )
       .limit(options.limit);
 
