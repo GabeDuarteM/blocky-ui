@@ -8,6 +8,7 @@ WORKDIR /app
 FROM --platform=${BUILDER_PLATFORM} oven/bun:1-alpine AS base-build
 WORKDIR /app
 RUN apk add --no-cache g++ make python3
+RUN bun install --global node-gyp
 
 # 3) deps + build, all on amd64 still
 FROM base-build AS deps-build
