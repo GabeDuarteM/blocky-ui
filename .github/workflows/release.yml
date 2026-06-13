@@ -135,14 +135,18 @@ jobs:
 
           for version in $(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[].version'); do
             tag="v${version}"
+            if ! release_id=$(gh api "repos/${GITHUB_REPOSITORY}/releases" --jq "map(select(.tag_name == \"${tag}\"))[0].id // empty"); then
+              echo "Failed to look up release for $tag"
+              failed_tags+=("$tag")
+              release_id=""
+            fi
 
-            if gh release view "$tag" >/dev/null 2>&1; then
-              echo "Deleting release and tag for $tag"
-              if ! gh release delete "$tag" --cleanup-tag --yes; then
-                echo "Failed to delete release and tag for $tag"
+            if [ -n "$release_id" ]; then
+              echo "Deleting release for $tag"
+              if ! gh api --method DELETE "repos/${GITHUB_REPOSITORY}/releases/${release_id}"; then
+                echo "Failed to delete release for $tag"
                 failed_tags+=("$tag")
               fi
-              continue
             fi
 
             if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
