@@ -1,5 +1,20 @@
 # blocky-ui
 
+## 1.9.0
+
+### Minor Changes
+
+- [#327](https://github.com/GabeDuarteM/blocky-ui/pull/327) [`560baa3`](https://github.com/GabeDuarteM/blocky-ui/commit/560baa3f955718b633ec3482d2a6a40cc5ff9b6a) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Add full support for Blocky's new SQLite query log target.
+
+  #### Configuration
+
+  Set `QUERY_LOG_TYPE` to `sqlite` and `QUERY_LOG_TARGET` to the SQLite database file path used by Blocky's `queryLog.target`:
+
+  ```env
+  QUERY_LOG_TYPE=sqlite
+  QUERY_LOG_TARGET=/path/to/blocky/query-log.db
+  ```
+
 ## 1.8.1
 
 ### Patch Changes
