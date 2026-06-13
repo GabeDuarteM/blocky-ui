@@ -112,3 +112,49 @@ jobs:
             ${{ env.GHCR_IMAGE }}:${{ matrix.package.version }}
             ${{ env.DOCKERHUB_IMAGE }}:latest
             ${{ env.DOCKERHUB_IMAGE }}:${{ matrix.package.version }}
+
+  cleanup-failed-release:
+    name: Cleanup Failed Release
+    runs-on: ubuntu-latest
+    needs:
+      - release
+      - publish-docker
+    if: ${{ always() && needs.release.outputs.published == 'true' && needs.publish-docker.result == 'failure' }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Delete GitHub releases and tags
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISHED_PACKAGES: ${{ needs.release.outputs.publishedPackages }}
+        run: |
+          set -euo pipefail
+
+          failed_tags=()
+
+          for version in $(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[].version'); do
+            tag="v${version}"
+
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "Deleting release and tag for $tag"
+              if ! gh release delete "$tag" --cleanup-tag --yes; then
+                echo "Failed to delete release and tag for $tag"
+                failed_tags+=("$tag")
+              fi
+              continue
+            fi
+
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${tag}" >/dev/null 2>&1; then
+              echo "Deleting tag for $tag"
+              if ! gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/refs/tags/${tag}"; then
+                echo "Failed to delete tag for $tag"
+                failed_tags+=("$tag")
+              fi
+            fi
+          done
+
+          if [ "${#failed_tags[@]}" -gt 0 ]; then
+            printf 'Failed to clean up tags: %s\n' "${failed_tags[*]}"
+            exit 1
+          fi
