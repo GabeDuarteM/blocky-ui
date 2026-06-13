@@ -7,6 +7,7 @@ WORKDIR /app
 # 2) builder base (FORCED to amd64 due to nextjs build issues on armv6/v7)
 FROM --platform=${BUILDER_PLATFORM} oven/bun:1-alpine AS base-build
 WORKDIR /app
+RUN apk add --no-cache g++ make python3
 
 # 3) deps + build, all on amd64 still
 FROM base-build AS deps-build
