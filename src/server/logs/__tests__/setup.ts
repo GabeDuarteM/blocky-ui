@@ -13,6 +13,8 @@ import { createConnection } from "mysql2/promise";
 import postgres from "postgres";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
+import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
 
 import {
   GenericContainer,
@@ -22,6 +24,8 @@ import {
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
 import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 import { logEntries as pgLogEntries } from "~/server/logs/postgres/schema";
+import { SQLiteLogProvider } from "~/server/logs/sqlite/provider";
+import { logEntries as sqliteLogEntries } from "~/server/logs/sqlite/schema";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
@@ -103,6 +107,10 @@ export function makeEntry(overrides: Partial<LogEntry> = {}): LogEntry {
 
 function isoToMysqlDatetime(iso: string): string {
   return iso.replace("T", " ").replace("Z", "");
+}
+
+function isoToSqliteDatetime(iso: string): string {
+  return isoToMysqlDatetime(iso);
 }
 
 // Field order must match INSERT_SQL column order exactly
@@ -213,6 +221,72 @@ async function setupPostgres(entries: LogEntry[]): Promise<{
     await container.stop();
     throw error;
   }
+}
+
+function setupSqlite(entries: LogEntry[]): {
+  provider: SQLiteLogProvider;
+  filePath: string;
+} {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "sqlite-test-"));
+  const filePath = path.join(directory, "query-log.db");
+  const dbFile = new Database(filePath);
+  const db = drizzleSqlite(dbFile);
+
+  try {
+    db.run(sql`
+      CREATE TABLE IF NOT EXISTS log_entries (
+        request_ts datetime NOT NULL,
+        client_ip TEXT NULL,
+        client_name TEXT NULL,
+        duration_ms INTEGER NULL,
+        reason TEXT NULL,
+        response_type TEXT NULL,
+        question_type TEXT NULL,
+        question_name TEXT NULL,
+        effective_tldp TEXT NULL,
+        answer TEXT NULL,
+        response_code TEXT NULL,
+        hostname TEXT NULL
+      )
+    `);
+    db.run(
+      sql`CREATE INDEX IF NOT EXISTS idx_log_entries_request_ts ON log_entries (request_ts)`,
+    );
+    db.run(
+      sql`CREATE INDEX IF NOT EXISTS idx_log_entries_client_name ON log_entries (client_name)`,
+    );
+    db.run(
+      sql`CREATE INDEX IF NOT EXISTS idx_log_entries_response_type ON log_entries (response_type)`,
+    );
+
+    if (entries.length > 0) {
+      db.insert(sqliteLogEntries)
+        .values(
+          entries.map((entry) => ({
+            requestTs: entry.requestTs
+              ? isoToSqliteDatetime(entry.requestTs)
+              : null,
+            clientIp: entry.clientIp,
+            clientName: entry.clientName,
+            durationMs: entry.durationMs,
+            reason: entry.reason,
+            responseType: entry.responseType,
+            questionType: entry.questionType,
+            questionName: entry.questionName,
+            effectiveTldp: entry.effectiveTldp,
+            answer: entry.answer,
+            responseCode: entry.responseCode,
+            hostname: entry.hostname,
+          })),
+        )
+        .run();
+    }
+  } finally {
+    dbFile.close();
+  }
+
+  const provider = new SQLiteLogProvider({ filePath });
+  return { provider, filePath };
 }
 
 function setupCsv(entries: LogEntry[]): {
@@ -345,18 +419,26 @@ export async function setupProviders(): Promise<{
 }> {
   const seedData = createSeedData();
 
-  const [mysqlResult, postgresResult, csvResult, csvClientResult, vlResult] =
-    await Promise.all([
-      setupMysql(seedData),
-      setupPostgres(seedData),
-      Promise.resolve(setupCsv(seedData)),
-      Promise.resolve(setupCsvClient(seedData)),
-      setupVictoriaLogs(seedData),
-    ]);
+  const [
+    mysqlResult,
+    postgresResult,
+    sqliteResult,
+    csvResult,
+    csvClientResult,
+    vlResult,
+  ] = await Promise.all([
+    setupMysql(seedData),
+    setupPostgres(seedData),
+    Promise.resolve(setupSqlite(seedData)),
+    Promise.resolve(setupCsv(seedData)),
+    Promise.resolve(setupCsvClient(seedData)),
+    setupVictoriaLogs(seedData),
+  ]);
 
   const providers = new Map<string, LogProvider>([
     ["mysql", mysqlResult.provider],
     ["postgres", postgresResult.provider],
+    ["sqlite", sqliteResult.provider],
     ["csv", csvResult.provider],
     ["csv-client", csvClientResult.provider],
     ["victorialogs", vlResult.provider],
@@ -367,6 +449,11 @@ export async function setupProviders(): Promise<{
     await mysqlResult.container.stop();
     await postgresResult.provider.close?.();
     await postgresResult.container.stop();
+    await sqliteResult.provider.close?.();
+    fs.rmSync(path.dirname(sqliteResult.filePath), {
+      recursive: true,
+      force: true,
+    });
     fs.rmSync(csvResult.directory, { recursive: true, force: true });
     fs.rmSync(csvClientResult.directory, { recursive: true, force: true });
     await vlResult.container.stop();

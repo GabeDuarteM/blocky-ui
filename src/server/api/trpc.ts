@@ -25,7 +25,7 @@ import { createLogProvider } from "~/server/logs";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const logProvider = createLogProvider();
+  const logProvider = await createLogProvider();
 
   return {
     logProvider,

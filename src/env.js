@@ -13,6 +13,7 @@ export const env = createEnv({
         "mysql",
         "postgresql",
         "timescale",
+        "sqlite",
         "csv",
         "csv-client",
         "console",

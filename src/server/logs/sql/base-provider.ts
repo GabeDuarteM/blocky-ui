@@ -107,6 +107,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return date.toISOString();
   }
 
+  protected getTextSortExpression(column: Column): Column | SQL {
+    return column;
+  }
+
   private buildRangeFilters(options: {
     range: TimeRange;
     filter: "all" | "blocked";
@@ -316,7 +320,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .from(this.table)
       .where(and(...filters))
       .groupBy(this.columns.questionName)
-      .orderBy(desc(sql`count(*)`), asc(this.columns.questionName))
+      .orderBy(
+        desc(sql`count(*)`),
+        asc(this.getTextSortExpression(this.columns.questionName)),
+      )
       .limit(options.limit)
       .offset(options.offset);
 
@@ -365,7 +372,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .from(this.table)
       .where(and(...filters))
       .groupBy(this.columns.clientName)
-      .orderBy(desc(sql`count(*)`), asc(this.columns.clientName))
+      .orderBy(
+        desc(sql`count(*)`),
+        asc(this.getTextSortExpression(this.columns.clientName)),
+      )
       .limit(options.limit)
       .offset(options.offset);
 
@@ -416,7 +426,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
       )
       .groupBy(this.columns.questionType)
-      .orderBy(desc(sql`count(*)`), asc(this.columns.questionType));
+      .orderBy(
+        desc(sql`count(*)`),
+        asc(this.getTextSortExpression(this.columns.questionType)),
+      );
 
     return result.map((row: { type: string | null; count: number }) => ({
       type: row.type ?? "unknown",
@@ -449,7 +462,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         ),
       )
       .groupBy(this.columns.questionName)
-      .orderBy(desc(sql`count(*)`), asc(this.columns.questionName))
+      .orderBy(
+        desc(sql`count(*)`),
+        asc(this.getTextSortExpression(this.columns.questionName)),
+      )
       .limit(options.limit);
 
     return result.map((row: { domain: string | null; count: number }) => ({
@@ -482,7 +498,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         ),
       )
       .groupBy(this.columns.clientName)
-      .orderBy(desc(sql`count(*)`), asc(this.columns.clientName))
+      .orderBy(
+        desc(sql`count(*)`),
+        asc(this.getTextSortExpression(this.columns.clientName)),
+      )
       .limit(options.limit);
 
     return result.map((row: { client: string | null; count: number }) => ({

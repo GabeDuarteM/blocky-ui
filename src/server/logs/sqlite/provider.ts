@@ -1,0 +1,81 @@
+import { sql, type Column, type SQL } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import Database from "better-sqlite3";
+
+import { type TimeRange } from "~/lib/constants";
+import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
+import { logEntries } from "~/server/logs/sqlite/schema";
+
+export class SQLiteLogProvider extends BaseSqlLogProvider {
+  private readonly dbFile: Database.Database;
+
+  constructor(options: { filePath: string }) {
+    const dbFile = new Database(options.filePath, {
+      readonly: true,
+      fileMustExist: true,
+    });
+    dbFile.pragma("busy_timeout = 5000");
+
+    const db = drizzle(dbFile, { schema: { logEntries } });
+
+    super({
+      db,
+      table: logEntries,
+      columns: {
+        requestTs: logEntries.requestTs,
+        clientIp: logEntries.clientIp,
+        clientName: logEntries.clientName,
+        durationMs: logEntries.durationMs,
+        reason: logEntries.reason,
+        responseType: logEntries.responseType,
+        questionType: logEntries.questionType,
+        questionName: logEntries.questionName,
+        effectiveTldp: logEntries.effectiveTldp,
+        answer: logEntries.answer,
+        responseCode: logEntries.responseCode,
+        hostname: logEntries.hostname,
+      },
+    });
+
+    this.dbFile = dbFile;
+  }
+
+  async close(): Promise<void> {
+    this.dbFile.close();
+  }
+
+  protected formatDateTimeForFilter(date: Date): string {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const hours = String(date.getUTCHours()).padStart(2, "0");
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+    const milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+  }
+
+  protected getTextSortExpression(column: Column): SQL {
+    return sql`lower(${column})`;
+  }
+
+  protected getBucketExpression(range: TimeRange): SQL {
+    const col = logEntries.requestTs.name;
+
+    switch (range) {
+      case "1h":
+        return sql.raw(
+          `strftime('%Y-%m-%d %H:', ${col}) || printf('%02d', (cast(strftime('%M', ${col}) as integer) / 5) * 5)`,
+        );
+      case "24h":
+        return sql.raw(`strftime('%Y-%m-%d %H:00', ${col})`);
+      case "7d":
+        return sql.raw(
+          `strftime('%Y-%m-%d ', ${col}) || printf('%02d', (cast(strftime('%H', ${col}) as integer) / 6) * 6) || ':00'`,
+        );
+      case "30d":
+        return sql.raw(`strftime('%Y-%m-%d', ${col})`);
+    }
+  }
+}
