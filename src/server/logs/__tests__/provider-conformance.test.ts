@@ -770,6 +770,7 @@ function defineProviderTests(providerName: string) {
 
 defineProviderTests("mysql");
 defineProviderTests("postgres");
+defineProviderTests("sqlite");
 defineProviderTests("csv");
 defineProviderTests("csv-client");
 defineProviderTests("victorialogs");
@@ -778,6 +779,7 @@ describe("cross-provider consistency", () => {
   const providerNames = [
     "mysql",
     "postgres",
+    "sqlite",
     "csv",
     "csv-client",
     "victorialogs",

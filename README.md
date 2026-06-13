@@ -60,6 +60,10 @@ services:
       # - QUERY_LOG_TYPE=timescale
       # - QUERY_LOG_TARGET=postgresql://username:password@localhost:5432/blocky_query_log
 
+      # from a SQLite database file:
+      # - QUERY_LOG_TYPE=sqlite
+      # - QUERY_LOG_TARGET=/path/to/blocky/query-log.db
+
       # from a CSV file (single daily file):
       # - QUERY_LOG_TYPE=csv
       # - QUERY_LOG_TARGET=/path/to/blocky/logs/folder/
@@ -113,16 +117,16 @@ docker run -d \
 
 BlockyUI is configured via environment variables in all deployment methods.
 
-| Variable                     | Required    | Default                 | Description                                                                                                            |
-| ---------------------------- | ----------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `BLOCKY_API_URL`             | No          | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                                       |
-| `BLOCKY_REQUEST_HEADERS`     | No          | None                    | JSON object of custom headers for all Blocky API and Prometheus requests (e.g., `'{"Authorization":"Bearer token"}'`). |
-| `QUERY_LOG_TYPE`             | No          | None                    | Enables query logging. Accepted values: `mysql`, `postgresql`, `timescale`, `csv`, `csv-client`, or `console`.         |
-| `QUERY_LOG_CONSOLE_PROVIDER` | Conditional | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`.            |
-| `QUERY_LOG_TARGET`           | No          | None                    | Connection string or log folder path for the same database or directory as Blocky's `queryLog.target`.                 |
-| `INSTANCE_NAME`              | No          | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                |
-| `PROMETHEUS_PATH`            | No          | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                                       |
-| `DEMO_MODE`                  | No          | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                        |
+| Variable                     | Required    | Default                 | Description                                                                                                              |
+| ---------------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `BLOCKY_API_URL`             | No          | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                                         |
+| `BLOCKY_REQUEST_HEADERS`     | No          | None                    | JSON object of custom headers for all Blocky API and Prometheus requests (e.g., `'{"Authorization":"Bearer token"}'`).   |
+| `QUERY_LOG_TYPE`             | No          | None                    | Enables query logging. Accepted values: `mysql`, `postgresql`, `timescale`, `sqlite`, `csv`, `csv-client`, or `console`. |
+| `QUERY_LOG_CONSOLE_PROVIDER` | Conditional | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`.              |
+| `QUERY_LOG_TARGET`           | No          | None                    | Connection string, SQLite file path, or log folder path for the same target as Blocky's `queryLog.target`.               |
+| `INSTANCE_NAME`              | No          | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                  |
+| `PROMETHEUS_PATH`            | No          | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                                         |
+| `DEMO_MODE`                  | No          | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                          |
 
 ### Common Setups
 

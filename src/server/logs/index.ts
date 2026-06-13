@@ -7,97 +7,137 @@ import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 import type { LogProvider } from "~/server/logs/types";
 
-/**
- * Cache the log provider in development.
- * This avoids creating a new provider (and db connections, when applicable) on every HMR update.
- */
 const globalForLogProvider = globalThis as unknown as {
-  logProvider: LogProvider | undefined;
+  logProvider: Promise<LogProvider | undefined> | undefined;
+};
+
+type SQLiteProviderModule = {
+  SQLiteLogProvider: new (options: { filePath: string }) => LogProvider;
 };
 
 /**
- * Factory function to create the appropriate log provider
- * Uses singleton pattern to avoid creating multiple watchers/connections
+ * Cache provider initialization across HMR and concurrent requests.
+ * This avoids duplicate file watchers and database connection pools.
  */
-export function createLogProvider(): LogProvider | undefined {
-  if (globalForLogProvider.logProvider) {
-    return globalForLogProvider.logProvider;
-  }
+export async function createLogProvider(): Promise<LogProvider | undefined> {
+  globalForLogProvider.logProvider ??= initializeLogProvider().catch(
+    (error) => {
+      globalForLogProvider.logProvider = undefined;
+      throw error;
+    },
+  );
 
+  return globalForLogProvider.logProvider;
+}
+
+async function initializeLogProvider(): Promise<LogProvider | undefined> {
   if (env.DATABASE_URL) {
     console.warn(
       "⚠️  DEPRECATION WARNING: DATABASE_URL is deprecated. Please use QUERY_LOG_TYPE and QUERY_LOG_TARGET instead.",
     );
   }
 
-  let provider: LogProvider | undefined;
-
   if (env.DEMO_MODE) {
     console.log("Using log provider type: demo");
-    provider = new DemoLogProvider();
-  } else {
-    const logType = env.QUERY_LOG_TYPE?.toLowerCase();
-    const logTarget = env.QUERY_LOG_TARGET;
+    return new DemoLogProvider();
+  }
 
-    if (logType === "csv") {
+  const logType = env.QUERY_LOG_TYPE?.toLowerCase();
+  const logTarget = env.QUERY_LOG_TARGET;
+
+  switch (logType) {
+    case "csv":
       console.log("Using log provider type: csv, target:", logTarget);
-      if (!logTarget) {
-        throw new Error(
+      return new CsvLogProvider({
+        directory: requireLogTarget(
+          logTarget,
           "QUERY_LOG_TARGET must be set to a directory path when QUERY_LOG_TYPE == 'csv'",
-        );
-      }
+        ),
+      });
 
-      provider = new CsvLogProvider({ directory: logTarget });
-    } else if (logType === "csv-client") {
+    case "csv-client":
       console.log("Using log provider type: csv-client, target:", logTarget);
-      if (!logTarget) {
-        throw new Error(
+      return new CsvClientLogProvider({
+        directory: requireLogTarget(
+          logTarget,
           "QUERY_LOG_TARGET must be set to a directory path when QUERY_LOG_TYPE == 'csv-client'",
-        );
-      }
+        ),
+      });
 
-      provider = new CsvClientLogProvider({ directory: logTarget });
-    } else if (logType === "mysql") {
+    case "mysql":
       console.log("Using log provider type: mysql");
-      if (!logTarget) {
-        throw new Error(
+      return new MySQLLogProvider({
+        connectionUri: requireLogTarget(
+          logTarget,
           "QUERY_LOG_TARGET (MySQL connection URI) is required when using QUERY_LOG_TYPE == 'mysql'",
-        );
-      }
-
-      provider = new MySQLLogProvider({
-        connectionUri: logTarget,
+        ),
       });
-    } else if (logType === "postgresql" || logType === "timescale") {
+
+    case "postgresql":
+    case "timescale":
       console.log(`Using log provider type: ${logType}`);
-      if (!logTarget) {
-        throw new Error(
+      return new PostgreSQLLogProvider({
+        connectionUri: requireLogTarget(
+          logTarget,
           `QUERY_LOG_TARGET (PostgreSQL connection URI) is required when using QUERY_LOG_TYPE == '${logType}'`,
-        );
-      }
-
-      provider = new PostgreSQLLogProvider({
-        connectionUri: logTarget,
+        ),
       });
-    } else if (logType === "console") {
+
+    case "sqlite":
+      console.log("Using log provider type: sqlite, target:", logTarget);
+      return createSQLiteLogProvider({
+        filePath: requireLogTarget(
+          logTarget,
+          "QUERY_LOG_TARGET (SQLite database file path) is required when using QUERY_LOG_TYPE == 'sqlite'",
+        ),
+      });
+
+    case "console": {
       const consoleProvider = env.QUERY_LOG_CONSOLE_PROVIDER;
       if (!consoleProvider) {
         throw new Error(
           "QUERY_LOG_CONSOLE_PROVIDER must be set when QUERY_LOG_TYPE == 'console' (supported values: 'victorialogs')",
         );
       }
-      if (!logTarget) {
-        throw new Error(
-          "QUERY_LOG_TARGET (provider base URL) is required when QUERY_LOG_TYPE == 'console'",
-        );
-      }
+
       console.log(
         `Using log provider type: console (${consoleProvider}), target: ${logTarget}`,
       );
-      provider = new VictoriaLogsProvider({ url: logTarget });
+      return new VictoriaLogsProvider({
+        url: requireLogTarget(
+          logTarget,
+          "QUERY_LOG_TARGET (provider base URL) is required when using QUERY_LOG_TYPE == 'console'",
+        ),
+      });
     }
+
+    case undefined:
+      return undefined;
   }
 
-  globalForLogProvider.logProvider = provider;
-  return provider;
+  return undefined;
+}
+
+async function createSQLiteLogProvider(options: {
+  filePath: string;
+}): Promise<LogProvider> {
+  let sqliteProviderModule: SQLiteProviderModule;
+
+  try {
+    sqliteProviderModule = await import("~/server/logs/sqlite/provider");
+  } catch (error) {
+    throw new Error("Failed to load the SQLite log provider.", {
+      cause: error,
+    });
+  }
+
+  return new sqliteProviderModule.SQLiteLogProvider(options);
+}
+
+function requireLogTarget(value: string | undefined, message: string): string {
+  if (!value) {
+    throw new Error(message);
+  }
+
+  return value;
 }
