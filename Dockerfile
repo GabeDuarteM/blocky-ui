@@ -2,7 +2,7 @@ ARG BUILDER_PLATFORM=linux/amd64
 
 FROM --platform=${BUILDER_PLATFORM} node:22-alpine AS deps
 WORKDIR /app
-ARG BUN_VERSION=1.3.9
+ARG BUN_VERSION=1.3.14
 RUN apk add --no-cache g++ make python3 \
   && npm install --global bun@${BUN_VERSION}
 
