@@ -1,26 +1,20 @@
 ARG BUILDER_PLATFORM=linux/amd64
 
-# 1) base image for the final container (native, multi-arch)
-FROM node:22-alpine AS base
+FROM --platform=${BUILDER_PLATFORM} node:22-alpine AS deps
 WORKDIR /app
+ARG BUN_VERSION=1.3.14
+RUN apk add --no-cache g++ make python3 \
+  && npm install --global bun@${BUN_VERSION}
 
-# 2) builder base (FORCED to amd64 due to nextjs build issues on armv6/v7)
-FROM --platform=${BUILDER_PLATFORM} oven/bun:1-alpine AS base-build
-WORKDIR /app
-RUN apk add --no-cache g++ make python3
-RUN bun install --global node-gyp
-
-# 3) deps + build, all on amd64 still
-FROM base-build AS deps-build
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile
 
-FROM deps-build AS builder
+FROM deps AS builder
 COPY . .
 RUN bun run build
 
-# 4) the runner stage, multi-arch from now on
-FROM base AS runner
+FROM node:22-alpine AS runner
+WORKDIR /app
 ENV NODE_ENV=production
 
 LABEL org.opencontainers.image.source="https://github.com/GabeDuarteM/blocky-ui"
