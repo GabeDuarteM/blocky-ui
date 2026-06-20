@@ -17,7 +17,7 @@ permissions:
   contents: read
   issues: write
   packages: write
-  pull-requests: read
+  pull-requests: write
 
 env:
   GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
