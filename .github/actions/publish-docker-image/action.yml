@@ -53,6 +53,5 @@ runs:
         platforms: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
         build-args: |
           BUILDER_PLATFORM=linux/amd64
-          BUILDER_PLATFORM@linux/arm64=linux/arm64
         tags: ${{ inputs.tags }}
         labels: ${{ inputs.labels }}
