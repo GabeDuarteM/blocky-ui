@@ -1,0 +1,146 @@
+name: PR container image
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Pull request number to build and create the image from.
+        required: true
+
+permissions:
+  contents: read
+  issues: write
+  packages: write
+  pull-requests: write
+
+env:
+  GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
+
+concurrency:
+  group: pr-image-${{ github.event.pull_request.number || inputs.pr_number }}
+  cancel-in-progress: true
+
+jobs:
+  publish-owner-pr:
+    name: Publish owner PR image
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.user.login == github.repository_owner &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=raw,value=pr-${{ github.event.pull_request.number }}
+            type=raw,value=pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.event.pull_request.head.sha }}
+            org.opencontainers.image.ref.name=pr-${{ github.event.pull_request.number }}
+
+      - name: Publish image
+        uses: ./.github/actions/publish-docker-image
+        with:
+          ghcr-token: ${{ secrets.GITHUB_TOKEN }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Comment with image tags
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-container-image
+          number: ${{ github.event.pull_request.number }}
+          message: |
+            Container images were published for this PR.
+
+            - Latest PR image: `${{ env.GHCR_IMAGE }}:pr-${{ github.event.pull_request.number }}`
+            - Exact commit image: `${{ env.GHCR_IMAGE }}:pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}`
+
+  publish-authorized-pr:
+    name: Publish authorized PR image
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: pr-images
+    steps:
+      - name: Checkout trusted workflow actions
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Resolve pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
+            echo "pr_number must be numeric" >&2
+            exit 1
+          fi
+
+          pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
+
+          {
+            echo "number=${PR_NUMBER}"
+            echo "head_repository=$(jq -r '.head.repo.full_name' <<< "${pr_json}")"
+            echo "head_sha=$(jq -r '.head.sha' <<< "${pr_json}")"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout pull request
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ steps.pr.outputs.head_repository }}
+          ref: ${{ steps.pr.outputs.head_sha }}
+          path: pr
+          persist-credentials: false
+
+      - name: Generate Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.GHCR_IMAGE }}
+          tags: |
+            type=raw,value=pr-${{ steps.pr.outputs.number }}
+            type=raw,value=pr-${{ steps.pr.outputs.number }}-${{ steps.pr.outputs.head_sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.pr.outputs.head_sha }}
+            org.opencontainers.image.ref.name=pr-${{ steps.pr.outputs.number }}
+
+      - name: Publish image
+        uses: ./.github/actions/publish-docker-image
+        with:
+          ghcr-token: ${{ secrets.GITHUB_TOKEN }}
+          context: pr
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Comment with image tags
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-container-image
+          number: ${{ steps.pr.outputs.number }}
+          message: |
+            Container images were published for this PR.
+
+            - Latest PR image: `${{ env.GHCR_IMAGE }}:pr-${{ steps.pr.outputs.number }}`
+            - Exact commit image: `${{ env.GHCR_IMAGE }}:pr-${{ steps.pr.outputs.number }}-${{ steps.pr.outputs.head_sha }}`
