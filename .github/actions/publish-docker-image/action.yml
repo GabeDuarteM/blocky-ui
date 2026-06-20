@@ -15,9 +15,16 @@ inputs:
   ghcr-token:
     description: GitHub token with package write permission.
     required: true
+  cache-ref:
+    description: BuildKit registry cache reference.
+    required: true
   labels:
     description: Docker image labels.
     required: false
+  platforms:
+    description: Target platforms to build.
+    required: false
+    default: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
   tags:
     description: Docker image tags.
     required: true
@@ -50,8 +57,10 @@ runs:
       with:
         context: ${{ inputs.context }}
         push: true
-        platforms: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+        platforms: ${{ inputs.platforms }}
         build-args: |
           BUILDER_PLATFORM=linux/amd64
+        cache-from: type=registry,ref=${{ inputs.cache-ref }}
+        cache-to: type=registry,ref=${{ inputs.cache-ref }},mode=max
         tags: ${{ inputs.tags }}
         labels: ${{ inputs.labels }}

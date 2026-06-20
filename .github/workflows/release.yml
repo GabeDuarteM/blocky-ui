@@ -84,6 +84,7 @@ jobs:
         uses: ./.github/actions/publish-docker-image
         with:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
           dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           tags: |
