@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
   packages: write
   pull-requests: read
 
@@ -59,6 +60,17 @@ jobs:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Comment with image tags
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-container-image
+          number: ${{ github.event.pull_request.number }}
+          message: |
+            Container images were published for this PR.
+
+            - Latest PR image: `${{ env.GHCR_IMAGE }}:pr-${{ github.event.pull_request.number }}`
+            - Exact commit image: `${{ env.GHCR_IMAGE }}:pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}`
 
   publish-authorized-pr:
     name: Publish authorized PR image
@@ -121,3 +133,14 @@ jobs:
           context: pr
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Comment with image tags
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: pr-container-image
+          number: ${{ steps.pr.outputs.number }}
+          message: |
+            Container images were published for this PR.
+
+            - Latest PR image: `${{ env.GHCR_IMAGE }}:pr-${{ steps.pr.outputs.number }}`
+            - Exact commit image: `${{ env.GHCR_IMAGE }}:pr-${{ steps.pr.outputs.number }}-${{ steps.pr.outputs.head_sha }}`
