@@ -1,5 +1,17 @@
 # blocky-ui
 
+## 1.9.1
+
+### Patch Changes
+
+- [#350](https://github.com/GabeDuarteM/blocky-ui/pull/350) [`ab567c0`](https://github.com/GabeDuarteM/blocky-ui/commit/ab567c0af99b787bfe5bb59a5ee777b99c497d54) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Fix SQLite query log support in armv6 and armv7 Docker images.
+
+  The Docker build now compiles the `better-sqlite3` native addon for each target runtime platform before copying it into the final image, so SQLite query logs work on 32-bit ARM images.
+
+- [#347](https://github.com/GabeDuarteM/blocky-ui/pull/347) [`7f567dd`](https://github.com/GabeDuarteM/blocky-ui/commit/7f567dd9669db4d091aaeb170b58137876f2ffa6) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Fix SQLite query log support in Docker images. Fixes [#342](https://github.com/GabeDuarteM/blocky-ui/issues/342)
+
+  The Docker build now installs dependencies in a Node-based builder so the `better-sqlite3` native module matches the Node runtime used by the production image.
+
 ## 1.9.0
 
 ### Minor Changes
