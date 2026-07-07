@@ -79,7 +79,7 @@
     "eslint-plugin-drizzle": "0.2.3",
     "jscpd": "5.0.11",
     "knip": "6.25.0",
-    "msw": "2.14.6",
+    "msw": "2.14.7",
     "postcss": "8.5.16",
     "prettier": "3.8.5",
     "prettier-plugin-tailwindcss": "0.8.0",
