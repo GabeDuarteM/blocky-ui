@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
-import { blockyApiProcedure } from "~/server/api/demo";
+import {
+  BLOCKY_API_UNAVAILABLE_MESSAGE,
+  blockyApiProcedure,
+} from "~/server/api/demo";
 import ky from "ky";
 import {
   BLOCKY_DNS_RECORD_TYPES,
@@ -55,9 +58,7 @@ export const blockyRouter = createTRPCRouter({
           error.message.includes("fetch failed") ||
           error.message.includes("NetworkError")
         ) {
-          throw new Error(
-            `Unable to reach Blocky API at ${env.BLOCKY_API_URL}. Please check if the API server is running.`,
-          );
+          throw new Error(BLOCKY_API_UNAVAILABLE_MESSAGE);
         }
 
         throw error;

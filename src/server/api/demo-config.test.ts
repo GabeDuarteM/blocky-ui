@@ -88,9 +88,11 @@ describe("demo request configuration", () => {
     const blockyCaller = blockyRouter.createCaller(context);
     const statsCaller = statsRouter.createCaller(context);
 
-    await expect(blockyCaller.blockingStatus()).rejects.toThrow(
-      "Unable to reach Blocky API at http://localhost:4000. Please check if the API server is running.",
-    );
+    await expect(blockyCaller.blockingStatus()).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      message:
+        "Unable to reach Blocky API at http://localhost:4000. Please check if the API server is running.",
+    });
     await expect(statsCaller.prometheusStatus()).resolves.toEqual({
       available: false,
     });
