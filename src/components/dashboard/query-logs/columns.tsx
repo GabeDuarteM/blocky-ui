@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { LogEntry } from "~/server/logs/types";
 
@@ -10,6 +11,47 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { Badge, type BadgeVariants } from "~/components/ui/badge";
+
+interface DomainCellProps {
+  domain: string;
+}
+
+function DomainCell({ domain }: DomainCellProps) {
+  const textRef = useRef<HTMLDivElement>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const element = textRef.current;
+    if (!element) {
+      return;
+    }
+
+    setIsTruncated(element.scrollWidth > element.clientWidth);
+  }, [domain]);
+
+  const content = (
+    <div className="flex h-full cursor-text items-center">
+      <div ref={textRef} className="max-w-50 truncate select-text">
+        {domain}
+      </div>
+    </div>
+  );
+
+  if (!isTruncated) {
+    return content;
+  }
+
+  return (
+    <TooltipProvider>
+      <Tooltip delayDuration={100}>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent>
+          <p>{domain}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export const columns: ColumnDef<LogEntry>[] = [
   {
@@ -41,20 +83,7 @@ export const columns: ColumnDef<LogEntry>[] = [
     cell: ({ row }) => {
       const domain = row.original.questionName;
       if (!domain) return null;
-      return (
-        <TooltipProvider>
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger>
-              <div className="flex h-full items-center">
-                <div className="max-w-50 truncate">{domain}</div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{domain}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+      return <DomainCell domain={domain} />;
     },
   },
   {

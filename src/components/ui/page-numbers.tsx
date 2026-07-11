@@ -78,7 +78,7 @@ export function PageNumbers({
       onClick={handleClick}
       className="text-muted-foreground h-7 px-2 text-xs tabular-nums"
     >
-      {currentPage + 1} / {totalPages}
+      {(currentPage + 1).toLocaleString()} / {totalPages.toLocaleString()}
     </Button>
   );
 }

@@ -1,41 +1,39 @@
 "use client";
 
-import { Activity, Ban, Database, List } from "lucide-react";
+import { Activity, ChartPie, Database, List } from "lucide-react";
+import { formatCount } from "~/lib/utils";
 import { api } from "~/trpc/react";
 import { StatCard } from "./stat-card";
 
 export function StatisticsOverview() {
-  const { data: status, isLoading: statusLoading } =
-    api.stats.prometheusStatus.useQuery();
-  const { data: overview, isLoading: overviewLoading } =
-    api.stats.overview.useQuery(undefined, {
-      enabled: status?.available ?? false,
-    });
+  const { data: snapshot, isLoading } = api.stats.snapshot.useQuery();
+  const overview = snapshot?.overview;
 
-  const isLoading = statusLoading || overviewLoading;
-  const showStats = status?.available && overview;
-
-  if (!statusLoading && !status?.available) {
+  if (!isLoading && !overview) {
     return null;
   }
-
-  const hasLogProvider = showStats && overview.hasLogProvider;
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         title="Total Queries"
-        value={showStats ? overview.totalQueries : 0}
+        value={overview?.totalQueries ?? 0}
         icon={Activity}
         isLoading={isLoading}
-        tooltip={hasLogProvider ? "Last 24 hours" : "Since Blocky started"}
+        tooltip="Last 24 hours"
+        detail={
+          overview
+            ? `${overview.avgResponseMs} ms avg. response`
+            : "0 ms avg. response"
+        }
       />
       <StatCard
-        title="Blocked"
-        value={showStats ? overview.blocked : 0}
-        icon={Ban}
+        title="Query Outcomes"
+        value={overview?.blocked ?? 0}
+        valueLabel="blocked"
+        icon={ChartPie}
         badge={
-          showStats
+          overview
             ? {
                 value: `${overview.blockedPercentage.toFixed(1)}%`,
                 variant: "destructive",
@@ -43,22 +41,36 @@ export function StatisticsOverview() {
             : undefined
         }
         isLoading={isLoading}
-        tooltip={hasLogProvider ? "Last 24 hours" : "Since Blocky started"}
+        tooltip="Blocked, dropped, and failed queries in the last 24 hours"
+        detail={
+          overview
+            ? `${formatCount(overview.dropped)} dropped · ${formatCount(overview.errors)} errors`
+            : "0 dropped · 0 errors"
+        }
       />
       <StatCard
         title="Cache Hit Rate"
-        value={showStats ? `${overview.cacheHitRate.toFixed(1)}%` : "0%"}
+        value={overview ? `${overview.cacheHitRate.toFixed(1)}%` : "0%"}
         icon={Database}
-        progress={showStats ? overview.cacheHitRate : 0}
         isLoading={isLoading}
-        tooltip="Percentage of queries answered from cache (since Blocky started)"
+        tooltip="Percentage of cache lookups served from cache in the last 24 hours"
+        detail={
+          overview
+            ? `${formatCount(overview.cacheEntries)} cached entries`
+            : "0 cached entries"
+        }
       />
       <StatCard
         title="Listed Domains"
-        value={showStats ? overview.listedDomains : 0}
+        value={overview?.listedDomains ?? 0}
         icon={List}
         isLoading={isLoading}
         tooltip="Total domains in blocklists"
+        detail={
+          overview
+            ? `${overview.denylistGroups} groups · ${formatCount(overview.allowlistDomains)} allowed`
+            : "0 groups · 0 allowed"
+        }
       />
     </div>
   );

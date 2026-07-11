@@ -11,7 +11,7 @@ import {
 const NO_SERVICES: DemoConfiguration = {
   services: {
     blockyApi: false,
-    prometheus: false,
+    statistics: false,
     queryLogs: false,
   },
 };
@@ -19,14 +19,14 @@ const NO_SERVICES: DemoConfiguration = {
 const API_AND_LOGS: DemoConfiguration = {
   services: {
     blockyApi: true,
-    prometheus: false,
+    statistics: false,
     queryLogs: true,
   },
 };
 
 describe("demo configuration", () => {
   it.each([
-    [DEFAULT_DEMO_CONFIGURATION, "blockyApi,prometheus,queryLogs"],
+    [DEFAULT_DEMO_CONFIGURATION, "blockyApi,statistics,queryLogs"],
     [API_AND_LOGS, "blockyApi,queryLogs"],
     [NO_SERVICES, "none"],
   ])("serializes enabled services", (configuration, value) => {
@@ -34,7 +34,7 @@ describe("demo configuration", () => {
   });
 
   it.each([
-    ["blockyApi,prometheus,queryLogs", DEFAULT_DEMO_CONFIGURATION],
+    ["blockyApi,statistics,queryLogs", DEFAULT_DEMO_CONFIGURATION],
     ["blockyApi,queryLogs", API_AND_LOGS],
     ["none", NO_SERVICES],
   ])("parses enabled services", (value, configuration) => {
@@ -50,13 +50,13 @@ describe("demo configuration", () => {
 
   it("reads enabled services from the request header", () => {
     const headers = new Headers({
-      [DEMO_CONFIGURATION_HEADER]: "prometheus,queryLogs",
+      [DEMO_CONFIGURATION_HEADER]: "statistics,queryLogs",
     });
 
     expect(getDemoConfigurationFromHeaders(headers)).toEqual({
       services: {
         blockyApi: false,
-        prometheus: true,
+        statistics: true,
         queryLogs: true,
       },
     });

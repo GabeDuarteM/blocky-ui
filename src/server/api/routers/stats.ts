@@ -2,10 +2,9 @@ import { z } from "zod";
 import { TIME_RANGES } from "~/lib/constants";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
-  checkPrometheusAvailable,
-  extractBlockyMetrics,
-  fetchPrometheusMetrics,
-} from "~/server/prometheus/client";
+  createStatisticsSnapshot,
+  fetchBlockyStatistics,
+} from "~/server/blocky/statistics";
 
 const timeRangeSchema = z.enum(TIME_RANGES);
 
@@ -23,47 +22,16 @@ const searchSchema = z.object({
 });
 
 export const statsRouter = createTRPCRouter({
-  prometheusStatus: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.isDemoServiceAvailable("prometheus")) {
-      return { available: false };
-    }
-
-    const available = await checkPrometheusAvailable();
-    return { available };
-  }),
-
-  overview: publicProcedure.query(async ({ ctx }) => {
-    if (!ctx.isDemoServiceAvailable("prometheus")) {
+  snapshot: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.isDemoServiceAvailable("statistics")) {
       return null;
     }
 
-    const parsed = await fetchPrometheusMetrics();
-    if (!parsed) return null;
-
-    const metrics = extractBlockyMetrics(parsed);
-    const totalDenylistEntries = metrics.denylistEntries.reduce(
-      (sum, e) => sum + e.count,
-      0,
-    );
-    const cacheHitRate =
-      metrics.cacheHits + metrics.cacheMisses > 0
-        ? (metrics.cacheHits / (metrics.cacheHits + metrics.cacheMisses)) * 100
-        : 0;
-
-    const stats24h = await ctx.logProvider?.getStats24h();
-    const totalQueries = stats24h?.totalQueries ?? metrics.queryTotal;
-    const blocked = stats24h?.blocked ?? metrics.blocked;
-    const blockedPercentage =
-      totalQueries > 0 ? (blocked / totalQueries) * 100 : 0;
-
-    return {
-      totalQueries,
-      blocked,
-      blockedPercentage,
-      cacheHitRate,
-      listedDomains: totalDenylistEntries,
-      hasLogProvider: !!ctx.logProvider,
-    };
+    const statistics = await fetchBlockyStatistics();
+    if (!statistics) {
+      return null;
+    }
+    return createStatisticsSnapshot(statistics);
   }),
 
   queriesOverTime: publicProcedure

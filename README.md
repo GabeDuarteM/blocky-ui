@@ -13,8 +13,9 @@ BlockyUI is a modern companion dashboard for your [Blocky DNS](https://github.co
   - Supports MySQL, PostgreSQL (including Timescale), CSV, CSV-Client, and console (check `QUERY_LOG_CONSOLE_PROVIDER`) logging types from Blocky
   - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
 - Statistics sections
-  - Overview cards: total queries, blocked requests, cache hit rate, listed domains (requires [Prometheus](https://0xerr0r.github.io/blocky/latest/configuration/#prometheus) enabled on Blocky)
-  - Queries over time chart, top domains, and top clients (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky)
+  - Overview cards: total queries, blocked requests, cache hit rate, listed domains, average response time (requires [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) enabled on Blocky)
+  - Top domains, blocked domains, and clients use Blocky's rolling 24-hour statistics when query logging is not configured
+  - Queries over time and richer top lists with selectable ranges, filtering, and pagination require [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky
 
 ## 🏁 Getting Started
 
@@ -42,9 +43,6 @@ services:
       - BLOCKY_API_URL=http://blocky:4000
       # Uncomment to add custom headers to Blocky API requests (e.g. authentication)
       # - BLOCKY_REQUEST_HEADERS={"Authorization":"Bearer your-token-here"}
-      # Uncomment to override the Prometheus metrics path (defaults to /metrics)
-      # Only use this if you've changed `prometheus.path` on your Blocky's server config
-      # - PROMETHEUS_PATH=/custom-metrics-path
 
       # Uncomment to enable query logging features
 
@@ -120,19 +118,18 @@ BlockyUI is configured via environment variables in all deployment methods.
 | Variable                     | Required    | Default                 | Description                                                                                                              |
 | ---------------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `BLOCKY_API_URL`             | No          | `http://localhost:4000` | Base URL of your Blocky API (usually `http://blocky-host:4000`).                                                         |
-| `BLOCKY_REQUEST_HEADERS`     | No          | None                    | JSON object of custom headers for all Blocky API and Prometheus requests (e.g., `'{"Authorization":"Bearer token"}'`).   |
+| `BLOCKY_REQUEST_HEADERS`     | No          | None                    | JSON object of custom headers for all Blocky API requests (e.g., `'{"Authorization":"Bearer token"}'`).                  |
 | `QUERY_LOG_TYPE`             | No          | None                    | Enables query logging. Accepted values: `mysql`, `postgresql`, `timescale`, `sqlite`, `csv`, `csv-client`, or `console`. |
 | `QUERY_LOG_CONSOLE_PROVIDER` | Conditional | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`.              |
 | `QUERY_LOG_TARGET`           | No          | None                    | Connection string, SQLite file path, or log folder path for the same target as Blocky's `queryLog.target`.               |
 | `INSTANCE_NAME`              | No          | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                  |
-| `PROMETHEUS_PATH`            | No          | `/metrics`              | Override if you have Prometheus enabled on Blocky and changed `prometheus.path`.                                         |
 | `DEMO_MODE`                  | No          | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                          |
 
 ### Common Setups
 
-- **Basic**: set only `BLOCKY_API_URL`. Only the server status, operations, and query tools will be visible.
-- **Blocky with Prometheus enabled**: Enables the statistics section.
-- **Query logging**: Enables the sections for query logging, top lists, queries over time, and a more detailed total queries/blocked panels, scoped by the last 24 hours.
+- **Basic**: set only `BLOCKY_API_URL`. Server status, operations, and query tools will be visible.
+- **Blocky with statistics enabled**: Add [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) to Blocky's configuration to show the rolling 24-hour overview cards and top lists.
+- **Query logging**: Enables query logs and the statistics charts with selectable time ranges, filtering, and pagination.
 
 ### Local Development
 

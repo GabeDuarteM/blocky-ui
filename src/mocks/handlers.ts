@@ -1,6 +1,5 @@
 import { http, HttpResponse } from "msw";
 import { env } from "~/env";
-import { generateMockPrometheusMetrics } from "./prometheusMock";
 
 interface BlockingStatus {
   enabled: boolean;
@@ -120,16 +119,58 @@ export const handlers = [
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.get(`${env.BLOCKY_API_URL}/metrics`, () => {
-    return new HttpResponse(generateMockPrometheusMetrics(), {
-      status: 200,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-      },
-    });
-  }),
+  http.get(`${env.BLOCKY_API_URL}/api/stats`, () => {
+    const end = new Date();
+    const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
 
-  http.head(`${env.BLOCKY_API_URL}/metrics`, () => {
-    return new HttpResponse(null, { status: 200 });
+    return HttpResponse.json({
+      start: start.toISOString(),
+      end: end.toISOString(),
+      summary: {
+        queries: 12453,
+        cached: 8976,
+        forwarded: 1343,
+        blocked: 2134,
+        local: 0,
+        dropped: 0,
+        errors: 0,
+        avgResponseMs: 12,
+        cacheHitRate: 0.87,
+      },
+      byResponseType: {
+        BLOCKED: 2134,
+        CACHED: 8976,
+        RESOLVED: 1343,
+      },
+      byQueryType: { A: 9000, AAAA: 3453 },
+      byResponseCode: { NOERROR: 12453 },
+      perHour: [],
+      topDomains: [
+        { name: "connectivitycheck.gstatic.com", count: 842 },
+        { name: "api.github.com", count: 613 },
+        { name: "registry.npmjs.org", count: 487 },
+        { name: "home-assistant.io", count: 321 },
+        { name: "time.cloudflare.com", count: 284 },
+      ],
+      topBlockedDomains: [
+        { name: "telemetry.microsoft.com", count: 312 },
+        { name: "ads.google.com", count: 268 },
+        { name: "graph.facebook.com", count: 194 },
+        { name: "tracking.example.com", count: 143 },
+        { name: "metrics.example.net", count: 97 },
+      ],
+      topClients: [
+        { name: "living-room", count: 3201 },
+        { name: "nas", count: 2740 },
+        { name: "laptop", count: 2388 },
+        { name: "home-assistant", count: 1984 },
+        { name: "phone", count: 1527 },
+      ],
+      lists: {
+        denylist: { default: 86832, ads: 42156, malware: 12543 },
+        allowlist: { default: 156, ads: 89 },
+      },
+      cache: { entries: 4521 },
+    });
   }),
 ];

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { QueriesOverTimeChart } from "./queries-over-time-chart";
 import { TopDomainsTable } from "./top-domains-table";
 import { TopClientsTable } from "./top-clients-table";
+import { TimeRangeSelector } from "./time-range-selector";
 import { type TimeRange } from "~/lib/constants";
 import {
   Card,
@@ -25,15 +26,16 @@ const ROWS_OPTIONS = [5, 10, 25, 50] as const;
 type RowsOption = (typeof ROWS_OPTIONS)[number];
 
 export function ChartsSection() {
-  const [range, setRange] = useState<TimeRange>("24h");
+  const [chartRange, setChartRange] = useState<TimeRange>("24h");
+  const [topListsRange, setTopListsRange] = useState<TimeRange>("24h");
   const [rowsPerTable, setRowsPerTable] = useState<RowsOption>(5);
 
   return (
     <div className="space-y-6">
-      <QueriesOverTimeChart range={range} onRangeChange={setRange} />
+      <QueriesOverTimeChart range={chartRange} onRangeChange={setChartRange} />
       <Card>
         <CardHeader>
-          <div className="flex w-full flex-row items-center justify-between">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <CardTitle className="flex items-center gap-2 text-base font-medium">
                 <ListOrdered className="h-5 w-5" />
@@ -41,30 +43,46 @@ export function ChartsSection() {
               </CardTitle>
               <CardDescription>Most active domains and clients</CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">Rows</span>
-              <Select
-                value={String(rowsPerTable)}
-                onValueChange={(v) => setRowsPerTable(Number(v) as RowsOption)}
-              >
-                <SelectTrigger size="sm" className="h-7 w-18 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROWS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={String(opt)}>
-                      {opt}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">Rows</span>
+                <Select
+                  value={String(rowsPerTable)}
+                  onValueChange={(v) =>
+                    setRowsPerTable(Number(v) as RowsOption)
+                  }
+                >
+                  <SelectTrigger size="sm" className="w-18 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROWS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt} value={String(opt)}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <TimeRangeSelector
+                value={topListsRange}
+                onChange={setTopListsRange}
+              />
             </div>
           </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
-            <TopDomainsTable range={range} limit={rowsPerTable} />
-            <TopClientsTable range={range} limit={rowsPerTable} />
+            <TopDomainsTable
+              key={`domains-${topListsRange}-${rowsPerTable}`}
+              range={topListsRange}
+              limit={rowsPerTable}
+            />
+            <TopClientsTable
+              key={`clients-${topListsRange}-${rowsPerTable}`}
+              range={topListsRange}
+              limit={rowsPerTable}
+            />
           </div>
         </CardContent>
       </Card>

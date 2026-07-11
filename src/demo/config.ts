@@ -7,9 +7,9 @@ export const DEMO_SERVICES = [
     description: "Status, controls, and query tool",
   },
   {
-    id: "prometheus",
-    label: "Prometheus",
-    description: "Metrics and overview statistics",
+    id: "statistics",
+    label: "Statistics API",
+    description: "Overview statistics and fallback top lists",
   },
   {
     id: "queryLogs",
@@ -27,7 +27,7 @@ export type DemoConfiguration = {
 export const DEFAULT_DEMO_CONFIGURATION: DemoConfiguration = {
   services: {
     blockyApi: true,
-    prometheus: true,
+    statistics: true,
     queryLogs: true,
   },
 };
@@ -77,7 +77,7 @@ function createDemoConfiguration(
   return {
     services: {
       blockyApi: enabledServices.has("blockyApi"),
-      prometheus: enabledServices.has("prometheus"),
+      statistics: enabledServices.has("statistics"),
       queryLogs: enabledServices.has("queryLogs"),
     },
   };
