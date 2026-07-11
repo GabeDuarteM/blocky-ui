@@ -8,7 +8,6 @@ const queryResponseSchema = z.object({
 });
 
 const BLOCKED_REASON_PATTERN = /^BLOCKED(?: [^(]+)? \((.*)\)$/i;
-const BLOCKING_GROUP_PATTERN = /(?:^|, )([^,:]+): /g;
 
 export interface BlockyQueryResult {
   responseType: string;
@@ -28,22 +27,24 @@ function parseAnswers(response: string): string[] {
   });
 }
 
-function parseBlockingGroups(reason: string): string[] {
+function parseBlockingGroup(reason: string): string | null {
   const reasonMatch = BLOCKED_REASON_PATTERN.exec(reason.trim());
   const details = reasonMatch?.[1];
   if (!details) {
-    return [];
+    return null;
   }
 
-  return Array.from(details.matchAll(BLOCKING_GROUP_PATTERN), (match) =>
-    match[1]?.trim(),
-  ).filter((group): group is string => Boolean(group));
+  const separatorIndex = details.indexOf(": ");
+  if (separatorIndex <= 0) {
+    return null;
+  }
+
+  return details.slice(0, separatorIndex);
 }
 
 function getDetail(responseType: string, reason: string): string | null {
   if (responseType.toUpperCase() === "BLOCKED") {
-    const groups = parseBlockingGroups(reason);
-    return groups.length > 0 ? groups.join(", ") : null;
+    return parseBlockingGroup(reason);
   }
 
   if (reason.toUpperCase() === responseType.toUpperCase()) {

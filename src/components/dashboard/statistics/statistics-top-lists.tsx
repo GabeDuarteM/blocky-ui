@@ -8,6 +8,7 @@ import {
   TopListCard,
   TopListEntry,
   type TopListFilter,
+  type TopListFilterControls,
   TopListsSection,
 } from "./top-list";
 
@@ -24,8 +25,7 @@ interface StatisticsTopListProps {
   icon: LucideIcon;
   entries: NameCount[];
   isLoading: boolean;
-  filter?: TopListFilter;
-  onFilterChange?: (filter: TopListFilter) => void;
+  filterControls?: TopListFilterControls;
 }
 
 function StatisticsTopList({
@@ -34,8 +34,7 @@ function StatisticsTopList({
   icon,
   entries,
   isLoading,
-  filter,
-  onFilterChange,
+  filterControls,
 }: StatisticsTopListProps) {
   const displayedEntries = entries.slice(0, DISPLAYED_ENTRIES);
   const maxCount = displayedEntries[0]?.count ?? 0;
@@ -45,8 +44,7 @@ function StatisticsTopList({
       title={title}
       description={description}
       icon={icon}
-      filter={filter}
-      onFilterChange={onFilterChange}
+      filterControls={filterControls}
       isLoading={isLoading}
       isEmpty={displayedEntries.length === 0}
       skeletonRows={DISPLAYED_ENTRIES}
@@ -110,8 +108,7 @@ export function StatisticsTopLists() {
         icon={Globe}
         entries={domainEntries}
         isLoading={isLoading}
-        filter={domainFilter}
-        onFilterChange={setDomainFilter}
+        filterControls={{ value: domainFilter, onChange: setDomainFilter }}
       />
       <StatisticsTopList
         title="Top Clients"

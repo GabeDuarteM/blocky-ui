@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { QueriesOverTimeChart } from "./queries-over-time-chart";
-import { TopDomainsTable } from "./top-domains-table";
-import { TopClientsTable } from "./top-clients-table";
+import { TopListTable } from "./top-list-table";
 import { TimeRangeSelector } from "./time-range-selector";
 import { TopListsSection } from "./top-list";
 import { type TimeRange } from "~/lib/constants";
@@ -72,7 +71,8 @@ export function ChartsSection() {
           </div>
         }
       >
-        <TopDomainsTable
+        <TopListTable
+          type="domains"
           range={topListsRange}
           limit={rowsPerTable}
           page={pages.domains}
@@ -80,7 +80,8 @@ export function ChartsSection() {
             setPages((current) => ({ ...current, domains: page }))
           }
         />
-        <TopClientsTable
+        <TopListTable
+          type="clients"
           range={topListsRange}
           limit={rowsPerTable}
           page={pages.clients}

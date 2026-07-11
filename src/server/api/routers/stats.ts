@@ -7,6 +7,7 @@ import {
 } from "~/server/blocky/statistics";
 
 const timeRangeSchema = z.enum(TIME_RANGES);
+const topListTypeSchema = z.enum(["domains", "clients"]);
 
 const paginatedRangeSchema = z.object({
   range: timeRangeSchema,
@@ -47,18 +48,35 @@ export const statsRouter = createTRPCRouter({
       return ctx.logProvider.getQueriesOverTime(input);
     }),
 
-  topDomains: publicProcedure
-    .input(paginatedRangeSchema)
+  topList: publicProcedure
+    .input(paginatedRangeSchema.extend({ type: topListTypeSchema }))
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
-      return ctx.logProvider.getTopDomains(input);
-    }),
 
-  topClients: publicProcedure
-    .input(paginatedRangeSchema)
-    .query(async ({ ctx, input }) => {
-      if (!ctx.logProvider) return null;
-      return ctx.logProvider.getTopClients(input);
+      const { type, ...options } = input;
+      if (type === "domains") {
+        const result = await ctx.logProvider.getTopDomains(options);
+        return {
+          ...result,
+          items: result.items.map((item) => ({
+            name: item.domain,
+            count: item.count,
+            blocked: item.blocked,
+            percentage: item.percentage,
+          })),
+        };
+      }
+
+      const result = await ctx.logProvider.getTopClients(options);
+      return {
+        ...result,
+        items: result.items.map((item) => ({
+          name: item.client,
+          count: item.total,
+          blocked: item.blocked,
+          percentage: item.percentage,
+        })),
+      };
     }),
 
   queryTypesBreakdown: publicProcedure

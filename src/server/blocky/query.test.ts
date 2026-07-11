@@ -32,7 +32,8 @@ describe("parseBlockyQueryResult", () => {
     ["BLOCKED (telemetry: [...])", "telemetry"],
     ["blocked (telemetry: [...])", "telemetry"],
     ["BLOCKED CNAME (ads: *.example.com)", "ads"],
-    ["BLOCKED (alpha: a.example, mid: m.example)", "alpha, mid"],
+    ["BLOCKED (alpha: a.example, mid: m.example)", "alpha"],
+    ["BLOCKED (telemetry: /foo, category: tracking/)", "telemetry"],
   ])("shows blocking groups for %s", (reason, expected) => {
     expect(createResult(reason).detail).toBe(expected);
   });

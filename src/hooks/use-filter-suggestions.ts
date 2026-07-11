@@ -27,13 +27,13 @@ export function useFilterSuggestions(
   const debouncedSearch = useDebounce(search, 300);
   const hasSearch = debouncedSearch.length > 0;
 
-  const { data: topDomains } = api.stats.topDomains.useQuery(
-    { range, limit: 5, offset: 0, filter: "all" },
+  const { data: topDomains } = api.stats.topList.useQuery(
+    { type: "domains", range, limit: 5, offset: 0, filter: "all" },
     { enabled: !hasSearch },
   );
 
-  const { data: topClients } = api.stats.topClients.useQuery(
-    { range, limit: 5, offset: 0, filter: "all" },
+  const { data: topClients } = api.stats.topList.useQuery(
+    { type: "clients", range, limit: 5, offset: 0, filter: "all" },
     { enabled: !hasSearch },
   );
 
@@ -49,13 +49,17 @@ export function useFilterSuggestions(
 
   const domains = hasSearch
     ? (searchedDomains ?? [])
-    : (topDomains?.items.map((d) => ({ domain: d.domain, count: d.count })) ??
-      []);
+    : (topDomains?.items.map((item) => ({
+        domain: item.name,
+        count: item.count,
+      })) ?? []);
 
   const clients = hasSearch
     ? (searchedClients ?? [])
-    : (topClients?.items.map((c) => ({ client: c.client, count: c.total })) ??
-      []);
+    : (topClients?.items.map((item) => ({
+        client: item.name,
+        count: item.count,
+      })) ?? []);
 
   return { domains, clients };
 }
