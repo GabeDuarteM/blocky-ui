@@ -9,7 +9,7 @@ const queryResponseSchema = z.object({
 
 const BLOCKED_REASON_PATTERN = /^BLOCKED(?: [^(]+)? \((.*)\)$/i;
 
-export interface BlockyQueryResult {
+interface BlockyQueryResult {
   responseType: string;
   returnCode: string;
   answers: string[];

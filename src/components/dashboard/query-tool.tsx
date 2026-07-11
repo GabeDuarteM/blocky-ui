@@ -18,20 +18,20 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { toast } from "sonner";
-import { api } from "~/trpc/react";
+import { api, type RouterOutputs } from "~/trpc/react";
 import { useState } from "react";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 import { cn } from "~/lib/utils";
-import { type BlockyQueryResult } from "~/server/blocky/query";
 
 type DNS_RECORD_TYPE = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
+type QueryResult = RouterOutputs["blocky"]["queryExecute"];
 
 function QueryResultPane({
   responseType,
   returnCode,
   answers,
   detail,
-}: BlockyQueryResult) {
+}: QueryResult) {
   const answerLabel = answers.length === 1 ? "answer" : "answers";
   const isBlocked = responseType === "BLOCKED";
 
