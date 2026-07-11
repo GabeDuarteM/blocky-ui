@@ -2,42 +2,71 @@
 
 import {
   createContext,
-  type Dispatch,
   type ReactNode,
-  type SetStateAction,
+  useCallback,
   useContext,
   useMemo,
   useState,
 } from "react";
-import { DEFAULT_DEMO_SETUP, type DemoSetup } from "~/demo/config";
+import {
+  DEFAULT_DEMO_CONFIGURATION,
+  type DemoConfiguration,
+  type DemoService,
+} from "~/demo/config";
 
-type DemoModeContextValue = {
-  setup: DemoSetup;
-  setSetup: Dispatch<SetStateAction<DemoSetup>>;
+type DemoConfigurationContextValue = {
+  configuration: DemoConfiguration;
+  setServiceEnabled: (service: DemoService, enabled: boolean) => void;
 };
 
-const DemoModeContext = createContext<DemoModeContextValue | null>(null);
+const DemoConfigurationContext =
+  createContext<DemoConfigurationContextValue | null>(null);
 
-export function DemoSetupProvider({ children }: { children: ReactNode }) {
-  const [setup, setSetup] = useState<DemoSetup>(DEFAULT_DEMO_SETUP);
-  const value = useMemo(() => ({ setup, setSetup }), [setup]);
+export function DemoConfigurationProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [configuration, setConfiguration] = useState<DemoConfiguration>(
+    DEFAULT_DEMO_CONFIGURATION,
+  );
+  const setServiceEnabled = useCallback(
+    (service: DemoService, enabled: boolean) => {
+      setConfiguration((current) => ({
+        services: {
+          ...current.services,
+          [service]: enabled,
+        },
+      }));
+    },
+    [],
+  );
+  const value = useMemo(
+    () => ({ configuration, setServiceEnabled }),
+    [configuration, setServiceEnabled],
+  );
 
   return (
-    <DemoModeContext.Provider value={value}>
+    <DemoConfigurationContext.Provider value={value}>
       {children}
-    </DemoModeContext.Provider>
+    </DemoConfigurationContext.Provider>
   );
 }
 
-export function useDemoSetup(): DemoSetup {
-  return useContext(DemoModeContext)?.setup ?? DEFAULT_DEMO_SETUP;
+export function useDemoConfiguration(): DemoConfiguration {
+  return (
+    useContext(DemoConfigurationContext)?.configuration ??
+    DEFAULT_DEMO_CONFIGURATION
+  );
 }
 
-export function useDemoSetupController(): DemoModeContextValue {
-  const context = useContext(DemoModeContext);
+export function useDemoConfigurationController(): DemoConfigurationContextValue {
+  const context = useContext(DemoConfigurationContext);
 
   if (!context) {
-    throw new Error("Demo setup controls require DemoSetupProvider.");
+    throw new Error(
+      "Demo configuration controls require DemoConfigurationProvider.",
+    );
   }
 
   return context;

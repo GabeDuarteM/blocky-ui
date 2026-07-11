@@ -1,27 +1,64 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_DEMO_SETUP,
-  DEMO_SETUPS,
-  DEMO_SETUP_HEADER,
-  getDemoSetup,
-  getDemoSetupFromHeaders,
+  DEFAULT_DEMO_CONFIGURATION,
+  DEMO_CONFIGURATION_HEADER,
+  getDemoConfiguration,
+  getDemoConfigurationFromHeaders,
+  serializeDemoConfiguration,
+  type DemoConfiguration,
 } from "~/demo/config";
 
+const NO_SERVICES: DemoConfiguration = {
+  services: {
+    blockyApi: false,
+    prometheus: false,
+    queryLogs: false,
+  },
+};
+
+const API_AND_LOGS: DemoConfiguration = {
+  services: {
+    blockyApi: true,
+    prometheus: false,
+    queryLogs: true,
+  },
+};
+
 describe("demo configuration", () => {
-  it.each(DEMO_SETUPS)("resolves the $id preset", (setup) => {
-    expect(getDemoSetup(setup.id)).toBe(setup);
+  it.each([
+    [DEFAULT_DEMO_CONFIGURATION, "blockyApi,prometheus,queryLogs"],
+    [API_AND_LOGS, "blockyApi,queryLogs"],
+    [NO_SERVICES, "none"],
+  ])("serializes enabled services", (configuration, value) => {
+    expect(serializeDemoConfiguration(configuration)).toBe(value);
   });
 
-  it.each([undefined, null, "unknown"])(
-    "defaults an invalid value to the complete setup",
+  it.each([
+    ["blockyApi,prometheus,queryLogs", DEFAULT_DEMO_CONFIGURATION],
+    ["blockyApi,queryLogs", API_AND_LOGS],
+    ["none", NO_SERVICES],
+  ])("parses enabled services", (value, configuration) => {
+    expect(getDemoConfiguration(value)).toEqual(configuration);
+  });
+
+  it.each([undefined, null, "unknown", "blockyApi,unknown"])(
+    "defaults a missing or invalid value to all services",
     (value) => {
-      expect(getDemoSetup(value)).toBe(DEFAULT_DEMO_SETUP);
+      expect(getDemoConfiguration(value)).toBe(DEFAULT_DEMO_CONFIGURATION);
     },
   );
 
-  it("reads the setup from the request header", () => {
-    const headers = new Headers({ [DEMO_SETUP_HEADER]: "api-only" });
+  it("reads enabled services from the request header", () => {
+    const headers = new Headers({
+      [DEMO_CONFIGURATION_HEADER]: "prometheus,queryLogs",
+    });
 
-    expect(getDemoSetupFromHeaders(headers).id).toBe("api-only");
+    expect(getDemoConfigurationFromHeaders(headers)).toEqual({
+      services: {
+        blockyApi: false,
+        prometheus: true,
+        queryLogs: true,
+      },
+    });
   });
 });

@@ -6,11 +6,11 @@ import { QueryTool } from "~/components/dashboard/query-tool";
 import { ServerStatus } from "~/components/dashboard/server-status";
 import { ChartsSection } from "~/components/dashboard/statistics/charts-section";
 import { StatisticsOverview } from "~/components/dashboard/statistics/statistics-overview";
-import { useDemoSetup } from "~/demo/context";
+import { useDemoConfiguration } from "~/demo/context";
 
 export function Dashboard({ showLogs }: { showLogs: boolean }) {
-  const setup = useDemoSetup();
-  const showLogFeatures = showLogs && setup.services.queryLogs;
+  const configuration = useDemoConfiguration();
+  const showLogFeatures = showLogs && configuration.services.queryLogs;
 
   return (
     <div className="space-y-5 sm:space-y-6">

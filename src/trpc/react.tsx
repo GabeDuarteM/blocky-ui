@@ -10,7 +10,7 @@ import SuperJSON from "superjson";
 
 import { type AppRouter } from "./app-router";
 import { createQueryClient } from "./query-client";
-import { DEMO_SETUP_HEADER, type DemoSetupId } from "~/demo/config";
+import { DEMO_CONFIGURATION_HEADER } from "~/demo/config";
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
@@ -44,10 +44,10 @@ export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export function TRPCReactProvider({
   children,
-  demoSetupId,
+  demoConfiguration,
 }: {
   children: React.ReactNode;
-  demoSetupId?: DemoSetupId;
+  demoConfiguration?: string;
 }) {
   const queryClient = getQueryClient();
 
@@ -66,15 +66,15 @@ export function TRPCReactProvider({
             headers: () => {
               const headers = new Headers();
               headers.set("x-trpc-source", "nextjs-react");
-              if (demoSetupId) {
-                headers.set(DEMO_SETUP_HEADER, demoSetupId);
+              if (demoConfiguration) {
+                headers.set(DEMO_CONFIGURATION_HEADER, demoConfiguration);
               }
               return headers;
             },
           }),
         ],
       }),
-    [demoSetupId],
+    [demoConfiguration],
   );
 
   return (

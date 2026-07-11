@@ -4,30 +4,33 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, FlaskConical, Server } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { DemoSetupProvider, useDemoSetupController } from "~/demo/context";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
-import { DEMO_SETUPS, getDemoSetup } from "~/demo/config";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "~/components/ui/popover";
+import { Switch } from "~/components/ui/switch";
+import { DEMO_SERVICES, serializeDemoConfiguration } from "~/demo/config";
+import {
+  DemoConfigurationProvider,
+  useDemoConfigurationController,
+} from "~/demo/context";
 import { TRPCReactProvider } from "~/trpc/react";
 
 export function DemoModeProvider({ children }: { children: ReactNode }) {
   return (
-    <DemoSetupProvider>
+    <DemoConfigurationProvider>
       <DemoModeContent>{children}</DemoModeContent>
-    </DemoSetupProvider>
+    </DemoConfigurationProvider>
   );
 }
 
 function DemoModeContent({ children }: { children: ReactNode }) {
-  const { setup } = useDemoSetupController();
+  const { configuration } = useDemoConfigurationController();
+  const serializedConfiguration = serializeDemoConfiguration(configuration);
 
   return (
-    <TRPCReactProvider demoSetupId={setup.id}>
+    <TRPCReactProvider demoConfiguration={serializedConfiguration}>
       <DemoModeShell>{children}</DemoModeShell>
     </TRPCReactProvider>
   );
@@ -35,18 +38,19 @@ function DemoModeContent({ children }: { children: ReactNode }) {
 
 function DemoModeShell({ children }: { children: ReactNode }) {
   const [isMinimized, setIsMinimized] = useState(true);
-  const { setup } = useDemoSetupController();
+  const { configuration } = useDemoConfigurationController();
+  const serializedConfiguration = serializeDemoConfiguration(configuration);
   const queryClient = useQueryClient();
-  const previousSetupId = useRef(setup.id);
+  const previousConfiguration = useRef(serializedConfiguration);
 
   useEffect(() => {
-    if (previousSetupId.current === setup.id) {
+    if (previousConfiguration.current === serializedConfiguration) {
       return;
     }
 
-    previousSetupId.current = setup.id;
+    previousConfiguration.current = serializedConfiguration;
     void queryClient.resetQueries();
-  }, [queryClient, setup.id]);
+  }, [queryClient, serializedConfiguration]);
 
   return (
     <>
@@ -68,11 +72,13 @@ function DemoDevtoolsBar({
   isMinimized: boolean;
   onMinimizedChange: (isMinimized: boolean) => void;
 }) {
-  const { setup, setSetup } = useDemoSetupController();
-
-  const handleSetupChange = (value: string) => {
-    setSetup(getDemoSetup(value));
-  };
+  const { configuration, setServiceEnabled } = useDemoConfigurationController();
+  const enabledServices = DEMO_SERVICES.filter(
+    ({ id }) => configuration.services[id],
+  );
+  const selectionLabel = getSelectionLabel(
+    enabledServices.map((service) => service.label),
+  );
 
   if (isMinimized) {
     return (
@@ -94,7 +100,7 @@ function DemoDevtoolsBar({
           </span>
           <span className="h-4 w-px bg-white/10" />
           <span className="max-w-40 truncate text-xs text-zinc-300">
-            {setup.label}
+            {selectionLabel}
           </span>
           <ChevronUp className="size-3.5 text-zinc-500" />
         </Button>
@@ -116,33 +122,57 @@ function DemoDevtoolsBar({
             Demo mode
           </p>
           <p className="hidden text-xs text-zinc-400 sm:block">
-            Preview setup states
+            Toggle services
           </p>
         </div>
       </div>
 
-      <Select value={setup.id} onValueChange={handleSetupChange}>
-        <SelectTrigger
-          aria-label="Demo setup"
-          size="sm"
-          className="h-9 w-full border-white/10 bg-white/5 text-zinc-100 sm:w-52"
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            aria-label="Demo services"
+            variant="outline"
+            className="h-9 w-full justify-between border-white/10 bg-white/5 px-3 text-zinc-100 hover:bg-white/10 hover:text-zinc-100 sm:w-52"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <Server className="size-3.5 shrink-0 text-zinc-400" />
+              <span className="truncate">{selectionLabel}</span>
+            </span>
+            <ChevronUp className="size-3.5 shrink-0 text-zinc-500" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="center"
+          side="top"
+          className="w-72 border-white/10 bg-zinc-950 p-1 text-zinc-100"
         >
-          <Server className="size-3.5 text-zinc-400" />
-          <SelectValue>{setup.label}</SelectValue>
-        </SelectTrigger>
-        <SelectContent align="center" className="min-w-72">
-          {DEMO_SETUPS.map((option) => (
-            <SelectItem key={option.id} value={option.id}>
-              <span className="flex flex-col items-start">
-                <span>{option.label}</span>
-                <span className="text-muted-foreground text-xs">
-                  {option.description}
+          <div aria-label="Enabled demo services" role="group">
+            {DEMO_SERVICES.map((service) => (
+              <label
+                key={service.id}
+                htmlFor={`demo-service-${service.id}`}
+                className="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 hover:bg-white/5"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm">{service.label}</span>
+                  <span className="block text-xs text-zinc-500">
+                    {service.description}
+                  </span>
                 </span>
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+                <Switch
+                  id={`demo-service-${service.id}`}
+                  aria-label={`${service.label} enabled`}
+                  checked={configuration.services[service.id]}
+                  onCheckedChange={(enabled) =>
+                    setServiceEnabled(service.id, enabled)
+                  }
+                  className="data-[state=checked]:bg-amber-400"
+                />
+              </label>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
 
       <Button
         aria-label="Minimize demo configuration"
@@ -155,4 +185,20 @@ function DemoDevtoolsBar({
       </Button>
     </aside>
   );
+}
+
+function getSelectionLabel(enabledServiceLabels: string[]): string {
+  if (enabledServiceLabels.length === 0) {
+    return "No services";
+  }
+
+  if (enabledServiceLabels.length === DEMO_SERVICES.length) {
+    return "Complete setup";
+  }
+
+  if (enabledServiceLabels.length === 1) {
+    return enabledServiceLabels[0] ?? "1 service";
+  }
+
+  return `${enabledServiceLabels.length} services`;
 }

@@ -13,9 +13,9 @@ import { ZodError, z } from "zod";
 import { createLogProvider } from "~/server/logs";
 import { env } from "~/env";
 import {
-  DEFAULT_DEMO_SETUP,
+  DEFAULT_DEMO_CONFIGURATION,
   type DemoService,
-  getDemoSetupFromHeaders,
+  getDemoConfigurationFromHeaders,
 } from "~/demo/config";
 
 /**
@@ -31,11 +31,11 @@ import {
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const demoSetup = env.DEMO_MODE
-    ? getDemoSetupFromHeaders(opts.headers)
-    : DEFAULT_DEMO_SETUP;
+  const demoConfiguration = env.DEMO_MODE
+    ? getDemoConfigurationFromHeaders(opts.headers)
+    : DEFAULT_DEMO_CONFIGURATION;
   const isDemoServiceAvailable = (service: DemoService) =>
-    demoSetup.services[service];
+    demoConfiguration.services[service];
   const logProvider = isDemoServiceAvailable("queryLogs")
     ? await createLogProvider()
     : undefined;

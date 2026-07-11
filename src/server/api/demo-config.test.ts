@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEMO_SETUPS, DEMO_SETUP_HEADER } from "~/demo/config";
+import { DEMO_CONFIGURATION_HEADER } from "~/demo/config";
 
 const mocks = vi.hoisted(() => {
   const logProvider = {};
@@ -26,11 +26,11 @@ import { blockyRouter } from "~/server/api/routers/blocky";
 import { statsRouter } from "~/server/api/routers/stats";
 import { createTRPCContext } from "~/server/api/trpc";
 
-function createHeaders(setupId?: string): Headers {
+function createHeaders(enabledServices?: string): Headers {
   const headers = new Headers();
 
-  if (setupId) {
-    headers.set(DEMO_SETUP_HEADER, setupId);
+  if (enabledServices) {
+    headers.set(DEMO_CONFIGURATION_HEADER, enabledServices);
   }
 
   return headers;
@@ -41,35 +41,37 @@ describe("demo request configuration", () => {
     mocks.createLogProvider.mockClear();
   });
 
-  it.each(DEMO_SETUPS)("applies the $id service policy", async (setup) => {
-    const context = await createTRPCContext({
-      headers: createHeaders(setup.id),
-    });
+  it.each([
+    ["blockyApi", true, false, false],
+    ["prometheus", false, true, false],
+    ["queryLogs", false, false, true],
+    ["none", false, false, false],
+  ])(
+    "enables services independently for %s",
+    async (enabledServices, blockyApi, prometheus, queryLogs) => {
+      const context = await createTRPCContext({
+        headers: createHeaders(enabledServices),
+      });
 
-    expect(context.isDemoServiceAvailable("blockyApi")).toBe(
-      setup.services.blockyApi,
-    );
-    expect(context.isDemoServiceAvailable("prometheus")).toBe(
-      setup.services.prometheus,
-    );
-    expect(context.isDemoServiceAvailable("queryLogs")).toBe(
-      setup.services.queryLogs,
-    );
+      expect(context.isDemoServiceAvailable("blockyApi")).toBe(blockyApi);
+      expect(context.isDemoServiceAvailable("prometheus")).toBe(prometheus);
+      expect(context.isDemoServiceAvailable("queryLogs")).toBe(queryLogs);
 
-    if (setup.services.queryLogs) {
-      expect(context.logProvider).toBe(mocks.logProvider);
-      expect(mocks.createLogProvider).toHaveBeenCalledOnce();
-    } else {
-      expect(context.logProvider).toBeUndefined();
-      expect(mocks.createLogProvider).not.toHaveBeenCalled();
-    }
-  });
+      if (queryLogs) {
+        expect(context.logProvider).toBe(mocks.logProvider);
+        expect(mocks.createLogProvider).toHaveBeenCalledOnce();
+      } else {
+        expect(context.logProvider).toBeUndefined();
+        expect(mocks.createLogProvider).not.toHaveBeenCalled();
+      }
+    },
+  );
 
   it.each([undefined, "invalid"])(
-    "uses the complete setup for a missing or invalid header",
-    async (setupId) => {
+    "enables every service for a missing or invalid header",
+    async (enabledServices) => {
       const context = await createTRPCContext({
-        headers: createHeaders(setupId),
+        headers: createHeaders(enabledServices),
       });
 
       expect(context.isDemoServiceAvailable("blockyApi")).toBe(true);
@@ -79,9 +81,9 @@ describe("demo request configuration", () => {
     },
   );
 
-  it("returns the real unavailable states for the offline setup", async () => {
+  it("returns the real unavailable states when services are disabled", async () => {
     const context = await createTRPCContext({
-      headers: createHeaders("offline"),
+      headers: createHeaders("none"),
     });
     const blockyCaller = blockyRouter.createCaller(context);
     const statsCaller = statsRouter.createCaller(context);
