@@ -11,6 +11,12 @@ import superjson from "superjson";
 import { ZodError, z } from "zod";
 
 import { createLogProvider } from "~/server/logs";
+import { env } from "~/env";
+import {
+  DEFAULT_DEMO_CONFIGURATION,
+  type DemoService,
+  getDemoConfigurationFromHeaders,
+} from "~/demo/config";
 
 /**
  * 1. CONTEXT
@@ -25,9 +31,17 @@ import { createLogProvider } from "~/server/logs";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const logProvider = await createLogProvider();
+  const demoConfiguration = env.DEMO_MODE
+    ? getDemoConfigurationFromHeaders(opts.headers)
+    : DEFAULT_DEMO_CONFIGURATION;
+  const isDemoServiceAvailable = (service: DemoService) =>
+    demoConfiguration.services[service];
+  const logProvider = isDemoServiceAvailable("queryLogs")
+    ? await createLogProvider()
+    : undefined;
 
   return {
+    isDemoServiceAvailable,
     logProvider,
     ...opts,
   };

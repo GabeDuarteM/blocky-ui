@@ -6,6 +6,7 @@ import { env } from "~/env";
 
 import "../styles/globals.css";
 import { cn } from "~/lib/utils";
+import { DemoModeProvider } from "~/components/dashboard/demo-mode";
 
 export const metadata = {
   title: env.INSTANCE_NAME ? `BlockyUI @ ${env.INSTANCE_NAME}` : "BlockyUI",
@@ -44,11 +45,13 @@ export default function RootLayout({
       lang="en"
     >
       <body>
-        <TRPCReactProvider>
-          {children}
-          <Toaster />
-          <Pattern />
-        </TRPCReactProvider>
+        {env.DEMO_MODE ? (
+          <DemoModeProvider>{children}</DemoModeProvider>
+        ) : (
+          <TRPCReactProvider>{children}</TRPCReactProvider>
+        )}
+        <Toaster />
+        <Pattern />
       </body>
     </html>
   );
