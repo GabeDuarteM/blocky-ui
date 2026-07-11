@@ -1,6 +1,7 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["scripts/generate_querylog_csv.ts", "src/trpc/server.ts"],
+  "$schema": "./node_modules/knip/schema.json",
+  "entry": ["drizzle.config.*.ts", "src/trpc/server.ts"],
+  "ignoreBinaries": ["podman"],
   "ignoreExportsUsedInFile": {
     "interface": true,
     "type": true

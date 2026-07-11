@@ -1,21 +1,15 @@
 import { pgTable, index, timestamp, text, bigint } from "drizzle-orm/pg-core";
 
+import { createLogEntryColumns } from "~/server/logs/sql/schema";
+
 export const logEntries = pgTable(
   "log_entries",
-  {
-    requestTs: timestamp("request_ts", { mode: "string", withTimezone: true }),
-    clientIp: text("client_ip"),
-    clientName: text("client_name"),
-    durationMs: bigint("duration_ms", { mode: "number" }),
-    reason: text(),
-    responseType: text("response_type"),
-    questionType: text("question_type"),
-    questionName: text("question_name"),
-    effectiveTldp: text("effective_tldp"),
-    answer: text(),
-    responseCode: text("response_code"),
-    hostname: text(),
-  },
+  createLogEntryColumns({
+    requestTs: (name) =>
+      timestamp(name, { mode: "string", withTimezone: true }),
+    text: (name) => text(name),
+    durationMs: (name) => bigint(name, { mode: "number" }),
+  }),
   (table) => [
     index("idx_log_entries_request_ts").on(table.requestTs),
     index("idx_log_entries_client_name").on(table.clientName),

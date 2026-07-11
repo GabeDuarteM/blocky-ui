@@ -113,6 +113,26 @@ function isoToSqliteDatetime(iso: string): string {
   return isoToMysqlDatetime(iso);
 }
 
+function entryToDatabaseValues(
+  entry: LogEntry,
+  formatRequestTs: (requestTs: string) => string = (requestTs) => requestTs,
+) {
+  return {
+    requestTs: entry.requestTs ? formatRequestTs(entry.requestTs) : null,
+    clientIp: entry.clientIp,
+    clientName: entry.clientName,
+    durationMs: entry.durationMs,
+    reason: entry.reason,
+    responseType: entry.responseType,
+    questionType: entry.questionType,
+    questionName: entry.questionName,
+    effectiveTldp: entry.effectiveTldp,
+    answer: entry.answer,
+    responseCode: entry.responseCode,
+    hostname: entry.hostname,
+  };
+}
+
 // Field order must match INSERT_SQL column order exactly
 function entryToMysqlRow(entry: LogEntry): unknown[] {
   return [
@@ -194,22 +214,9 @@ async function setupPostgres(entries: LogEntry[]): Promise<{
       `);
 
       if (entries.length > 0) {
-        await db.insert(pgLogEntries).values(
-          entries.map((entry) => ({
-            requestTs: entry.requestTs,
-            clientIp: entry.clientIp,
-            clientName: entry.clientName,
-            durationMs: entry.durationMs,
-            reason: entry.reason,
-            responseType: entry.responseType,
-            questionType: entry.questionType,
-            questionName: entry.questionName,
-            effectiveTldp: entry.effectiveTldp,
-            answer: entry.answer,
-            responseCode: entry.responseCode,
-            hostname: entry.hostname,
-          })),
-        );
+        await db
+          .insert(pgLogEntries)
+          .values(entries.map((entry) => entryToDatabaseValues(entry)));
       }
     } finally {
       await conn.end();
@@ -262,22 +269,9 @@ function setupSqlite(entries: LogEntry[]): {
     if (entries.length > 0) {
       db.insert(sqliteLogEntries)
         .values(
-          entries.map((entry) => ({
-            requestTs: entry.requestTs
-              ? isoToSqliteDatetime(entry.requestTs)
-              : null,
-            clientIp: entry.clientIp,
-            clientName: entry.clientName,
-            durationMs: entry.durationMs,
-            reason: entry.reason,
-            responseType: entry.responseType,
-            questionType: entry.questionType,
-            questionName: entry.questionName,
-            effectiveTldp: entry.effectiveTldp,
-            answer: entry.answer,
-            responseCode: entry.responseCode,
-            hostname: entry.hostname,
-          })),
+          entries.map((entry) =>
+            entryToDatabaseValues(entry, isoToSqliteDatetime),
+          ),
         )
         .run();
     }

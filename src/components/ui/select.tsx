@@ -12,7 +12,8 @@ function Select({
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
-function SelectGroup({
+/** @knipignore */
+export function SelectGroup({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />
@@ -85,7 +86,8 @@ function SelectContent({
   )
 }
 
-function SelectLabel({
+/** @knipignore */
+export function SelectLabel({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Label>) {
@@ -122,7 +124,8 @@ function SelectItem({
   )
 }
 
-function SelectSeparator({
+/** @knipignore */
+export function SelectSeparator({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Separator>) {
@@ -135,7 +138,8 @@ function SelectSeparator({
   )
 }
 
-function SelectScrollUpButton({
+/** @knipignore */
+export function SelectScrollUpButton({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
@@ -153,7 +157,8 @@ function SelectScrollUpButton({
   )
 }
 
-function SelectScrollDownButton({
+/** @knipignore */
+export function SelectScrollDownButton({
   className,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
@@ -174,12 +179,7 @@ function SelectScrollDownButton({
 export {
   Select,
   SelectContent,
-  /** @knipignore */ SelectGroup,
   SelectItem,
-  /** @knipignore */ SelectLabel,
-  /** @knipignore */ SelectScrollDownButton,
-  /** @knipignore */ SelectScrollUpButton,
-  /** @knipignore */ SelectSeparator,
   SelectTrigger,
   SelectValue,
 }

@@ -29,7 +29,8 @@ function Command({
   )
 }
 
-function CommandDialog({
+/** @knipignore */
+export function CommandDialog({
   title = "Command Palette",
   description = "Search for a command to run...",
   children,
@@ -126,7 +127,8 @@ function CommandGroup({
   )
 }
 
-function CommandSeparator({
+/** @knipignore */
+export function CommandSeparator({
   className,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Separator>) {
@@ -155,7 +157,8 @@ function CommandItem({
   )
 }
 
-function CommandShortcut({
+/** @knipignore */
+export function CommandShortcut({
   className,
   ...props
 }: React.ComponentProps<"span">) {
@@ -173,12 +176,9 @@ function CommandShortcut({
 
 export {
   Command,
-  /** @knipignore */ CommandDialog,
   CommandInput,
   CommandList,
   CommandEmpty,
   CommandGroup,
   CommandItem,
-  /** @knipignore */ CommandShortcut,
-  /** @knipignore */ CommandSeparator,
 }
