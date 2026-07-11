@@ -20,20 +20,7 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
     super({
       db,
       table: logEntries,
-      columns: {
-        requestTs: logEntries.requestTs,
-        clientIp: logEntries.clientIp,
-        clientName: logEntries.clientName,
-        durationMs: logEntries.durationMs,
-        reason: logEntries.reason,
-        responseType: logEntries.responseType,
-        questionType: logEntries.questionType,
-        questionName: logEntries.questionName,
-        effectiveTldp: logEntries.effectiveTldp,
-        answer: logEntries.answer,
-        responseCode: logEntries.responseCode,
-        hostname: logEntries.hostname,
-      },
+      columns: logEntries,
     });
 
     this.conn = conn;
@@ -41,6 +28,10 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
 
   async close(): Promise<void> {
     await this.conn.end();
+  }
+
+  protected formatDateTimeForFilter(date: Date): string {
+    return date.toISOString();
   }
 
   protected getBucketExpression(range: TimeRange): SQL {

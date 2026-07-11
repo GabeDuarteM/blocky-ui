@@ -69,7 +69,8 @@ function ChartContainer({
   )
 }
 
-const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+/** @knipignore */
+export const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(
     ([, config]) => config.theme || config.color
   )
@@ -264,7 +265,8 @@ function ChartTooltipContent({
 
 const ChartLegend = RechartsPrimitive.Legend
 
-function ChartLegendContent({
+/** @knipignore */
+export function ChartLegendContent({
   className,
   hideIcon = false,
   payload,
@@ -364,6 +366,4 @@ export {
   ChartTooltip,
   ChartTooltipContent,
   ChartLegend,
-  /** @knipignore */ ChartLegendContent,
-  /** @knipignore */ ChartStyle,
 }

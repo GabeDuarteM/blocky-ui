@@ -12,25 +12,29 @@ function Dialog({
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogTrigger({
+/** @knipignore */
+export function DialogTrigger({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
 }
 
-function DialogPortal({
+/** @knipignore */
+export function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-function DialogClose({
+/** @knipignore */
+export function DialogClose({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 }
 
-function DialogOverlay({
+/** @knipignore */
+export function DialogOverlay({
   className,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) {
@@ -90,7 +94,11 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+/** @knipignore */
+export function DialogFooter({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-footer"
@@ -131,13 +139,8 @@ function DialogDescription({
 
 export {
   Dialog,
-  /** @knipignore */ DialogClose,
   DialogContent,
   DialogDescription,
-  /** @knipignore */ DialogFooter,
   DialogHeader,
-  /** @knipignore */ DialogOverlay,
-  /** @knipignore */ DialogPortal,
   DialogTitle,
-  /** @knipignore */ DialogTrigger,
 }

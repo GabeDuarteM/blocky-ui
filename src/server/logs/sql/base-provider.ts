@@ -76,10 +76,24 @@ interface TopClientsRow {
   totalQueriesCount: number;
 }
 
+interface GroupedTotalsRow {
+  totalCount: number;
+  totalQueriesCount: number;
+}
+
 export interface BaseSqlLogProviderConfig {
   db: AnyDrizzleDb;
   table: AnyTable;
   columns: LogEntriesColumns;
+}
+
+function getUtcDateParts(date: Date) {
+  return {
+    year: date.getUTCFullYear(),
+    month: String(date.getUTCMonth() + 1).padStart(2, "0"),
+    day: String(date.getUTCDate()).padStart(2, "0"),
+    hours: String(date.getUTCHours()).padStart(2, "0"),
+  };
 }
 
 /**
@@ -104,7 +118,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   protected abstract getBucketExpression(range: TimeRange): SQL;
 
   protected formatDateTimeForFilter(date: Date): string {
-    return date.toISOString();
+    const { year, month, day, hours } = getUtcDateParts(date);
+    const minutes = String(date.getUTCMinutes()).padStart(2, "0");
+    const seconds = String(date.getUTCSeconds()).padStart(2, "0");
+    const milliseconds = String(date.getUTCMilliseconds()).padStart(3, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
   protected getTextSortExpression(column: Column): Column | SQL {
@@ -142,6 +161,25 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return {
       totalCount: Number(result[0]?.totalCount ?? 0),
       totalQueriesCount: Number(result[0]?.totalQueriesCount ?? 0),
+    };
+  }
+
+  private async resolveGroupedTotals(options: {
+    row: GroupedTotalsRow | undefined;
+    offset: number;
+    filters: SqlFilter[];
+    groupColumn: Column;
+  }): Promise<GroupedTotalsRow> {
+    if (!options.row && options.offset > 0) {
+      return this.getGroupedTotals({
+        filters: options.filters,
+        groupColumn: options.groupColumn,
+      });
+    }
+
+    return {
+      totalQueriesCount: Number(options.row?.totalQueriesCount ?? 0),
+      totalCount: Number(options.row?.totalCount ?? 0),
     };
   }
 
@@ -328,17 +366,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .limit(options.limit)
       .offset(options.offset);
 
-    let totalQueriesCount = Number(result[0]?.totalQueriesCount ?? 0);
-    let totalCount = Number(result[0]?.totalCount ?? 0);
-
-    if (result.length === 0 && options.offset > 0) {
-      const totals = await this.getGroupedTotals({
-        filters,
-        groupColumn: this.columns.questionName,
-      });
-      totalQueriesCount = totals.totalQueriesCount;
-      totalCount = totals.totalCount;
-    }
+    const { totalQueriesCount, totalCount } = await this.resolveGroupedTotals({
+      row: result[0],
+      offset: options.offset,
+      filters,
+      groupColumn: this.columns.questionName,
+    });
 
     return {
       items: result.map((row: TopDomainsRow) => ({
@@ -381,17 +414,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       .limit(options.limit)
       .offset(options.offset);
 
-    let totalQueriesCount = Number(result[0]?.totalQueriesCount ?? 0);
-    let totalCount = Number(result[0]?.totalCount ?? 0);
-
-    if (result.length === 0 && options.offset > 0) {
-      const totals = await this.getGroupedTotals({
-        filters,
-        groupColumn: this.columns.clientName,
-      });
-      totalQueriesCount = totals.totalQueriesCount;
-      totalCount = totals.totalCount;
-    }
+    const { totalQueriesCount, totalCount } = await this.resolveGroupedTotals({
+      row: result[0],
+      offset: options.offset,
+      filters,
+      groupColumn: this.columns.clientName,
+    });
 
     return {
       items: result.map((row: TopClientsRow) => ({
@@ -519,7 +547,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
 /**
  * Fills in missing time buckets with zero values.
  */
-export function fillTimeBuckets(
+function fillTimeBuckets(
   data: {
     timeBucket: string;
     total: number;
@@ -556,11 +584,8 @@ export function fillTimeBuckets(
 /**
  * Formats a date to match the SQL bucket expression output.
  */
-export function formatDateForRange(date: Date, range: TimeRange): string {
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  const hours = String(date.getUTCHours()).padStart(2, "0");
+function formatDateForRange(date: Date, range: TimeRange): string {
+  const { year, month, day, hours } = getUtcDateParts(date);
 
   switch (range) {
     case "1h": {
