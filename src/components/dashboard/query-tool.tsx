@@ -22,36 +22,16 @@ import { api } from "~/trpc/react";
 import { useState } from "react";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 import { cn } from "~/lib/utils";
-import { getQueryResultDetail } from "~/components/dashboard/query-result-utils";
+import { type BlockyQueryResult } from "~/server/blocky/query";
 
 type DNS_RECORD_TYPE = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
-
-interface QueryResultPaneProps {
-  responseType: string;
-  returnCode: string;
-  reason: string;
-  response: string;
-}
-
-function parseDnsAnswers(response: string): string[] {
-  if (!response) {
-    return [];
-  }
-
-  return response.split(/,\s+(?=[A-Z0-9]+\s+\()/).map((record) => {
-    const match = /^[A-Z0-9]+\s+\((.*)\)$/.exec(record);
-    return match?.[1] ?? record;
-  });
-}
 
 function QueryResultPane({
   responseType,
   returnCode,
-  reason,
-  response,
-}: QueryResultPaneProps) {
-  const answers = parseDnsAnswers(response);
-  const detail = getQueryResultDetail(responseType, reason);
+  answers,
+  detail,
+}: BlockyQueryResult) {
   const answerLabel = answers.length === 1 ? "answer" : "answers";
   const isBlocked = responseType === "BLOCKED";
 

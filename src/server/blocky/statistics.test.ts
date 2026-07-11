@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createStatisticsSnapshot,
+  parseBlockyStatistics,
   type BlockyStatistics,
 } from "~/server/blocky/statistics";
 
@@ -9,23 +10,14 @@ function createStatistics(
   overrides?: Partial<BlockyStatistics>,
 ): BlockyStatistics {
   return {
-    start: "2026-07-10T12:00:00Z",
-    end: "2026-07-11T12:00:00Z",
     summary: {
       queries: 200,
-      cached: 75,
-      forwarded: 25,
       blocked: 50,
-      local: 50,
       dropped: 0,
       errors: 0,
       avgResponseMs: 10,
       cacheHitRate: 0.75,
     },
-    byResponseType: {},
-    byQueryType: {},
-    byResponseCode: {},
-    perHour: [],
     topDomains: [{ name: "example.com", count: 40 }],
     topBlockedDomains: [{ name: "ads.example.com", count: 20 }],
     topClients: [{ name: "laptop", count: 80 }],
@@ -66,10 +58,7 @@ describe("createStatisticsSnapshot", () => {
     const statistics = createStatistics({
       summary: {
         queries: 0,
-        cached: 0,
-        forwarded: 0,
         blocked: 0,
-        local: 0,
         dropped: 0,
         errors: 0,
         avgResponseMs: 0,
@@ -80,5 +69,25 @@ describe("createStatisticsSnapshot", () => {
     expect(
       createStatisticsSnapshot(statistics).overview.blockedPercentage,
     ).toBe(0);
+  });
+});
+
+describe("parseBlockyStatistics", () => {
+  it("keeps the fields used by BlockyUI and ignores the rest", () => {
+    const statistics = createStatistics();
+
+    expect(
+      parseBlockyStatistics({
+        ...statistics,
+        start: "2026-07-10T12:00:00Z",
+        end: "2026-07-11T12:00:00Z",
+        byResponseType: { BLOCKED: 50 },
+        perHour: [],
+      }),
+    ).toEqual(statistics);
+  });
+
+  it("returns null for a malformed payload", () => {
+    expect(parseBlockyStatistics({ summary: {} })).toBeNull();
   });
 });

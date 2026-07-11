@@ -9,6 +9,7 @@ import {
   BLOCKY_RESPONSE_TYPES,
 } from "~/lib/constants";
 import { blockyApi } from "~/server/blocky/client";
+import { parseBlockyQueryResult } from "~/server/blocky/query";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -19,13 +20,6 @@ const statusSchema = z.object({
 const queryRequestSchema = z.object({
   query: z.string(),
   type: z.enum(BLOCKY_DNS_RECORD_TYPES),
-});
-
-const queryResultSchema = z.object({
-  reason: z.string(),
-  response: z.string(),
-  responseType: z.string(),
-  returnCode: z.string(),
 });
 
 export const blockyRouter = createTRPCRouter({
@@ -123,7 +117,7 @@ export const blockyRouter = createTRPCRouter({
 
       const data = await response.json();
 
-      return queryResultSchema.parse(data);
+      return parseBlockyQueryResult(data);
     }),
   getQueryLogs: publicProcedure
     .input(

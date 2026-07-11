@@ -5,29 +5,14 @@ import { blockyApi } from "~/server/blocky/client";
 const countByNameSchema = z.record(z.string(), z.number());
 
 const statisticsSchema = z.object({
-  start: z.string(),
-  end: z.string(),
   summary: z.object({
     queries: z.number(),
-    cached: z.number(),
-    forwarded: z.number(),
     blocked: z.number(),
-    local: z.number(),
     dropped: z.number(),
     errors: z.number(),
     avgResponseMs: z.number(),
     cacheHitRate: z.number(),
   }),
-  byResponseType: countByNameSchema,
-  byQueryType: countByNameSchema,
-  byResponseCode: countByNameSchema,
-  perHour: z.array(
-    z.object({
-      hour: z.string(),
-      queries: z.number(),
-      blocked: z.number(),
-    }),
-  ),
   topDomains: z.array(z.object({ name: z.string(), count: z.number() })),
   topBlockedDomains: z.array(z.object({ name: z.string(), count: z.number() })),
   topClients: z.array(z.object({ name: z.string(), count: z.number() })),
@@ -42,20 +27,24 @@ const statisticsSchema = z.object({
 
 export type BlockyStatistics = z.infer<typeof statisticsSchema>;
 
-export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> {
-  let response: Response;
+export function parseBlockyStatistics(value: unknown): BlockyStatistics | null {
+  const result = statisticsSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
 
+export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> {
   try {
-    response = await blockyApi.get("api/stats", { throwHttpErrors: false });
+    const response = await blockyApi.get("api/stats", {
+      throwHttpErrors: false,
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    return parseBlockyStatistics(await response.json());
   } catch {
     return null;
   }
-
-  if (!response.ok) {
-    return null;
-  }
-
-  return statisticsSchema.parse(await response.json());
 }
 
 export function createStatisticsSnapshot(statistics: BlockyStatistics) {
