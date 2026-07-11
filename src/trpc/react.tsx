@@ -5,11 +5,12 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { httpBatchStreamLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
-import { useState } from "react";
+import { useMemo } from "react";
 import SuperJSON from "superjson";
 
 import { type AppRouter } from "./app-router";
 import { createQueryClient } from "./query-client";
+import { DEMO_SETUP_HEADER, type DemoSetupId } from "~/demo/config";
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
@@ -41,34 +42,45 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
-export function TRPCReactProvider(props: { children: React.ReactNode }) {
+export function TRPCReactProvider({
+  children,
+  demoSetupId,
+}: {
+  children: React.ReactNode;
+  demoSetupId?: DemoSetupId;
+}) {
   const queryClient = getQueryClient();
 
-  const [trpcClient] = useState(() =>
-    api.createClient({
-      links: [
-        loggerLink({
-          enabled: (op) =>
-            process.env.NODE_ENV === "development" ||
-            (op.direction === "down" && op.result instanceof Error),
-        }),
-        httpBatchStreamLink({
-          transformer: SuperJSON,
-          url: getBaseUrl() + "/api/trpc",
-          headers: () => {
-            const headers = new Headers();
-            headers.set("x-trpc-source", "nextjs-react");
-            return headers;
-          },
-        }),
-      ],
-    }),
+  const trpcClient = useMemo(
+    () =>
+      api.createClient({
+        links: [
+          loggerLink({
+            enabled: (op) =>
+              process.env.NODE_ENV === "development" ||
+              (op.direction === "down" && op.result instanceof Error),
+          }),
+          httpBatchStreamLink({
+            transformer: SuperJSON,
+            url: getBaseUrl() + "/api/trpc",
+            headers: () => {
+              const headers = new Headers();
+              headers.set("x-trpc-source", "nextjs-react");
+              if (demoSetupId) {
+                headers.set(DEMO_SETUP_HEADER, demoSetupId);
+              }
+              return headers;
+            },
+          }),
+        ],
+      }),
+    [demoSetupId],
   );
 
   return (
     <QueryClientProvider client={queryClient}>
       <api.Provider client={trpcClient} queryClient={queryClient}>
-        {props.children}
+        {children}
       </api.Provider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

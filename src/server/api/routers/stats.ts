@@ -23,12 +23,20 @@ const searchSchema = z.object({
 });
 
 export const statsRouter = createTRPCRouter({
-  prometheusStatus: publicProcedure.query(async () => {
+  prometheusStatus: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.isDemoServiceAvailable("prometheus")) {
+      return { available: false };
+    }
+
     const available = await checkPrometheusAvailable();
     return { available };
   }),
 
   overview: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.isDemoServiceAvailable("prometheus")) {
+      return null;
+    }
+
     const parsed = await fetchPrometheusMetrics();
     if (!parsed) return null;
 

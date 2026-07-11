@@ -180,7 +180,14 @@ export function ServerStatus() {
         </CardTitle>
         <CardDescription>{description}</CardDescription>
       </CardHeader>
-      <CardContent className="h-full">{content}</CardContent>
+      <CardContent
+        className={cn(
+          "flex flex-1 flex-col",
+          (isLoading || error) && "justify-center",
+        )}
+      >
+        {content}
+      </CardContent>
     </Card>
   );
 }
