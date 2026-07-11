@@ -3,9 +3,7 @@ import { type TimeRange } from "~/lib/constants";
 import { useDebounce } from "~/hooks/use-debounce";
 
 export type FilterValue =
-  | { type: "domain"; value: string }
-  | { type: "client"; value: string }
-  | null;
+  { type: "domain"; value: string } | { type: "client"; value: string } | null;
 
 interface DomainSuggestion {
   domain: string;
