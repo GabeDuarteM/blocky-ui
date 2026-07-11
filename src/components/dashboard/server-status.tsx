@@ -97,11 +97,11 @@ export function ServerStatus() {
   if (error) {
     description = "";
   } else if (status?.enabled) {
-    description = "DNS server is currently running and processing queries.";
+    description = "Blocking is currently enabled.";
   } else if (countdown) {
-    description = `DNS server is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`;
+    description = `Blocking is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`;
   } else if (!isLoading) {
-    description = "DNS server is permanently disabled until manually enabled.";
+    description = "Blocking is disabled until manually enabled.";
   }
 
   let content = null;
@@ -164,7 +164,7 @@ export function ServerStatus() {
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Server Status
+            Blocking Status
           </span>
           <Badge
             variant="outline"
