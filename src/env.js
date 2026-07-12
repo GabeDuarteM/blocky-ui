@@ -7,7 +7,6 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
-    DATABASE_URL: z.string().optional().meta({ deprecated: true }),
     QUERY_LOG_TYPE: z
       .enum([
         "mysql",
@@ -46,12 +45,9 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    QUERY_LOG_TYPE:
-      process.env.QUERY_LOG_TYPE ??
-      (process.env.DATABASE_URL ? "mysql" : undefined),
+    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE,
     QUERY_LOG_CONSOLE_PROVIDER: process.env.QUERY_LOG_CONSOLE_PROVIDER,
-    QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET ?? process.env.DATABASE_URL,
+    QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET,
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_REQUEST_HEADERS,

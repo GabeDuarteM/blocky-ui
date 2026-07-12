@@ -31,12 +31,6 @@ export async function createLogProvider(): Promise<LogProvider | undefined> {
 }
 
 async function initializeLogProvider(): Promise<LogProvider | undefined> {
-  if (env.DATABASE_URL) {
-    console.warn(
-      "⚠️  DEPRECATION WARNING: DATABASE_URL is deprecated. Please use QUERY_LOG_TYPE and QUERY_LOG_TARGET instead.",
-    );
-  }
-
   if (env.DEMO_MODE) {
     console.log("Using log provider type: demo");
     return new DemoLogProvider();

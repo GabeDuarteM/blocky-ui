@@ -6,12 +6,6 @@ inputs:
     description: Docker build context path.
     required: false
     default: "."
-  dockerhub-password:
-    description: DockerHub password or token. Omit to skip DockerHub login.
-    required: false
-  dockerhub-username:
-    description: DockerHub username. Omit to skip DockerHub login.
-    required: false
   ghcr-token:
     description: GitHub token with package write permission.
     required: true
@@ -44,13 +38,6 @@ runs:
         registry: ghcr.io
         username: ${{ github.repository_owner }}
         password: ${{ inputs.ghcr-token }}
-
-    - name: Log in to DockerHub
-      if: inputs.dockerhub-username != '' && inputs.dockerhub-password != ''
-      uses: docker/login-action@v4
-      with:
-        username: ${{ inputs.dockerhub-username }}
-        password: ${{ inputs.dockerhub-password }}
 
     - name: Build and publish image
       uses: docker/build-push-action@v7
