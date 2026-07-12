@@ -1,5 +1,71 @@
 # blocky-ui
 
+## 2.0.0
+
+### Major Changes
+
+- [#390](https://github.com/GabeDuarteM/blocky-ui/pull/390) [`4c38f85`](https://github.com/GabeDuarteM/blocky-ui/commit/4c38f8502bb74fdf34f6b57446626b1aba7b29c7) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Replace Prometheus-backed overview statistics with Blocky's statistics API, add rolling 24-hour top lists for installations without query logging, and remove deprecated configuration.
+
+  #### Blocky statistics
+
+  BlockyUI now reads various statistics from Blocky's `/api/stats` endpoint, instead of requiring a prometheus integration and reading from it. Query logging remains optional and continues to provide longer time ranges, filtering, pagination, and detailed query logs when configured.
+
+  Without query logging, the statistics API provides rolling 24-hour Top Domains with All and Blocked views, plus Top Clients.
+
+  Overview total queries, outcomes, cache hit rate, and average response time now use Blocky's rolling 24-hour statistics.
+
+  ![Statistics overview](https://i.imgur.com/SYJvGfe.png)
+
+  #### Breaking changes
+
+  ##### Statistics configuration
+
+  BlockyUI no longer queries Prometheus for dashboard statistics, and the `PROMETHEUS_PATH` environment variable has been removed. Installations that only expose Prometheus metrics, run a Blocky version older than v0.33.0, or do not enable Blocky's statistics API will no longer display the Overview cards or fallback Top Lists.
+
+  To migrate, upgrade to Blocky v0.33.0 or newer and enable statistics:
+
+  ```yaml
+  statistics:
+    enable: true
+  ```
+
+  ##### Query log configuration
+
+  `DATABASE_URL` has been deprecated since v1.2.0 and is now no longer accepted. Configure the query log provider explicitly:
+
+  ```env
+  QUERY_LOG_TYPE=mysql
+  QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log
+  ```
+
+### Minor Changes
+
+- [#390](https://github.com/GabeDuarteM/blocky-ui/pull/390) [`4c38f85`](https://github.com/GabeDuarteM/blocky-ui/commit/4c38f8502bb74fdf34f6b57446626b1aba7b29c7) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Improved dashboard usability with independent Top Lists timeframes, redesigned Query Tool results, and selectable log domains.
+
+  #### Query Tool results
+
+  Query Tool results got a complete redesign and now separates the query outcome from the returned DNS answers in a clearer layout.
+
+  ![Blocked Query Tool results](https://i.imgur.com/pQgqE33.png)
+
+  ![Cached Query Tool results](https://i.imgur.com/YkXbmHC.png)
+
+  #### Top Lists controls
+
+  Previously, the Top Lists used to share the time-frame options with the Queries over time chart, which could be confusing in some cases. Now they have their own time-frame selector on the top right, so they can be explored completely independently.
+
+  ![Top Lists controls](https://i.imgur.com/FH2eSYp.png)
+
+  #### Query log usability
+
+  Domains in the query log can now be selected like normal text. Full-domain tooltips only appear when the displayed value is truncated. Also, on the page switcher large page counts now use grouped digits for easier reading.
+
+### Patch Changes
+
+- [#383](https://github.com/GabeDuarteM/blocky-ui/pull/383) [`194e8c7`](https://github.com/GabeDuarteM/blocky-ui/commit/194e8c7761fdd3eb0a5957b5910fa58eee8c0454) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Clarify the Blocking Status card to show that its controls enable or disable query blocking without stopping the DNS server. Fixes [#353](https://github.com/GabeDuarteM/blocky-ui/issues/353)
+
+- [#390](https://github.com/GabeDuarteM/blocky-ui/pull/390) [`4c38f85`](https://github.com/GabeDuarteM/blocky-ui/commit/4c38f8502bb74fdf34f6b57446626b1aba7b29c7) Thanks [@GabeDuarteM](https://github.com/GabeDuarteM)! - Fixes the seven-day Queries over time hover points so they properly follow the active time bucket on mouse movements.
+
 ## 1.9.1
 
 ### Patch Changes
