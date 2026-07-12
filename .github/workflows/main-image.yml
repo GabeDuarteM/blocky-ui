@@ -1,0 +1,35 @@
+name: Main container image
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
+
+concurrency:
+  group: main-container-image
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    name: Publish main image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Publish image
+        uses: ./.github/actions/publish-docker-image
+        with:
+          ghcr-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
+          cache-policy: shared
+          tags: ${{ env.GHCR_IMAGE }}:main
