@@ -10,8 +10,14 @@ inputs:
     description: GitHub token with package write permission.
     required: true
   cache-ref:
-    description: BuildKit registry cache reference.
+    description: Shared BuildKit registry cache reference.
     required: true
+  cache-policy:
+    description: Cache policy. Use shared for the registry writer, scoped for PR caches, or read-only for registry consumers.
+    required: true
+  cache-scope:
+    description: GitHub Actions cache scope used by the scoped cache policy.
+    required: false
   labels:
     description: Docker image labels.
     required: false
@@ -39,6 +45,79 @@ runs:
         username: ${{ github.repository_owner }}
         password: ${{ inputs.ghcr-token }}
 
+    - name: Resolve native dependency versions
+      id: native-dependencies
+      shell: bash
+      working-directory: ${{ inputs.context }}
+      run: |
+        set -euo pipefail
+
+        better_sqlite3="$(jq -er '.dependencies["better-sqlite3"] | select(type == "string")' package.json)"
+        if [[ ! "${better_sqlite3}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
+          echo "better-sqlite3 must use an exact semantic version" >&2
+          exit 1
+        fi
+
+        echo "better_sqlite3=${better_sqlite3}" >> "${GITHUB_OUTPUT}"
+
+    - name: Configure build cache
+      id: cache
+      shell: bash
+      env:
+        CACHE_POLICY: ${{ inputs.cache-policy }}
+        CACHE_REF: ${{ inputs.cache-ref }}
+        CACHE_SCOPE: ${{ inputs.cache-scope }}
+        PLATFORMS: ${{ inputs.platforms }}
+      run: |
+        set -euo pipefail
+
+        if [[ -n "${CACHE_SCOPE}" && ! "${CACHE_SCOPE}" =~ ^[0-9A-Za-z._-]+$ ]]; then
+          echo "cache-scope contains unsupported characters" >&2
+          exit 1
+        fi
+
+        case "${CACHE_POLICY}" in
+          scoped)
+            if [[ -z "${CACHE_SCOPE}" ]]; then
+              echo "cache-scope is required for the scoped cache policy" >&2
+              exit 1
+            fi
+
+            platform_hash="$(printf '%s' "${PLATFORMS}" | sha256sum | cut -c1-12)"
+            effective_scope="${CACHE_SCOPE}-${platform_hash}"
+            {
+              echo "from<<EOF"
+              echo "type=gha,scope=${effective_scope}"
+              echo "type=registry,ref=${CACHE_REF}"
+              echo "EOF"
+              echo "to=type=gha,scope=${effective_scope},mode=max"
+            } >> "${GITHUB_OUTPUT}"
+            ;;
+          shared)
+            if [[ -n "${CACHE_SCOPE}" ]]; then
+              echo "cache-scope is only supported by the scoped cache policy" >&2
+              exit 1
+            fi
+
+            {
+              echo "from=type=registry,ref=${CACHE_REF}"
+              echo "to=type=registry,ref=${CACHE_REF},mode=max"
+            } >> "${GITHUB_OUTPUT}"
+            ;;
+          read-only)
+            if [[ -n "${CACHE_SCOPE}" ]]; then
+              echo "cache-scope is only supported by the scoped cache policy" >&2
+              exit 1
+            fi
+
+            echo "from=type=registry,ref=${CACHE_REF}" >> "${GITHUB_OUTPUT}"
+            ;;
+          *)
+            echo "cache-policy must be shared, scoped, or read-only" >&2
+            exit 1
+            ;;
+        esac
+
     - name: Build and publish image
       uses: docker/build-push-action@v7
       with:
@@ -46,8 +125,9 @@ runs:
         push: true
         platforms: ${{ inputs.platforms }}
         build-args: |
+          BETTER_SQLITE3_VERSION=${{ steps.native-dependencies.outputs.better_sqlite3 }}
           BUILDER_PLATFORM=linux/amd64
-        cache-from: type=registry,ref=${{ inputs.cache-ref }}
-        cache-to: type=registry,ref=${{ inputs.cache-ref }},mode=max
+        cache-from: ${{ steps.cache.outputs.from }}
+        cache-to: ${{ steps.cache.outputs.to }}
         tags: ${{ inputs.tags }}
         labels: ${{ inputs.labels }}

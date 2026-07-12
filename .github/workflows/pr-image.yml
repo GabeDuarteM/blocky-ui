@@ -66,6 +66,8 @@ jobs:
         with:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
           cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
+          cache-policy: scoped
+          cache-scope: pr-${{ github.event.pull_request.number }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -140,6 +142,8 @@ jobs:
         with:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
           cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
+          cache-policy: scoped
+          cache-scope: pr-${{ steps.pr.outputs.number }}
           context: pr
           platforms: ${{ inputs.platforms }}
           tags: ${{ steps.meta.outputs.tags }}

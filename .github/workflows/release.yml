@@ -84,6 +84,7 @@ jobs:
         with:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
           cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
+          cache-policy: read-only
           tags: |
             ${{ env.GHCR_IMAGE }}:latest
             ${{ env.GHCR_IMAGE }}:${{ matrix.package.version }}
