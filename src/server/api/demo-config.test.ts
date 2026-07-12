@@ -43,18 +43,18 @@ describe("demo request configuration", () => {
 
   it.each([
     ["blockyApi", true, false, false],
-    ["prometheus", false, true, false],
+    ["statistics", false, true, false],
     ["queryLogs", false, false, true],
     ["none", false, false, false],
   ])(
     "enables services independently for %s",
-    async (enabledServices, blockyApi, prometheus, queryLogs) => {
+    async (enabledServices, blockyApi, statistics, queryLogs) => {
       const context = await createTRPCContext({
         headers: createHeaders(enabledServices),
       });
 
       expect(context.isDemoServiceAvailable("blockyApi")).toBe(blockyApi);
-      expect(context.isDemoServiceAvailable("prometheus")).toBe(prometheus);
+      expect(context.isDemoServiceAvailable("statistics")).toBe(statistics);
       expect(context.isDemoServiceAvailable("queryLogs")).toBe(queryLogs);
 
       if (queryLogs) {
@@ -75,7 +75,7 @@ describe("demo request configuration", () => {
       });
 
       expect(context.isDemoServiceAvailable("blockyApi")).toBe(true);
-      expect(context.isDemoServiceAvailable("prometheus")).toBe(true);
+      expect(context.isDemoServiceAvailable("statistics")).toBe(true);
       expect(context.isDemoServiceAvailable("queryLogs")).toBe(true);
       expect(context.logProvider).toBe(mocks.logProvider);
     },
@@ -93,9 +93,6 @@ describe("demo request configuration", () => {
       message:
         "Unable to reach Blocky API at http://localhost:4000. Please check if the API server is running.",
     });
-    await expect(statsCaller.prometheusStatus()).resolves.toEqual({
-      available: false,
-    });
-    await expect(statsCaller.overview()).resolves.toBeNull();
+    await expect(statsCaller.snapshot()).resolves.toBeNull();
   });
 });

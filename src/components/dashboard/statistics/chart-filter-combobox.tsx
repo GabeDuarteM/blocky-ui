@@ -61,7 +61,7 @@ export function ChartFilterCombobox({
               variant="outline"
               size="icon"
               className={cn(
-                "relative h-7 w-7",
+                "relative h-8 w-8",
                 hasFilter && "border-primary/50 bg-primary/5",
               )}
               aria-label="Filter chart"

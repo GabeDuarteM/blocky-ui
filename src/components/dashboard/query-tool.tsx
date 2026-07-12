@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Type, Code, AlertCircle, MessageSquare } from "lucide-react";
+import { Radio, Search } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -18,11 +18,83 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { toast } from "sonner";
-import { api } from "~/trpc/react";
+import { api, type RouterOutputs } from "~/trpc/react";
 import { useState } from "react";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
+import { cn } from "~/lib/utils";
 
 type DNS_RECORD_TYPE = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
+type QueryResult = RouterOutputs["blocky"]["queryExecute"];
+
+function QueryResultPane({
+  responseType,
+  returnCode,
+  answers,
+  detail,
+}: QueryResult) {
+  const answerLabel = answers.length === 1 ? "answer" : "answers";
+  const isBlocked = responseType === "BLOCKED";
+
+  return (
+    <section
+      aria-live="polite"
+      className="mt-6 grid overflow-hidden rounded-md sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]"
+    >
+      <div
+        className={cn(
+          "flex min-w-0 flex-col justify-between border-l-4 px-5 py-5",
+          isBlocked
+            ? "border-l-destructive bg-destructive/5"
+            : "border-l-primary bg-primary/5",
+        )}
+      >
+        <div className="flex items-center gap-2 text-xs tracking-widest uppercase">
+          <Radio className="h-3.5 w-3.5" /> Query outcome
+        </div>
+        <div className="mt-8 min-w-0">
+          <p className="text-3xl font-black tracking-tight break-all">
+            {responseType}
+          </p>
+          <p className="text-muted-foreground mt-1 font-mono text-xs">
+            {returnCode} / {answers.length} {answerLabel}
+          </p>
+          {detail && (
+            <p
+              className="text-muted-foreground mt-2 truncate text-xs"
+              title={detail}
+            >
+              {detail}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex max-h-64 min-h-0 min-w-0 flex-col gap-3 px-5 py-5 sm:border-l">
+        <p className="text-muted-foreground text-xs tracking-wide uppercase">
+          DNS answers
+        </p>
+        {answers.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No answer returned</p>
+        ) : (
+          <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-2">
+            {answers.map((answer, index) => (
+              <div
+                key={`${answer}-${index}`}
+                className="flex items-baseline gap-3"
+              >
+                <span className="text-muted-foreground font-mono text-xs">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="min-w-0 font-mono text-lg break-all select-text">
+                  {answer}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 export function QueryTool() {
   const [query, setQuery] = useState("");
@@ -91,44 +163,7 @@ export function QueryTool() {
           </div>
         </form>
 
-        {queryMutation.data && (
-          <div className="mt-6 space-y-4 sm:space-y-2">
-            <div className="flex items-start gap-2">
-              <Type className="text-muted-foreground mt-1 h-4 w-4" />
-              <div>
-                <span className="text-muted-foreground font-bold">
-                  Response Type:
-                </span>{" "}
-                {queryMutation.data.responseType}
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <Code className="text-muted-foreground mt-1 h-4 w-4" />
-              <div>
-                <span className="text-muted-foreground font-bold">
-                  Return Code:
-                </span>{" "}
-                {queryMutation.data.returnCode}
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <AlertCircle className="text-muted-foreground mt-1 h-4 w-4" />
-              <div>
-                <span className="text-muted-foreground font-bold">Reason:</span>{" "}
-                {queryMutation.data.reason}
-              </div>
-            </div>
-            <div className="flex items-start gap-2">
-              <MessageSquare className="text-muted-foreground mt-1 h-4 w-4" />
-              <div>
-                <span className="text-muted-foreground font-bold">
-                  Response:
-                </span>{" "}
-                {queryMutation.data.response}
-              </div>
-            </div>
-          </div>
-        )}
+        {queryMutation.data && <QueryResultPane {...queryMutation.data} />}
       </CardContent>
     </Card>
   );

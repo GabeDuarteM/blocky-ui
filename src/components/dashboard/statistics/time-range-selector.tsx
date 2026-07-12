@@ -19,7 +19,7 @@ export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
           size="sm"
           onClick={() => onChange(range)}
           className={cn(
-            "h-7 px-2.5 text-xs",
+            "h-8 px-2.5 text-xs",
             value === range && "border border-transparent",
           )}
         >

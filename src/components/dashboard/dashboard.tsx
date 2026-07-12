@@ -6,6 +6,7 @@ import { QueryTool } from "~/components/dashboard/query-tool";
 import { ServerStatus } from "~/components/dashboard/server-status";
 import { ChartsSection } from "~/components/dashboard/statistics/charts-section";
 import { StatisticsOverview } from "~/components/dashboard/statistics/statistics-overview";
+import { StatisticsTopLists } from "~/components/dashboard/statistics/statistics-top-lists";
 import { useDemoConfiguration } from "~/demo/context";
 
 export function Dashboard({ showLogs }: { showLogs: boolean }) {
@@ -19,7 +20,7 @@ export function Dashboard({ showLogs }: { showLogs: boolean }) {
         <ServerStatus />
         <Operations />
       </div>
-      {showLogFeatures ? <ChartsSection /> : null}
+      {showLogFeatures ? <ChartsSection /> : <StatisticsTopLists />}
       <QueryTool />
       {showLogFeatures ? <QueryLogs /> : null}
     </div>

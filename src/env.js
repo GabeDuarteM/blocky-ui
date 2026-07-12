@@ -26,7 +26,6 @@ export const env = createEnv({
       .string()
       .transform((val) => JSON.parse(val))
       .optional(),
-    PROMETHEUS_PATH: z.string().startsWith("/").default("/metrics"),
     DEMO_MODE: z.boolean().default(false),
     INSTANCE_NAME: z.string().optional(),
   },
@@ -51,7 +50,6 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_REQUEST_HEADERS,
-    PROMETHEUS_PATH: process.env.PROMETHEUS_PATH,
     DEMO_MODE: process.env.DEMO_MODE === "true",
     INSTANCE_NAME: process.env.INSTANCE_NAME,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,

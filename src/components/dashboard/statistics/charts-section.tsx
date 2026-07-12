@@ -2,16 +2,10 @@
 
 import { useState } from "react";
 import { QueriesOverTimeChart } from "./queries-over-time-chart";
-import { TopDomainsTable } from "./top-domains-table";
-import { TopClientsTable } from "./top-clients-table";
+import { TopListTable } from "./top-list-table";
+import { TimeRangeSelector } from "./time-range-selector";
+import { TopListsSection } from "./top-list";
 import { type TimeRange } from "~/lib/constants";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -25,49 +19,77 @@ const ROWS_OPTIONS = [5, 10, 25, 50] as const;
 type RowsOption = (typeof ROWS_OPTIONS)[number];
 
 export function ChartsSection() {
-  const [range, setRange] = useState<TimeRange>("24h");
+  const [chartRange, setChartRange] = useState<TimeRange>("24h");
+  const [topListsRange, setTopListsRange] = useState<TimeRange>("24h");
   const [rowsPerTable, setRowsPerTable] = useState<RowsOption>(5);
+  const [pages, setPages] = useState({ domains: 0, clients: 0 });
+
+  const resetPages = () => {
+    setPages({ domains: 0, clients: 0 });
+  };
+
+  const handleTopListsRangeChange = (range: TimeRange) => {
+    setTopListsRange(range);
+    resetPages();
+  };
+
+  const handleRowsChange = (value: string) => {
+    setRowsPerTable(Number(value) as RowsOption);
+    resetPages();
+  };
 
   return (
     <div className="space-y-6">
-      <QueriesOverTimeChart range={range} onRangeChange={setRange} />
-      <Card>
-        <CardHeader>
-          <div className="flex w-full flex-row items-center justify-between">
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <CardTitle className="flex items-center gap-2 text-base font-medium">
-                <ListOrdered className="h-5 w-5" />
-                Top Lists
-              </CardTitle>
-              <CardDescription>Most active domains and clients</CardDescription>
-            </div>
+      <QueriesOverTimeChart range={chartRange} onRangeChange={setChartRange} />
+      <TopListsSection
+        description="Most active domains and clients"
+        icon={ListOrdered}
+        controls={
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground text-xs">Rows</span>
               <Select
                 value={String(rowsPerTable)}
-                onValueChange={(v) => setRowsPerTable(Number(v) as RowsOption)}
+                onValueChange={handleRowsChange}
               >
-                <SelectTrigger size="sm" className="h-7 w-18 text-xs">
+                <SelectTrigger size="sm" className="w-18 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROWS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt} value={String(opt)}>
-                      {opt}
+                  {ROWS_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={String(option)}>
+                      {option}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            <TimeRangeSelector
+              value={topListsRange}
+              onChange={handleTopListsRangeChange}
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 md:grid-cols-2">
-            <TopDomainsTable range={range} limit={rowsPerTable} />
-            <TopClientsTable range={range} limit={rowsPerTable} />
-          </div>
-        </CardContent>
-      </Card>
+        }
+      >
+        <TopListTable
+          type="domains"
+          range={topListsRange}
+          limit={rowsPerTable}
+          page={pages.domains}
+          onPageChange={(page) =>
+            setPages((current) => ({ ...current, domains: page }))
+          }
+        />
+        <TopListTable
+          type="clients"
+          range={topListsRange}
+          limit={rowsPerTable}
+          page={pages.clients}
+          onPageChange={(page) =>
+            setPages((current) => ({ ...current, clients: page }))
+          }
+        />
+      </TopListsSection>
     </div>
   );
 }

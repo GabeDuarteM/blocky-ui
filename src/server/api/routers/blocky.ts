@@ -1,15 +1,15 @@
 import { z } from "zod";
-import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   BLOCKY_API_UNAVAILABLE_MESSAGE,
   blockyApiProcedure,
 } from "~/server/api/demo";
-import ky from "ky";
 import {
   BLOCKY_DNS_RECORD_TYPES,
   BLOCKY_RESPONSE_TYPES,
 } from "~/lib/constants";
+import { blockyApi } from "~/server/blocky/client";
+import { parseBlockyQueryResult } from "~/server/blocky/query";
 
 const statusSchema = z.object({
   enabled: z.boolean(),
@@ -22,25 +22,10 @@ const queryRequestSchema = z.object({
   type: z.enum(BLOCKY_DNS_RECORD_TYPES),
 });
 
-const queryResultSchema = z.object({
-  reason: z.string(),
-  response: z.string(),
-  responseType: z.string(),
-  returnCode: z.string(),
-});
-
-const api = ky.create({
-  baseUrl: env.BLOCKY_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-    ...env.BLOCKY_REQUEST_HEADERS,
-  },
-});
-
 export const blockyRouter = createTRPCRouter({
   blockingStatus: blockyApiProcedure.query(async () => {
     try {
-      const response = await api.get("api/blocking/status");
+      const response = await blockyApi.get("api/blocking/status");
 
       if (!response.ok) {
         throw new Error(
@@ -70,7 +55,7 @@ export const blockyRouter = createTRPCRouter({
     }
   }),
   blockingEnable: blockyApiProcedure.mutation(async () => {
-    const response = await api.get("api/blocking/enable");
+    const response = await blockyApi.get("api/blocking/enable");
     if (!response.ok) {
       throw new Error(`Failed to enable blocking: ${response.statusText}`);
     }
@@ -91,7 +76,7 @@ export const blockyRouter = createTRPCRouter({
       if (input?.duration) searchParams.set("duration", input.duration);
       if (input?.groups) searchParams.set("groups", input.groups);
 
-      const response = await api.get(
+      const response = await blockyApi.get(
         `api/blocking/disable${searchParams.toString() ? `?${searchParams.toString()}` : ""}`,
       );
 
@@ -102,7 +87,7 @@ export const blockyRouter = createTRPCRouter({
       return { success: true };
     }),
   cacheClear: blockyApiProcedure.mutation(async () => {
-    const response = await api.post("api/cache/flush");
+    const response = await blockyApi.post("api/cache/flush");
 
     if (!response.ok) {
       throw new Error(`Failed to clear cache: ${response.statusText}`);
@@ -111,7 +96,7 @@ export const blockyRouter = createTRPCRouter({
     return { success: true };
   }),
   listsRefresh: blockyApiProcedure.mutation(async () => {
-    const response = await api.post("api/lists/refresh");
+    const response = await blockyApi.post("api/lists/refresh");
 
     if (!response.ok) {
       throw new Error(`Failed to refresh lists: ${response.statusText}`);
@@ -122,7 +107,7 @@ export const blockyRouter = createTRPCRouter({
   queryExecute: blockyApiProcedure
     .input(queryRequestSchema)
     .mutation(async ({ input }) => {
-      const response = await api.post("api/query", {
+      const response = await blockyApi.post("api/query", {
         json: input,
       });
 
@@ -132,7 +117,7 @@ export const blockyRouter = createTRPCRouter({
 
       const data = await response.json();
 
-      return queryResultSchema.parse(data);
+      return parseBlockyQueryResult(data);
     }),
   getQueryLogs: publicProcedure
     .input(

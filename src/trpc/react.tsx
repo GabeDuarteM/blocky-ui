@@ -37,7 +37,6 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
 /**
  * Inference helper for outputs.
  *
- * @knipignore
  * @example type HelloOutput = RouterOutputs['example']['hello']
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;

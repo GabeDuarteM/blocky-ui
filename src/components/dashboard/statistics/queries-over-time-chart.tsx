@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useCallback, useMemo, useId } from "react";
+import { type ReactNode, useState, useCallback, useId } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { format } from "date-fns";
 import {
@@ -238,16 +238,10 @@ export function QueriesOverTimeChart({
     );
   const showLoading = isLoading || isPlaceholderData;
 
-  const chartData = useMemo(
-    () =>
-      data?.map((entry) => ({
-        ...entry,
-        axisTime: format(
-          new Date(entry.time),
-          timeRangeConfig[range].axisFormat,
-        ),
-      })) ?? [],
-    [data, range],
+  const formatXAxisTick = useCallback(
+    (value: string) =>
+      format(new Date(value), timeRangeConfig[range].axisFormat),
+    [range],
   );
 
   const formatTooltipLabel = useCallback(
@@ -304,12 +298,13 @@ export function QueriesOverTimeChart({
             className="h-[220px] min-h-[220px] w-full min-w-0 sm:h-[250px]"
           >
             <AreaChart
-              data={chartData}
+              data={data ?? []}
               margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
-                dataKey="axisTime"
+                dataKey="time"
+                tickFormatter={formatXAxisTick}
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}

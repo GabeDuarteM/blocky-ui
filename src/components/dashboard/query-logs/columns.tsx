@@ -10,6 +10,22 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { Badge, type BadgeVariants } from "~/components/ui/badge";
+import { OverflowTooltip } from "~/components/overflow-tooltip";
+
+interface DomainCellProps {
+  domain: string;
+}
+
+function DomainCell({ domain }: DomainCellProps) {
+  return (
+    <div className="flex h-full items-center">
+      <OverflowTooltip
+        text={domain}
+        className="max-w-50 cursor-text select-text"
+      />
+    </div>
+  );
+}
 
 export const columns: ColumnDef<LogEntry>[] = [
   {
@@ -41,20 +57,7 @@ export const columns: ColumnDef<LogEntry>[] = [
     cell: ({ row }) => {
       const domain = row.original.questionName;
       if (!domain) return null;
-      return (
-        <TooltipProvider>
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger>
-              <div className="flex h-full items-center">
-                <div className="max-w-50 truncate">{domain}</div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{domain}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+      return <DomainCell domain={domain} />;
     },
   },
   {
