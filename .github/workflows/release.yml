@@ -9,7 +9,6 @@ on:
 env:
   CI: true
   GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
-  DOCKERHUB_IMAGE: gabrielduartem/blocky-ui
 
 jobs:
   release:
@@ -85,13 +84,9 @@ jobs:
         with:
           ghcr-token: ${{ secrets.GITHUB_TOKEN }}
           cache-ref: ${{ env.GHCR_IMAGE }}:buildcache
-          dockerhub-username: ${{ secrets.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           tags: |
             ${{ env.GHCR_IMAGE }}:latest
             ${{ env.GHCR_IMAGE }}:${{ matrix.package.version }}
-            ${{ env.DOCKERHUB_IMAGE }}:latest
-            ${{ env.DOCKERHUB_IMAGE }}:${{ matrix.package.version }}
 
   cleanup-failed-release:
     name: Cleanup Failed Release
