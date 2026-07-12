@@ -137,8 +137,9 @@ function TopListPagination({
   return (
     <CardFooter className="justify-between border-t pt-4">
       <span className="text-muted-foreground text-xs tabular-nums">
-        {page * limit + 1}-{Math.min((page + 1) * limit, totalCount)} of{" "}
-        {totalCount}
+        {(page * limit + 1).toLocaleString()}-
+        {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
+        {totalCount.toLocaleString()}
       </span>
       <div className="flex gap-1">
         <Button
