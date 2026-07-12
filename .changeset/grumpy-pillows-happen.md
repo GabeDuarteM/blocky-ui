@@ -2,7 +2,7 @@
 "blocky-ui": major
 ---
 
-Replace Prometheus-backed overview statistics with Blocky's statistics API and add rolling 24-hour top lists for installations without query logging.
+Replace Prometheus-backed overview statistics with Blocky's statistics API, add rolling 24-hour top lists for installations without query logging, and remove deprecated configuration.
 
 #### Blocky statistics
 
@@ -16,6 +16,8 @@ Overview total queries, outcomes, cache hit rate, and average response time now 
 
 #### Breaking changes
 
+##### Statistics configuration
+
 BlockyUI no longer queries Prometheus for dashboard statistics, and the `PROMETHEUS_PATH` environment variable has been removed. Installations that only expose Prometheus metrics, run a Blocky version older than v0.33.0, or do not enable Blocky's statistics API will no longer display the Overview cards or fallback Top Lists.
 
 To migrate, upgrade to Blocky v0.33.0 or newer and enable statistics:
@@ -23,4 +25,13 @@ To migrate, upgrade to Blocky v0.33.0 or newer and enable statistics:
 ```yaml
 statistics:
   enable: true
+```
+
+##### Query log configuration
+
+`DATABASE_URL` has been deprecated since v1.2.0 and is now no longer accepted. Configure the query log provider explicitly:
+
+```env
+QUERY_LOG_TYPE=mysql
+QUERY_LOG_TARGET=mysql://username:password@localhost:3306/blocky_query_log
 ```
