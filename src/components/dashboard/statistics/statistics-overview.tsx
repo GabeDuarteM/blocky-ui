@@ -68,8 +68,8 @@ export function StatisticsOverview() {
         tooltip="Total domains in blocklists"
         detail={
           overview
-            ? `${overview.denylistGroups} groups · ${formatCount(overview.allowlistDomains)} allowed`
-            : "0 groups · 0 allowed"
+            ? `${overview.denylistGroups} deny groups · ${formatCount(overview.allowlistDomains)} allowlisted`
+            : "0 deny groups · 0 allowlisted"
         }
       />
     </div>

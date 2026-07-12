@@ -68,7 +68,7 @@ function QueryResultPane({
           )}
         </div>
       </div>
-      <div className="flex max-h-60 min-h-0 min-w-0 flex-col gap-3 px-5 py-5 sm:border-l">
+      <div className="flex max-h-64 min-h-0 min-w-0 flex-col gap-3 px-5 py-5 sm:border-l">
         <p className="text-muted-foreground text-xs tracking-wide uppercase">
           DNS answers
         </p>
