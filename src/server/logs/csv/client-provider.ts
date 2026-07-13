@@ -14,6 +14,7 @@ import {
   createFilterFn,
   createTimeFilter,
   computeStats,
+  EMPTY_STATS,
 } from "./utils";
 
 const DATE_PATTERN = /^(\d{4}-\d{2}-\d{2})_.+\.log$/;
@@ -127,7 +128,7 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
   async getStats24h(): Promise<StatsResult> {
     const logFiles = await this.findLatestDateFiles();
     if (logFiles.length === 0) {
-      return { totalQueries: 0, blocked: 0 };
+      return EMPTY_STATS;
     }
 
     try {
@@ -139,7 +140,7 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
       return computeStats(entriesArrays.flat());
     } catch (error) {
       console.error("Error getting stats:", error);
-      return { totalQueries: 0, blocked: 0 };
+      return EMPTY_STATS;
     }
   }
 

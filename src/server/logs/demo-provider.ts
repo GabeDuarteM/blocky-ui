@@ -5,7 +5,7 @@ import type {
   QueryLogsOptions,
   QueryLogsResult,
 } from "./types";
-import { getTimeRangeConfig } from "./aggregation-utils";
+import { aggregateStats24h, getTimeRangeConfig } from "./aggregation-utils";
 import { BaseMemoryLogProvider } from "./base-provider";
 
 /**
@@ -64,21 +64,7 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
 
   async getStats24h(): Promise<StatsResult> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const recentLogs = logEntryMock.filter((log) => {
-      const logDate = new Date(log.requestTs ?? 0);
-      return logDate >= oneDayAgo;
-    });
-
-    const blocked = recentLogs.filter(
-      (log) => log.responseType === "BLOCKED",
-    ).length;
-
-    return {
-      totalQueries: recentLogs.length,
-      blocked,
-    };
+    return aggregateStats24h(logEntryMock);
   }
 
   protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
