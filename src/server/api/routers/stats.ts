@@ -67,7 +67,24 @@ export const statsRouter = createTRPCRouter({
     // When a query log is configured it spans every instance and survives
     // restarts, so prefer it for the traffic counters. The remaining fields
     // (cache size, list sizes) are current blocky state and stay as reported.
-    const stats = await ctx.logProvider.getStats24h();
+    //
+    // The query log is a separate service and can be unreachable, so treat it
+    // as best-effort: if it fails, or reports no queries at all while blocky
+    // says it served some, keep blocky's numbers rather than blanking the
+    // cards. Providers signal failure inconsistently — some throw, others log
+    // and return zeroes — so guard against both.
+    let stats: StatsResult;
+    try {
+      stats = await ctx.logProvider.getStats24h();
+    } catch (error) {
+      console.error("Failed to read statistics from the query log:", error);
+      return snapshot;
+    }
+
+    if (stats.totalQueries === 0 && snapshot.overview.totalQueries > 0) {
+      return snapshot;
+    }
+
     return {
       ...snapshot,
       overview: { ...snapshot.overview, ...overviewFromLogs(stats) },
