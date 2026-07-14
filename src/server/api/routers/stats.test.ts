@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { StatsResult } from "~/server/logs/types";
+import { type LogProvider, type StatsResult } from "~/server/logs/types";
 
 const mocks = vi.hoisted(() => ({
   fetchBlockyStatistics: vi.fn(),
@@ -20,7 +20,10 @@ vi.mock("~/server/blocky/statistics", async (importOriginal) => ({
 }));
 
 import { statsRouter } from "~/server/api/routers/stats";
-import type { BlockyStatistics } from "~/server/blocky/statistics";
+import { type createTRPCContext } from "~/server/api/trpc";
+import { type BlockyStatistics } from "~/server/blocky/statistics";
+
+type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 /** Blocky reports traffic of its own, so a fallback is always distinguishable. */
 const BLOCKY_STATISTICS: BlockyStatistics = {
@@ -56,18 +59,26 @@ const EMPTY_LOG_STATS: StatsResult = {
 };
 
 function createCaller(withLogProvider: boolean) {
-  return statsRouter.createCaller({
+  // Only getStats24h is exercised here; the rest of the provider is never
+  // reached, so a partial fake keeps the fixture honest about what it stubs.
+  const logProvider: Pick<LogProvider, "getStats24h"> = {
+    getStats24h: mocks.getStats24h,
+  };
+
+  const ctx: TRPCContext = {
     headers: new Headers(),
     isDemoServiceAvailable: () => true,
-    logProvider: withLogProvider
-      ? ({ getStats24h: mocks.getStats24h } as never)
-      : undefined,
-  } as never);
+    logProvider: withLogProvider ? (logProvider as LogProvider) : undefined,
+  };
+
+  return statsRouter.createCaller(ctx);
 }
 
 describe("stats.snapshot", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    // resetAllMocks, not clearAllMocks: the former also drops mockResolvedValue
+    // implementations, so one test's stub cannot leak into the next.
+    vi.resetAllMocks();
     mocks.fetchBlockyStatistics.mockResolvedValue(BLOCKY_STATISTICS);
   });
 
