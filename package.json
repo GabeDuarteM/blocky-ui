@@ -79,7 +79,7 @@
     "jscpd": "5.0.12",
     "knip": "6.27.0",
     "msw": "2.15.0",
-    "postcss": "8.5.20",
+    "postcss": "8.5.21",
     "prettier": "3.9.6",
     "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "4.3.3",
