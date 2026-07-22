@@ -52,7 +52,7 @@
     "next": "16.2.10",
     "postgres": "3.4.9",
     "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react-dom": "19.2.8",
     "recharts": "3.9.2",
     "sonner": "2.0.7",
     "superjson": "2.2.6",
