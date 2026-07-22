@@ -1,5 +1,10 @@
 import ky from "ky";
-import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import {
+  BLOCKED_RESPONSE_TYPES,
+  CACHED_RESPONSE_TYPES,
+  FORWARDED_RESPONSE_TYPES,
+  getTimeRangeConfig,
+} from "~/server/logs/aggregation-utils";
 import {
   type LogEntry,
   type LogProvider,
@@ -171,21 +176,25 @@ export class VictoriaLogsProvider implements LogProvider {
   }
 
   async getStats24h(): Promise<StatsResult> {
-    // VictoriaLogs does not support conditional aggregation (count(if(...))),
-    // so total and blocked counts require separate queries.
-    const [totalResult, blockedResult] = await Promise.all([
-      this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
-        start: "24h",
-      }),
-      this.queryRaw(
-        `${BASE_FILTER} AND response_type:BLOCKED | stats count() as blocked`,
-        { start: "24h" },
-      ),
-    ]);
+    const anyOf = (field: string, values: string[]) =>
+      values.map((value) => `${field}:${value}`).join(" or ");
+
+    const [result] = await this.queryRaw(
+      `${BASE_FILTER} | stats
+         count() as total,
+         count() if (${anyOf("response_type", CACHED_RESPONSE_TYPES)}) as cached,
+         count() if (${anyOf("response_type", FORWARDED_RESPONSE_TYPES)}) as forwarded,
+         count() if (${anyOf("response_type", BLOCKED_RESPONSE_TYPES)}) as blocked,
+         sum(duration_ms) as duration_sum`,
+      { start: "24h" },
+    );
 
     return {
-      totalQueries: Number(totalResult[0]?.total ?? 0),
-      blocked: Number(blockedResult[0]?.blocked ?? 0),
+      totalQueries: Number(result?.total ?? 0),
+      blocked: Number(result?.blocked ?? 0),
+      cached: Number(result?.cached ?? 0),
+      forwarded: Number(result?.forwarded ?? 0),
+      durationSum: Number(result?.duration_sum ?? 0),
     };
   }
 
