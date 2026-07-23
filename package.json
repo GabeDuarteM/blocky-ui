@@ -47,7 +47,7 @@
     "date-fns": "4.4.0",
     "drizzle-orm": "0.45.2",
     "ky": "2.0.2",
-    "lucide-react": "1.24.0",
+    "lucide-react": "1.26.0",
     "mysql2": "3.22.6",
     "next": "16.2.10",
     "postgres": "3.4.9",
