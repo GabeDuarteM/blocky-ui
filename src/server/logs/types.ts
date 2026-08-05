@@ -20,6 +20,10 @@ export interface LogEntry {
 export interface StatsResult {
   totalQueries: number;
   blocked: number;
+  cached: number;
+  forwarded: number;
+  /** Summed, not averaged: integers compare exactly across every provider. */
+  durationSum: number;
 }
 
 export interface QueriesOverTimeEntry {

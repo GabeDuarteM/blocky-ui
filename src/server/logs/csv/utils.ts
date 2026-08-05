@@ -1,6 +1,7 @@
 import * as fs from "fs";
 import * as readline from "readline";
-import type { LogEntry, QueryLogsOptions } from "../types";
+import { aggregateStats24h } from "../aggregation-utils";
+import type { LogEntry, QueryLogsOptions, StatsResult } from "../types";
 
 function parseLogLine(line: string): LogEntry | null {
   try {
@@ -118,10 +119,14 @@ export function createTimeFilter(since: Date): (entry: LogEntry) => boolean {
   };
 }
 
-export function computeStats(entries: LogEntry[]): {
-  totalQueries: number;
-  blocked: number;
-} {
-  const blocked = entries.filter((e) => e.responseType === "BLOCKED").length;
-  return { totalQueries: entries.length, blocked };
+export const EMPTY_STATS: StatsResult = {
+  totalQueries: 0,
+  blocked: 0,
+  cached: 0,
+  forwarded: 0,
+  durationSum: 0,
+};
+
+export function computeStats(entries: LogEntry[]): StatsResult {
+  return aggregateStats24h(entries);
 }

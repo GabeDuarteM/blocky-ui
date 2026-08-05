@@ -83,6 +83,28 @@ function createTemplates(): EntryTemplate[] {
       questionType: "A",
     },
     {
+      offsetMs: 16 * MINUTE,
+      clientIp: "192.168.1.10",
+      clientName: "laptop",
+      durationMs: 22,
+      reason: "CONDITIONAL",
+      questionName: "nas.lan",
+      answer: "192.168.1.5",
+      responseType: "CONDITIONAL",
+      questionType: "A",
+    },
+    {
+      offsetMs: 17 * MINUTE,
+      clientIp: "192.168.1.30",
+      clientName: "server-01",
+      durationMs: 2,
+      reason: "FILTERED",
+      questionName: "filtered-site.com",
+      answer: "",
+      responseType: "FILTERED",
+      questionType: "AAAA",
+    },
+    {
       offsetMs: 20 * MINUTE,
       clientIp: "192.168.1.10",
       clientName: "laptop",
@@ -571,25 +593,42 @@ export function createSeedData(): LogEntry[] {
 export function countEntriesInRange(
   entries: LogEntry[],
   range: TimeRange,
-): { total: number; blocked: number; cached: number } {
+): {
+  total: number;
+  blocked: number;
+  cached: number;
+  forwarded: number;
+  durationSum: number;
+} {
   const { startTime } = getTimeRangeConfig(range);
 
   let total = 0;
   let blocked = 0;
   let cached = 0;
+  let forwarded = 0;
+  let durationSum = 0;
 
+  // Spelled out rather than reusing the provider's own bucket constants, so
+  // the expectation stays an independent check on how they are categorised.
   for (const entry of entries) {
     const ts = entry.requestTs ? new Date(entry.requestTs).getTime() : 0;
     if (ts >= startTime.getTime()) {
       total++;
+      durationSum += entry.durationMs ?? 0;
       if (entry.responseType === "BLOCKED") {
         blocked++;
       }
       if (entry.responseType === "CACHED") {
         cached++;
       }
+      if (
+        entry.responseType === "RESOLVED" ||
+        entry.responseType === "CONDITIONAL"
+      ) {
+        forwarded++;
+      }
     }
   }
 
-  return { total, blocked, cached };
+  return { total, blocked, cached, forwarded, durationSum };
 }

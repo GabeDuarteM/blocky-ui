@@ -2,12 +2,30 @@ import { type TimeRange } from "~/lib/constants";
 import type {
   LogEntry,
   QueriesOverTimeEntry,
+  StatsResult,
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
   SearchDomainEntry,
   SearchClientEntry,
 } from "./types";
+
+/**
+ * Response types that count as a cache hit or a forwarded lookup.
+ *
+ * These mirror blocky's own `categorize()` (stats/collector.go), which decides
+ * how `/api/stats` buckets each response type. The cache hit rate is measured
+ * against these two buckets, so keeping them aligned means a log-derived
+ * overview reports the same rate blocky would.
+ *
+ * Note: blocky also folds FILTERED and NOTFQDN into "blocked", whereas this
+ * codebase counts only BLOCKED throughout (query log filters, top domains,
+ * queries-over-time). That difference is left alone here so "blocked" keeps one
+ * meaning across the UI.
+ */
+export const CACHED_RESPONSE_TYPES = ["CACHED"];
+export const FORWARDED_RESPONSE_TYPES = ["RESOLVED", "CONDITIONAL"];
+export const BLOCKED_RESPONSE_TYPES = ["BLOCKED"];
 
 export interface TimeRangeConfig {
   startTime: Date;
@@ -43,6 +61,39 @@ export function getTimeRangeConfig(range: TimeRange): TimeRangeConfig {
         bucketCount: 30,
       };
   }
+}
+
+/**
+ * Counts the last 24 hours of entries into blocky's outcome buckets.
+ *
+ * Returns `durationSum` rather than an average: summing integers is exact and
+ * therefore identical across every provider, whereas each backend's own AVG()
+ * rounds differently. Callers divide once, at the point of display.
+ */
+export function aggregateStats24h(entries: LogEntry[]): StatsResult {
+  const { startTime } = getTimeRangeConfig("24h");
+  const stats: StatsResult = {
+    totalQueries: 0,
+    blocked: 0,
+    cached: 0,
+    forwarded: 0,
+    durationSum: 0,
+  };
+
+  for (const entry of entries) {
+    const ts = entry.requestTs ? new Date(entry.requestTs).getTime() : 0;
+    if (ts < startTime.getTime()) continue;
+
+    stats.totalQueries++;
+    stats.durationSum += entry.durationMs ?? 0;
+
+    const rtype = entry.responseType ?? "";
+    if (CACHED_RESPONSE_TYPES.includes(rtype)) stats.cached++;
+    if (FORWARDED_RESPONSE_TYPES.includes(rtype)) stats.forwarded++;
+    if (BLOCKED_RESPONSE_TYPES.includes(rtype)) stats.blocked++;
+  }
+
+  return stats;
 }
 
 export function aggregateQueriesOverTime(
