@@ -49,13 +49,21 @@ export const statsRouter = createTRPCRouter({
     }),
 
   topList: publicProcedure
-    .input(paginatedRangeSchema.extend({ type: topListTypeSchema }))
+    .input(
+      paginatedRangeSchema.extend({
+        type: topListTypeSchema,
+        hideLocalDiscovery: z.boolean().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       if (!ctx.logProvider) return null;
 
-      const { type, ...options } = input;
+      const { type, hideLocalDiscovery, ...options } = input;
       if (type === "domains") {
-        const result = await ctx.logProvider.getTopDomains(options);
+        const result = await ctx.logProvider.getTopDomains({
+          ...options,
+          hideLocalDiscovery,
+        });
         return {
           ...result,
           items: result.items.map((item) => ({

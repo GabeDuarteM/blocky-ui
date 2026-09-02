@@ -28,6 +28,7 @@ export const env = createEnv({
       .optional(),
     DEMO_MODE: z.boolean().default(false),
     INSTANCE_NAME: z.string().optional(),
+    HIDE_LOCAL_DISCOVERY_DOMAINS: z.boolean().default(false),
   },
 
   /**
@@ -51,6 +52,8 @@ export const env = createEnv({
     BLOCKY_API_URL: process.env.BLOCKY_API_URL,
     BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_REQUEST_HEADERS,
     DEMO_MODE: process.env.DEMO_MODE === "true",
+    HIDE_LOCAL_DISCOVERY_DOMAINS:
+      process.env.HIDE_LOCAL_DISCOVERY_DOMAINS === "true",
     INSTANCE_NAME: process.env.INSTANCE_NAME,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
   },

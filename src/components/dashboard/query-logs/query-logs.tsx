@@ -47,6 +47,14 @@ export function QueryLogs() {
   const [questionTypeFilter, setQuestionTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  // Defaults to hiding: the noise is why the option exists. Operators who want
+  // the local-discovery traffic can switch it off and it is queried again.
+  const [hideLocalDiscovery, setHideLocalDiscovery] = useState(true);
+  const { data: features, isPending: featuresPending } =
+    api.blocky.features.useQuery(undefined, { retry: false });
+  // On error the query settles with no data, so treat it as "feature off" rather
+  // than leaving the log query disabled forever.
+  const featuresSettled = !featuresPending;
 
   const handleFilterChange = (value: QueryLogFilter) => {
     setFilter(value);
@@ -72,6 +80,9 @@ export function QueryLogs() {
     ? questionTypeFilter
     : undefined;
   const searchParams = {
+    hideLocalDiscovery: features?.localDiscoveryFilter
+      ? hideLocalDiscovery
+      : undefined,
     search,
     client,
     limit: pageSize,
@@ -88,6 +99,9 @@ export function QueryLogs() {
     refetch,
     error,
   } = api.blocky.getQueryLogs.useQuery(searchParams, {
+    // Without this the first render queries unfiltered, then refetches once the
+    // feature flag arrives -- a visible flash of the rows the switch exists to hide.
+    enabled: featuresSettled,
     placeholderData: (previousData) => {
       if (previousData === undefined) {
         return undefined;
@@ -136,6 +150,7 @@ export function QueryLogs() {
         offset: targetPage * pageSize,
         responseType,
         questionType,
+        hideLocalDiscovery: searchParams.hideLocalDiscovery,
       });
     },
   });
@@ -154,6 +169,36 @@ export function QueryLogs() {
             </CardDescription>
           </div>
           <div className="flex h-full items-center justify-center gap-4 pl-4">
+            {features?.localDiscoveryFilter ? (
+              <div className="flex items-center gap-2">
+                <Label
+                  htmlFor="hide-local-discovery"
+                  className="text-muted-foreground text-sm"
+                >
+                  Hide local
+                </Label>
+                <Tooltip disableHoverableContent>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Switch
+                        id="hide-local-discovery"
+                        checked={hideLocalDiscovery}
+                        onCheckedChange={(next) => {
+                          setHideLocalDiscovery(next);
+                          // The filtered set is smaller; the current offset may be
+                          // past its end, which would show an empty page.
+                          setPageIndex(0);
+                        }}
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={4}>
+                    Hide local service-discovery and special-use names (.arpa,
+                    .localhost, .localdomain, DNS-SD)
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            ) : null}
             <div className="flex items-center gap-2">
               <Label
                 htmlFor="auto-refresh"

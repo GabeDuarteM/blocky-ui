@@ -16,6 +16,12 @@ import {
   type Column,
 } from "drizzle-orm";
 import { type TimeRange } from "~/lib/constants";
+import {
+  BARE_LOCAL_NAMES,
+  escapeLikePattern,
+  SERVICE_LABELS,
+  SPECIAL_USE_SUFFIXES,
+} from "~/server/blocky/local-discovery";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import type {
   LogProvider,
@@ -146,6 +152,48 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return filters;
   }
 
+  /**
+   * Exclude local discovery names from the top-domain aggregation.
+   *
+   * This has to happen in the WHERE clause, not after the query returns: the
+   * aggregation is grouped, paginated with limit/offset, and totals come from
+   * window functions over the matched set. Filtering rows afterwards would leave
+   * short pages and totals that disagree with what is displayed.
+   */
+  private buildLocalDiscoveryFilters(hide: boolean | undefined): SqlFilter[] {
+    if (!hide) return [];
+
+    const column = this.columns.questionName;
+
+    // LOWER() on both sides, matching how search filters are written elsewhere in
+    // this file. LIKE is case-sensitive on PostgreSQL but not on MySQL or SQLite,
+    // so a bare comparison would filter different rows per dialect -- and neither
+    // would agree with isLocalDiscoveryDomain(), which lowercases.
+    //
+    // Patterns are escaped because `_` is a single-character LIKE wildcard, and the
+    // DNS-SD labels contain one: an unescaped `%._tcp.%` also matches `foo.xtcp.bar`.
+    // ESCAPE is supported by PostgreSQL, MySQL and SQLite alike. `!` is used rather
+    // than a backslash, which MySQL also treats as a string escape.
+    const like = (pattern: string) =>
+      sql`LOWER(${column}) NOT LIKE ${pattern} ESCAPE '!'`;
+
+    const conditions: SqlFilter[] = [
+      // Trailing dot is not stored by blocky, so a plain suffix match is enough.
+      ...SPECIAL_USE_SUFFIXES.map((suffix) =>
+        like(`%${escapeLikePattern(suffix.toLowerCase())}`),
+      ),
+      ...SERVICE_LABELS.map((label) =>
+        like(`%${escapeLikePattern(label.toLowerCase())}%`),
+      ),
+      sql`LOWER(${column}) NOT IN ${BARE_LOCAL_NAMES.map((n) => n.toLowerCase())}`,
+    ];
+
+    // A NULL question name is not a local-discovery name, but `NULL NOT LIKE ...`
+    // evaluates to NULL rather than true, so without this those rows disappear from
+    // the results whenever the filter is on.
+    return [sql`(${column} IS NULL OR (${and(...conditions)}))`];
+  }
+
   private async getGroupedTotals(options: {
     filters: SqlFilter[];
     groupColumn: Column;
@@ -236,6 +284,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     if (options.questionType) {
       filters.push(eq(this.columns.questionType, options.questionType));
     }
+
+    filters.push(
+      ...this.buildLocalDiscoveryFilters(options.hideLocalDiscovery),
+    );
 
     const countQuery = this.db
       .select({ count: sql<number>`count(*)` })
@@ -344,8 +396,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     limit: number;
     offset: number;
     filter: "all" | "blocked";
+    hideLocalDiscovery?: boolean;
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    const filters = this.buildRangeFilters(options);
+    const filters = [
+      ...this.buildRangeFilters(options),
+      ...this.buildLocalDiscoveryFilters(options.hideLocalDiscovery),
+    ];
 
     const result = await this.db
       .select({

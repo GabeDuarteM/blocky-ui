@@ -66,6 +66,8 @@ export interface QueryLogsOptions {
   responseType?: string;
   client?: string;
   questionType?: string;
+  /** Exclude local service-discovery and special-use names. */
+  hideLocalDiscovery?: boolean;
 }
 
 export interface QueryLogsResult {
@@ -91,6 +93,7 @@ export interface LogProvider {
     limit: number;
     offset: number;
     filter: "all" | "blocked";
+    hideLocalDiscovery?: boolean;
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }>;
 
   getTopClients(options: {
