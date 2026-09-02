@@ -114,20 +114,24 @@ export function TopListTable({
       headerExtra={
         showLocalDiscoveryToggle ? (
           <Tooltip disableHoverableContent>
-            {/* The trigger is the Switch itself, not a wrapper. A span is not
-                focusable, so the tooltip would never open from the keyboard --
-                and this control has no visible label, so the tooltip is the only
-                description of what it does. */}
+            {/* The span is load-bearing. Radix Tooltip sets data-state on its
+                trigger, and Switch styles itself from data-state=checked /
+                unchecked -- making the Switch the trigger directly leaves it
+                with neither, so it renders with no background and no thumb
+                movement. Screen readers get the aria-label; the tooltip is a
+                pointer affordance on top of that. */}
             <TooltipTrigger asChild>
-              <Switch
-                id="top-domains-hide-local-discovery"
-                aria-label="Hide local service-discovery domains"
-                checked={hideLocalDiscovery}
-                onCheckedChange={(next) => {
-                  setHideLocalDiscovery(next);
-                  onPageChange(0);
-                }}
-              />
+              <span className="inline-flex">
+                <Switch
+                  id="top-domains-hide-local-discovery"
+                  aria-label="Hide local service-discovery domains"
+                  checked={hideLocalDiscovery}
+                  onCheckedChange={(next) => {
+                    setHideLocalDiscovery(next);
+                    onPageChange(0);
+                  }}
+                />
+              </span>
             </TooltipTrigger>
             <TooltipContent sideOffset={4}>
               Hide local service-discovery and special-use names (.arpa,
