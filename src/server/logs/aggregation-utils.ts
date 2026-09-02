@@ -1,4 +1,5 @@
 import { type TimeRange } from "~/lib/constants";
+import { isLocalDiscoveryDomain } from "~/server/blocky/local-discovery";
 import type {
   LogEntry,
   QueriesOverTimeEntry,
@@ -84,17 +85,28 @@ export function aggregateTopDomains(
   entries: LogEntry[],
   limit: number,
   offset: number,
+  hideLocalDiscovery = false,
 ): { items: TopDomainEntry[]; totalCount: number } {
   const domainStats = new Map<string, { count: number; blocked: number }>();
+  // Counted rather than using entries.length, so percentages are relative to the
+  // rows actually shown. The SQL providers compute their total with a window
+  // function over the filtered set, and the two paths must agree.
+  let includedCount = 0;
   for (const entry of entries) {
     const domain = entry.questionName ?? "unknown";
+    // Filtered here rather than after aggregating, so totals and pagination
+    // describe the same set of rows the caller is shown.
+    if (hideLocalDiscovery && isLocalDiscoveryDomain(domain)) {
+      continue;
+    }
+    includedCount++;
     const stats = domainStats.get(domain) ?? { count: 0, blocked: 0 };
     stats.count++;
     if (entry.responseType === "BLOCKED") stats.blocked++;
     domainStats.set(domain, stats);
   }
 
-  const totalQueriesCount = entries.length;
+  const totalQueriesCount = includedCount;
   const sortedDomains = Array.from(domainStats.entries()).sort(
     (a, b) => b[1].count - a[1].count || a[0].localeCompare(b[0]),
   );

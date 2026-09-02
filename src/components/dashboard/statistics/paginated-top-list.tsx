@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { type ReactNode } from "react";
 
 import { Button } from "~/components/ui/button";
 import { CardFooter } from "~/components/ui/card";
@@ -24,6 +25,7 @@ interface PaginatedTopListProps {
   isLoading: boolean;
   filter: TopListFilter;
   onFilterChange: (filter: TopListFilter) => void;
+  headerExtra?: ReactNode;
   page: number;
   limit: number;
   onPageChange: (page: number) => void;
@@ -179,6 +181,7 @@ export function PaginatedTopList({
   isLoading,
   filter,
   onFilterChange,
+  headerExtra,
   page,
   limit,
   onPageChange,
@@ -191,6 +194,7 @@ export function PaginatedTopList({
       description={description}
       icon={icon}
       filterControls={{ value: filter, onChange: onFilterChange }}
+      headerExtra={headerExtra}
       isLoading={isLoading}
       isEmpty={items.length === 0}
       skeletonRows={limit}

@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import { isLocalDiscoveryDomain } from "~/server/blocky/local-discovery";
 import * as readline from "readline";
 import type { LogEntry, QueryLogsOptions } from "../types";
 
@@ -88,7 +89,7 @@ export function streamAndParseEntries(
 export function createFilterFn(
   options: Pick<
     QueryLogsOptions,
-    "search" | "responseType" | "client" | "questionType"
+    "search" | "responseType" | "client" | "questionType" | "hideLocalDiscovery"
   >,
 ): (entry: LogEntry) => boolean {
   const searchLower = options.search?.toLowerCase();
@@ -105,8 +106,17 @@ export function createFilterFn(
       entry.clientName?.toLowerCase().includes(clientLower) === true;
     const passesQuestionType =
       !options.questionType || entry.questionType === options.questionType;
+    // A missing question name is not a local-discovery name, so it is kept.
+    const passesLocalDiscovery =
+      !options.hideLocalDiscovery ||
+      !entry.questionName ||
+      !isLocalDiscoveryDomain(entry.questionName);
     return (
-      passesSearch && passesResponseType && passesClient && passesQuestionType
+      passesSearch &&
+      passesResponseType &&
+      passesClient &&
+      passesQuestionType &&
+      passesLocalDiscovery
     );
   };
 }

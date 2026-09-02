@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { Globe, Users, type LucideIcon } from "lucide-react";
 
+import { Switch } from "~/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 import { type TimeRange } from "~/lib/constants";
 import { api } from "~/trpc/react";
@@ -43,9 +49,32 @@ export function TopListTable({
   onPageChange,
 }: TopListTableProps) {
   const [filter, setFilter] = useState<TopListFilter>("all");
+  // Defaults to hiding. Applies to both the all and blocked views, because it is
+  // the same query with a different filter.
+  const [hideLocalDiscovery, setHideLocalDiscovery] = useState(true);
+  const { data: features, isPending: featuresPending } =
+    api.blocky.features.useQuery(undefined, { retry: false });
+  const showLocalDiscoveryToggle =
+    type === "domains" && Boolean(features?.localDiscoveryFilter);
+  const localDiscoveryInput = showLocalDiscoveryToggle
+    ? hideLocalDiscovery
+    : undefined;
+
   const query = api.stats.topList.useQuery(
-    { type, range, limit, offset: page * limit, filter },
-    { placeholderData: (previous) => previous },
+    {
+      type,
+      range,
+      limit,
+      offset: page * limit,
+      filter,
+      hideLocalDiscovery: localDiscoveryInput,
+    },
+    {
+      // Without this the first render queries unfiltered, then refetches once the
+      // feature flag arrives -- a visible flash of the rows the switch hides.
+      enabled: !featuresPending,
+      placeholderData: (previous) => previous,
+    },
   );
   const utils = api.useUtils();
   const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
@@ -62,6 +91,7 @@ export function TopListTable({
         limit,
         offset: targetPage * limit,
         filter,
+        hideLocalDiscovery: localDiscoveryInput,
       });
     },
   });
@@ -81,6 +111,31 @@ export function TopListTable({
       isLoading={query.isLoading || query.isPlaceholderData}
       filter={filter}
       onFilterChange={handleFilterChange}
+      headerExtra={
+        showLocalDiscoveryToggle ? (
+          <Tooltip disableHoverableContent>
+            {/* The trigger is the Switch itself, not a wrapper. A span is not
+                focusable, so the tooltip would never open from the keyboard --
+                and this control has no visible label, so the tooltip is the only
+                description of what it does. */}
+            <TooltipTrigger asChild>
+              <Switch
+                id="top-domains-hide-local-discovery"
+                aria-label="Hide local service-discovery domains"
+                checked={hideLocalDiscovery}
+                onCheckedChange={(next) => {
+                  setHideLocalDiscovery(next);
+                  onPageChange(0);
+                }}
+              />
+            </TooltipTrigger>
+            <TooltipContent sideOffset={4}>
+              Hide local service-discovery and special-use names (.arpa,
+              .localhost, .localdomain, DNS-SD)
+            </TooltipContent>
+          </Tooltip>
+        ) : null
+      }
       page={page}
       limit={limit}
       onPageChange={onPageChange}

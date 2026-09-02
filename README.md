@@ -123,6 +123,7 @@ BlockyUI is configured via environment variables in all deployment methods.
 | `QUERY_LOG_CONSOLE_PROVIDER` | Conditional | None                    | Required when `QUERY_LOG_TYPE=console`. Selects the console log backend. Currently supports `victorialogs`.              |
 | `QUERY_LOG_TARGET`           | No          | None                    | Connection string, SQLite file path, or log folder path for the same target as Blocky's `queryLog.target`.               |
 | `INSTANCE_NAME`              | No          | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                  |
+| `HIDE_LOCAL_DISCOVERY_DOMAINS` | No | `false` | Offers a switch on Query Logs and Top Domains to hide `.arpa`, `.localhost`, `.localdomain` and DNS-SD (`._tcp.`/`._udp.`) names. The switch is on by default; turning it off queries those names again. Summary counts are never filtered. |
 | `DEMO_MODE`                  | No          | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                          |
 
 ### Common Setups
