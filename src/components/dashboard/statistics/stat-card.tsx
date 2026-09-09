@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Badge } from "~/components/ui/badge";
@@ -11,7 +12,8 @@ import { formatCount } from "~/lib/utils";
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value?: string | number;
+  children?: ReactNode;
   valueLabel?: string;
   icon: LucideIcon;
   badge?: {
@@ -32,7 +34,8 @@ function formatValue(value: string | number): string {
 
 export function StatCard({
   title,
-  value,
+  value = 0,
+  children,
   valueLabel,
   icon: Icon,
   badge,
@@ -47,9 +50,11 @@ export function StatCard({
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-5 w-5 rounded" />
         </CardHeader>
-        <CardContent>
-          <Skeleton className="mb-2 h-8 w-20" />
-          {detail !== undefined && <Skeleton className="h-2 w-full" />}
+        <CardContent className="min-h-15">
+          <Skeleton className="mb-2 h-9 w-20" />
+          {(children || detail !== undefined) && (
+            <Skeleton className="h-4 w-full" />
+          )}
         </CardContent>
       </Card>
     );
@@ -74,22 +79,28 @@ export function StatCard({
         )}
         <Icon className="text-muted-foreground h-5 w-5" />
       </CardHeader>
-      <CardContent>
-        <div className="mb-2 flex items-baseline gap-2">
-          <span className="text-3xl font-bold">{formatValue(value)}</span>
-          {valueLabel && (
-            <span className="text-foreground text-sm font-medium">
-              {valueLabel}
-            </span>
-          )}
-          {badge && (
-            <Badge variant={badge.variant ?? "secondary"}>{badge.value}</Badge>
-          )}
-        </div>
-        {detail && (
-          <p className="text-muted-foreground mt-2 text-xs tabular-nums">
-            {detail}
-          </p>
+      <CardContent className="min-h-15">
+        {children ?? (
+          <>
+            <div className="mb-2 flex items-baseline gap-2">
+              <span className="text-3xl font-bold">{formatValue(value)}</span>
+              {valueLabel && (
+                <span className="text-foreground text-sm font-medium">
+                  {valueLabel}
+                </span>
+              )}
+              {badge && (
+                <Badge variant={badge.variant ?? "secondary"}>
+                  {badge.value}
+                </Badge>
+              )}
+            </div>
+            {detail && (
+              <p className="text-muted-foreground mt-2 text-xs tabular-nums">
+                {detail}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

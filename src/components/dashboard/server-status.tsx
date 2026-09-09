@@ -1,6 +1,11 @@
 "use client";
 
-import { Database, Loader2, Power, AlertCircle, Pause } from "lucide-react";
+import { type ReactNode, useEffect } from "react";
+import { Database, Power, Pause } from "lucide-react";
+import { ActionLayout } from "~/components/dashboard/action-layout";
+import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useServerCommand } from "~/hooks/use-server-command";
+import { useCountdown } from "~/hooks/use-countdown";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -9,10 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Badge } from "~/components/ui/badge";
-import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { startTransition, useEffect, useState } from "react";
 import { cn } from "~/lib/utils";
 
 const DURATION_PRESETS = [
@@ -22,171 +26,124 @@ const DURATION_PRESETS = [
   { label: "Disable", value: "0", icon: Power },
 ];
 
-export function ServerStatus() {
+export function ServerStatus({ controls }: { controls?: ReactNode }) {
+  const dashboard = useDashboardServers();
+  const command = useServerCommand("blocking");
   const utils = api.useUtils();
-  const {
-    data: status,
-    isLoading,
-    isFetching,
-    error,
-  } = api.blocky.blockingStatus.useQuery();
-  const [countdown, setCountdown] = useState<number | null>(null);
-
+  const targets = dashboard.selection.selected("blocking");
+  const known =
+    dashboard.statuses?.flatMap((result) =>
+      targets.includes(result.serverId) && result.success ? [result.data] : [],
+    ) ?? [];
+  const enabled = known.filter((status) => status.enabled).length;
+  const disabled = known.length - enabled;
+  const unavailable = targets.length - known.length;
+  const mixed = enabled > 0 && disabled > 0;
+  const countdown = useCountdown(
+    targets.length === 1 ? known[0]?.autoEnableInSec : undefined,
+    dashboard.statusUpdatedAt,
+  );
   useEffect(() => {
-    startTransition(() => {
-      setCountdown(status?.autoEnableInSec ?? null);
-    });
-  }, [status?.autoEnableInSec]);
-
-  const enableMutation = api.blocky.blockingEnable.useMutation({
-    onSuccess: () => {
-      toast.success("Blocking has been enabled");
-      void utils.blocky.blockingStatus.invalidate();
-    },
-    onError: (error) => {
-      toast.error("Failed to enable blocking", {
-        description: error.message,
-      });
-    },
-  });
-
-  const disableMutation = api.blocky.blockingDisable.useMutation({
-    onSuccess: () => {
-      toast.success("Blocking has been disabled");
-      void utils.blocky.blockingStatus.invalidate();
-    },
-    onError: (error) => {
-      toast.error("Failed to disable blocking", {
-        description: error.message,
-      });
-    },
-  });
-
-  useEffect(() => {
-    if (countdown === null) return undefined;
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev === null || prev <= 0) {
-          clearInterval(timer);
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [countdown]);
-
-  useEffect(() => {
-    if (error) {
-      toast.error("Failed to query blocking status", {
-        description: error.message,
-      });
+    if (countdown === 0) {
+      void utils.servers.blockingStatus.invalidate();
     }
-  }, [error]);
+  }, [countdown, utils]);
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds.toString().padStart(2, "0")}s`;
-  };
-
-  let description = "";
-
-  if (error) {
-    description = "";
-  } else if (status?.enabled) {
-    description = "Blocking is currently enabled.";
-  } else if (countdown) {
-    description = `Blocking is temporarily disabled. Auto-enables in ${formatTime(countdown)}.`;
-  } else if (!isLoading) {
-    description = "Blocking is disabled until manually enabled.";
-  }
-
-  let content = null;
-
-  if (error) {
-    content = (
-      <div className="flex h-full flex-col items-center justify-center gap-2 text-center text-red-400">
-        <AlertCircle className="h-8 w-8" />
-        <p className="text-sm">{error.message}</p>
-      </div>
-    );
-  } else if (status?.enabled) {
-    content = (
-      <div className="space-y-4">
-        <div>
-          <div className="grid grid-cols-2 gap-2">
-            {DURATION_PRESETS.map((preset) => {
-              const Icon = preset.icon;
-              return (
-                <Button
-                  key={preset.value}
-                  variant={preset.value === "0" ? "destructive" : "outline"}
-                  onClick={() =>
-                    disableMutation.mutate({ duration: preset.value })
-                  }
-                  disabled={isFetching || disableMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Icon className="h-4 w-4" />
-                  {preset.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  } else if (!isLoading) {
-    content = (
-      <Button
-        className="flex w-full items-center gap-2"
-        onClick={() => enableMutation.mutate()}
-        disabled={isFetching || enableMutation.isPending}
-      >
-        <Power className="h-4 w-4" />
-        Enable
-      </Button>
-    );
-  } else {
-    content = (
-      <div className="flex justify-center">
-        <Loader2 className="h-10 w-10 animate-spin" />
-      </div>
-    );
-  }
+  const showDisable = enabled > 0 || unavailable > 0;
 
   return (
     <Card className="min-h-52">
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2">
             <Database className="h-5 w-5" />
             Blocking Status
           </span>
-          <Badge
-            variant="outline"
-            className={cn(
-              (isLoading || error) && "invisible",
-              status?.enabled
-                ? "border-green-400 bg-green-400/10 text-green-600"
-                : "border-red-400 bg-red-400/10 text-red-400",
-            )}
-          >
-            {status?.enabled ? "Enabled" : "Disabled"}
-          </Badge>
+          {dashboard.loading ? (
+            <Skeleton className="h-5 w-16" />
+          ) : (
+            <Badge
+              variant="outline"
+              className={cn(
+                mixed || unavailable > 0
+                  ? "border-amber-400 bg-amber-400/10 text-amber-400"
+                  : enabled > 0
+                    ? "border-green-400 bg-green-400/10 text-green-600"
+                    : "border-red-400 bg-red-400/10 text-red-400",
+              )}
+            >
+              {mixed
+                ? "Mixed"
+                : unavailable > 0
+                  ? "Unknown"
+                  : enabled > 0
+                    ? "Enabled"
+                    : "Disabled"}
+            </Badge>
+          )}
         </CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>
+          Enable blocking or pause it temporarily
+        </CardDescription>
       </CardHeader>
-      <CardContent
-        className={cn(
-          "flex flex-1 flex-col",
-          (isLoading || error) && "justify-center",
-        )}
-      >
-        {content}
+      <CardContent>
+        <ActionLayout controls={controls}>
+          {dashboard.loading ? (
+            <div
+              className="grid grid-cols-2 gap-2"
+              aria-label="Loading blocking status"
+            >
+              {DURATION_PRESETS.map((preset) => (
+                <Skeleton key={preset.value} className="h-9 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {disabled > 0 && countdown !== null && countdown > 0 && (
+                <p className="text-muted-foreground text-sm tabular-nums">
+                  Auto-enables in {Math.floor(countdown / 60)}m{" "}
+                  {(countdown % 60).toString().padStart(2, "0")}s
+                </p>
+              )}
+              {(disabled > 0 || unavailable > 0) && (
+                <Button
+                  className="flex w-full items-center gap-2"
+                  disabled={command.isPending}
+                  onClick={() => void command.execute({ action: "enable" })}
+                >
+                  {!showDisable && <Power className="size-4" />}
+                  {targets.length > 1 ? "Enable on selected servers" : "Enable"}
+                </Button>
+              )}
+              {showDisable && (
+                <div className="grid grid-cols-2 gap-2">
+                  {DURATION_PRESETS.map((preset) => {
+                    const Icon = preset.icon;
+                    return (
+                      <Button
+                        key={preset.value}
+                        variant={
+                          preset.value === "0" ? "destructive" : "outline"
+                        }
+                        disabled={command.isPending}
+                        className="flex items-center gap-2"
+                        onClick={() =>
+                          void command.execute({
+                            action: "disable",
+                            duration: preset.value,
+                          })
+                        }
+                      >
+                        <Icon className="size-4" />
+                        {preset.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </ActionLayout>
       </CardContent>
     </Card>
   );

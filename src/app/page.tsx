@@ -1,10 +1,11 @@
-import { Dashboard } from "~/components/dashboard/dashboard";
-import { env } from "~/env";
+import { ConnectedDashboard } from "~/components/dashboard/connected-dashboard";
+import { serverSummaries } from "~/server/config/servers";
+import { getConfiguration } from "~/server/config";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const showLogs = Boolean(env.QUERY_LOG_TARGET ?? env.DEMO_MODE);
+export default async function HomePage() {
+  const servers = serverSummaries(await getConfiguration());
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8 sm:py-10">
@@ -14,7 +15,7 @@ export default function HomePage() {
         </h1>
       </header>
 
-      <Dashboard showLogs={showLogs} />
+      <ConnectedDashboard servers={servers} />
     </main>
   );
 }
