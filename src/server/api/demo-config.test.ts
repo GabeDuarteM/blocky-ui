@@ -20,6 +20,7 @@ vi.mock("~/env", () => ({
 
 vi.mock("~/server/logs", () => ({
   createLogProvider: mocks.createLogProvider,
+  getLogCoordinator: async () => ({}),
 }));
 
 import { blockyRouter } from "~/server/api/routers/blocky";

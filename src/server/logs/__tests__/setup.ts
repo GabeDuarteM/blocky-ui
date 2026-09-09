@@ -283,7 +283,7 @@ function setupSqlite(entries: LogEntry[]): {
   return { provider, filePath };
 }
 
-function setupCsv(entries: LogEntry[]): {
+export function setupCsv(entries: LogEntry[]): {
   provider: CsvLogProvider;
   directory: string;
 } {
@@ -353,6 +353,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
         client_names: entry.clientName ?? "",
         duration_ms: entry.durationMs != null ? String(entry.durationMs) : "",
         response_reason: entry.reason ?? "",
+        instance: entry.hostname ?? "",
         question_name: entry.questionName ?? "",
         answer: entry.answer ?? "",
         response_code: entry.responseCode ?? "",

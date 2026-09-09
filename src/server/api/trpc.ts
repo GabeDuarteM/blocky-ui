@@ -12,7 +12,7 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError, z } from "zod";
 
-import { createLogProvider } from "~/server/logs";
+import { createLogProvider, getLogCoordinator } from "~/server/logs";
 import { env } from "~/env";
 import {
   DEFAULT_DEMO_CONFIGURATION,
@@ -46,6 +46,7 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
 
   return {
     configuration,
+    logs: await getLogCoordinator(),
     servers: createBlockyServers(configuration),
     isDemoServiceAvailable,
     logProvider,

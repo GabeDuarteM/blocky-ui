@@ -1,3 +1,4 @@
+import { logsRouter } from "~/server/api/routers/logs";
 import { serversRouter } from "~/server/api/routers/servers";
 import { blockyRouter } from "~/server/api/routers/blocky";
 import { statsRouter } from "~/server/api/routers/stats";
@@ -10,6 +11,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  */
 export const appRouter = createTRPCRouter({
   servers: serversRouter,
+  logs: logsRouter,
   blocky: blockyRouter,
   stats: statsRouter,
 });
