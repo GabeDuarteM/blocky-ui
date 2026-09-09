@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEMO_CONFIGURATION_HEADER } from "~/demo/config";
+import {
+  DEMO_CONFIGURATION_HEADER,
+  DEMO_SERVER_COUNT_HEADER,
+  DEMO_SERVER_COUNTS,
+} from "~/demo/config";
 
 vi.mock("~/env", () => ({
   env: {
@@ -22,6 +26,26 @@ function createHeaders(enabledServices?: string): Headers {
 }
 
 describe("demo request configuration", () => {
+  it.each(DEMO_SERVER_COUNTS)(
+    "provides %s servers with matching query logs",
+    async (count) => {
+      const context = await createTRPCContext({
+        headers: new Headers({ [DEMO_SERVER_COUNT_HEADER]: String(count) }),
+      });
+      const servers = await serversRouter.createCaller(context).list();
+      expect(servers).toHaveLength(count);
+
+      for (const server of servers) {
+        const result = await logsRouter.createCaller(context).rows({
+          serverIds: [server.id],
+          limit: 1,
+        });
+        expect(result.diagnostics).toEqual([]);
+        expect(result.items[0]?.serverId).toBe(server.id);
+      }
+    },
+  );
+
   it.each([
     ["blockyApi", true, false, false],
     ["statistics", false, true, false],

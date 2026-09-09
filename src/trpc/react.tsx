@@ -10,7 +10,11 @@ import SuperJSON from "superjson";
 
 import { type AppRouter } from "./app-router";
 import { createQueryClient } from "./query-client";
-import { DEMO_CONFIGURATION_HEADER } from "~/demo/config";
+import {
+  DEMO_CONFIGURATION_HEADER,
+  DEMO_SERVER_COUNT_HEADER,
+  type DemoServerCount,
+} from "~/demo/config";
 
 let clientQueryClientSingleton: QueryClient | undefined = undefined;
 const getQueryClient = () => {
@@ -43,9 +47,11 @@ export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export function TRPCReactProvider({
   children,
   demoConfiguration,
+  demoServerCount,
 }: {
   children: React.ReactNode;
   demoConfiguration?: string;
+  demoServerCount?: DemoServerCount;
 }) {
   const queryClient = getQueryClient();
 
@@ -67,12 +73,15 @@ export function TRPCReactProvider({
               if (demoConfiguration) {
                 headers.set(DEMO_CONFIGURATION_HEADER, demoConfiguration);
               }
+              if (demoServerCount !== undefined) {
+                headers.set(DEMO_SERVER_COUNT_HEADER, String(demoServerCount));
+              }
               return headers;
             },
           }),
         ],
       }),
-    [demoConfiguration],
+    [demoConfiguration, demoServerCount],
   );
 
   return (

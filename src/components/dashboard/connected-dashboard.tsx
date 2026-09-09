@@ -8,18 +8,24 @@ import {
   ServerSelector,
 } from "~/components/dashboard/server-selector";
 import { useServerSelection } from "~/hooks/use-server-selection";
+import { demoServers } from "~/demo/config";
+import { useDemoConfiguration } from "~/demo/context";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 export function ConnectedDashboard({
   servers: initialServers,
+  demoMode = false,
 }: {
   servers: RouterOutputs["servers"]["list"];
+  demoMode?: boolean;
 }) {
+  const demo = useDemoConfiguration();
   const { data: configuredServers } = api.servers.list.useQuery(undefined, {
     initialData: initialServers,
+    enabled: !demoMode,
     refetchInterval: 30_000,
   });
-  const servers = configuredServers;
+  const servers = demoMode ? demoServers(demo.serverCount) : configuredServers;
   const [logDiagnostics, setLogDiagnostics] = useState<
     Record<string, { sourceId: string; message: string }[]>
   >({});

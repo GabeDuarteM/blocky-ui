@@ -11,6 +11,7 @@ import superjson from "superjson";
 import { ZodError, z } from "zod";
 
 import { createBlockyServers } from "~/server/blocky/servers";
+import { getDemoScenario } from "~/server/demo";
 import { getConfiguration } from "~/server/config";
 import { getLogCoordinator } from "~/server/logs";
 import { env } from "~/env";
@@ -38,11 +39,14 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     : DEFAULT_DEMO_CONFIGURATION;
   const isDemoServiceAvailable = (service: DemoService) =>
     demoConfiguration.services[service];
-  const configuration = await getConfiguration();
+  const scenario = env.DEMO_MODE
+    ? getDemoScenario(demoConfiguration.serverCount)
+    : undefined;
+  const configuration = scenario?.configuration ?? (await getConfiguration());
 
   return {
     configuration,
-    logs: await getLogCoordinator(),
+    logs: scenario?.logs ?? (await getLogCoordinator()),
     servers: createBlockyServers(configuration),
     isDemoServiceAvailable,
     ...opts,

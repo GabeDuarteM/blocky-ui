@@ -1,3 +1,5 @@
+import { env } from "~/env";
+import { demoServers, DEFAULT_DEMO_CONFIGURATION } from "~/demo/config";
 import { ConnectedDashboard } from "~/components/dashboard/connected-dashboard";
 import { serverSummaries } from "~/server/config/servers";
 import { getConfiguration } from "~/server/config";
@@ -5,7 +7,9 @@ import { getConfiguration } from "~/server/config";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const servers = serverSummaries(await getConfiguration());
+  const servers = env.DEMO_MODE
+    ? demoServers(DEFAULT_DEMO_CONFIGURATION.serverCount)
+    : serverSummaries(await getConfiguration());
 
   return (
     <main className="container mx-auto max-w-5xl px-4 py-8 sm:py-10">
@@ -15,7 +19,7 @@ export default async function HomePage() {
         </h1>
       </header>
 
-      <ConnectedDashboard servers={servers} />
+      <ConnectedDashboard servers={servers} demoMode={env.DEMO_MODE} />
     </main>
   );
 }

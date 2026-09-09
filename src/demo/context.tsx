@@ -12,10 +12,12 @@ import {
   DEFAULT_DEMO_CONFIGURATION,
   type DemoConfiguration,
   type DemoService,
+  type DemoServerCount,
 } from "~/demo/config";
 
 type DemoConfigurationContextValue = {
   configuration: DemoConfiguration;
+  setServerCount: (count: DemoServerCount) => void;
   setServiceEnabled: (service: DemoService, enabled: boolean) => void;
 };
 
@@ -33,6 +35,7 @@ export function DemoConfigurationProvider({
   const setServiceEnabled = useCallback(
     (service: DemoService, enabled: boolean) => {
       setConfiguration((current) => ({
+        ...current,
         services: {
           ...current.services,
           [service]: enabled,
@@ -41,9 +44,12 @@ export function DemoConfigurationProvider({
     },
     [],
   );
+  const setServerCount = useCallback((serverCount: DemoServerCount) => {
+    setConfiguration((current) => ({ ...current, serverCount }));
+  }, []);
   const value = useMemo(
-    () => ({ configuration, setServiceEnabled }),
-    [configuration, setServiceEnabled],
+    () => ({ configuration, setServiceEnabled, setServerCount }),
+    [configuration, setServiceEnabled, setServerCount],
   );
 
   return (

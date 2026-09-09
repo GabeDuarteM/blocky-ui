@@ -9,8 +9,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
-import { DEMO_SERVICES, serializeDemoConfiguration } from "~/demo/config";
+import {
+  DEMO_SERVICES,
+  DEMO_SERVER_COUNTS,
+  parseDemoServerCount,
+  serializeDemoConfiguration,
+} from "~/demo/config";
 import {
   DemoConfigurationProvider,
   useDemoConfigurationController,
@@ -30,7 +42,10 @@ function DemoModeContent({ children }: { children: ReactNode }) {
   const serializedConfiguration = serializeDemoConfiguration(configuration);
 
   return (
-    <TRPCReactProvider demoConfiguration={serializedConfiguration}>
+    <TRPCReactProvider
+      demoConfiguration={serializedConfiguration}
+      demoServerCount={configuration.serverCount}
+    >
       <DemoModeShell>{children}</DemoModeShell>
     </TRPCReactProvider>
   );
@@ -41,16 +56,17 @@ function DemoModeShell({ children }: { children: ReactNode }) {
   const { configuration } = useDemoConfigurationController();
   const serializedConfiguration = serializeDemoConfiguration(configuration);
   const queryClient = useQueryClient();
-  const previousConfiguration = useRef(serializedConfiguration);
+  const configurationKey = `${serializedConfiguration}:${configuration.serverCount}`;
+  const previousConfiguration = useRef(configurationKey);
 
   useEffect(() => {
-    if (previousConfiguration.current === serializedConfiguration) {
+    if (previousConfiguration.current === configurationKey) {
       return;
     }
 
-    previousConfiguration.current = serializedConfiguration;
+    previousConfiguration.current = configurationKey;
     void queryClient.resetQueries();
-  }, [queryClient, serializedConfiguration]);
+  }, [queryClient, configurationKey]);
 
   return (
     <>
@@ -72,7 +88,8 @@ function DemoDevtoolsBar({
   isMinimized: boolean;
   onMinimizedChange: (isMinimized: boolean) => void;
 }) {
-  const { configuration, setServiceEnabled } = useDemoConfigurationController();
+  const { configuration, setServiceEnabled, setServerCount } =
+    useDemoConfigurationController();
   const enabledServices = DEMO_SERVICES.filter(
     ({ id }) => configuration.services[id],
   );
@@ -122,7 +139,7 @@ function DemoDevtoolsBar({
             Demo mode
           </p>
           <p className="hidden text-xs text-zinc-400 sm:block">
-            Toggle services
+            Configure demo
           </p>
         </div>
       </div>
@@ -146,6 +163,28 @@ function DemoDevtoolsBar({
           side="top"
           className="w-72 border-white/10 bg-zinc-950 p-1 text-zinc-100"
         >
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
+            <label htmlFor="demo-server-count" className="text-sm">
+              Servers
+            </label>
+            <Select
+              value={String(configuration.serverCount)}
+              onValueChange={(value) =>
+                setServerCount(parseDemoServerCount(value))
+              }
+            >
+              <SelectTrigger id="demo-server-count" className="w-28">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DEMO_SERVER_COUNTS.map((count) => (
+                  <SelectItem key={count} value={String(count)}>
+                    {count} {count === 1 ? "server" : "servers"}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div aria-label="Enabled demo services" role="group">
             {DEMO_SERVICES.map((service) => (
               <label
