@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/postgres/schema";
 import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
@@ -9,12 +10,20 @@ import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
   private readonly conn: ReturnType<typeof postgres>;
 
-  constructor(options: { connectionUri: string }) {
-    const conn = postgres(options.connectionUri, {
-      connection: {
-        timezone: "UTC",
-      },
-    });
+  constructor(options: {
+    connectionUri: string;
+    connections?: Map<string, ReturnType<typeof postgres>>;
+  }) {
+    const conn = cachedConnection(
+      options.connectionUri,
+      options.connections,
+      () =>
+        postgres(options.connectionUri, {
+          connection: {
+            timezone: "UTC",
+          },
+        }),
+    );
     const db = drizzle(conn, { schema: { logEntries } });
 
     super({
@@ -28,6 +37,10 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
 
   async close(): Promise<void> {
     await this.conn.end();
+  }
+
+  protected queryLogTimestampOrder(): SQL {
+    return sql`${logEntries.requestTs} desc nulls last`;
   }
 
   protected formatDateTimeForFilter(date: Date): string {

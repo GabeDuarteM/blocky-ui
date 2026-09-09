@@ -1,3 +1,4 @@
+import type { SearchDomainEntry, SearchClientEntry } from "./types";
 import { type TimeRange } from "~/lib/constants";
 import type {
   LogEntry,
@@ -5,14 +6,11 @@ import type {
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
-  SearchDomainEntry,
-  SearchClientEntry,
 } from "./types";
 
 export interface TimeRangeConfig {
   startTime: Date;
   interval: number;
-  bucketCount: number;
 }
 
 export function getTimeRangeConfig(range: TimeRange): TimeRangeConfig {
@@ -22,25 +20,21 @@ export function getTimeRangeConfig(range: TimeRange): TimeRangeConfig {
       return {
         startTime: new Date(now - 60 * 60 * 1000),
         interval: 5 * 60 * 1000,
-        bucketCount: 12,
       };
     case "24h":
       return {
         startTime: new Date(now - 24 * 60 * 60 * 1000),
         interval: 60 * 60 * 1000,
-        bucketCount: 24,
       };
     case "7d":
       return {
         startTime: new Date(now - 7 * 24 * 60 * 60 * 1000),
         interval: 6 * 60 * 60 * 1000,
-        bucketCount: 28,
       };
     case "30d":
       return {
         startTime: new Date(now - 30 * 24 * 60 * 60 * 1000),
         interval: 24 * 60 * 60 * 1000,
-        bucketCount: 30,
       };
   }
 }
@@ -49,35 +43,35 @@ export function aggregateQueriesOverTime(
   entries: LogEntry[],
   range: TimeRange,
 ): QueriesOverTimeEntry[] {
-  const { startTime, interval, bucketCount } = getTimeRangeConfig(range);
-
-  const buckets: Map<number, QueriesOverTimeEntry> = new Map();
-  for (let i = 0; i < bucketCount; i++) {
-    const time = new Date(startTime.getTime() + i * interval);
-    buckets.set(i, {
-      time: time.toISOString(),
+  const { startTime, interval } = getTimeRangeConfig(range);
+  const buckets = new Map<number, QueriesOverTimeEntry>();
+  const now = Date.now();
+  const firstBucket = Math.floor(startTime.getTime() / interval) * interval;
+  for (let time = firstBucket; time <= now; time += interval) {
+    buckets.set(time, {
+      time: new Date(time).toISOString(),
       total: 0,
       blocked: 0,
       cached: 0,
     });
   }
-
   for (const entry of entries) {
-    const entryTime = new Date(entry.requestTs ?? 0).getTime();
-    const bucketIndex = Math.floor(
-      (entryTime - startTime.getTime()) / interval,
-    );
-    if (bucketIndex >= 0 && bucketIndex < bucketCount) {
-      const bucket = buckets.get(bucketIndex);
-      if (bucket) {
-        bucket.total++;
-        if (entry.responseType === "BLOCKED") bucket.blocked++;
-        if (entry.responseType === "CACHED") bucket.cached++;
+    const time = new Date(entry.requestTs ?? 0).getTime();
+    if (time < startTime.getTime()) {
+      continue;
+    }
+    const bucket = buckets.get(Math.floor(time / interval) * interval);
+    if (bucket) {
+      bucket.total++;
+      if (entry.responseType === "BLOCKED") {
+        bucket.blocked++;
+      }
+      if (entry.responseType === "CACHED") {
+        bucket.cached++;
       }
     }
   }
-
-  return Array.from(buckets.values());
+  return [...buckets.values()];
 }
 
 export function aggregateTopDomains(

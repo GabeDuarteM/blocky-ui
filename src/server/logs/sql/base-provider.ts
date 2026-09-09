@@ -1,3 +1,9 @@
+import type {
+  StatsResult,
+  SearchDomainEntry,
+  SearchClientEntry,
+} from "~/server/logs/types";
+import { readQueryLogPage } from "~/server/logs/query-page";
 /**
  * Base class for SQL database log providers (MySQL, PostgreSQL, etc.)
  *
@@ -12,6 +18,11 @@ import {
   and,
   eq,
   gte,
+  lte,
+  or,
+  notInArray,
+  isNull,
+  inArray,
   type SQL,
   type Column,
 } from "drizzle-orm";
@@ -19,14 +30,13 @@ import { type TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import type {
   LogProvider,
+  LogScope,
+  QueryLogFilters,
   LogEntry,
-  StatsResult,
   QueriesOverTimeEntry,
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
-  SearchDomainEntry,
-  SearchClientEntry,
   QueryLogsOptions,
   QueryLogsResult,
 } from "~/server/logs/types";
@@ -130,12 +140,15 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return column;
   }
 
-  private buildRangeFilters(options: {
-    range: TimeRange;
-    filter: "all" | "blocked";
-  }): SqlFilter[] {
+  private buildRangeFilters(
+    options: LogScope & {
+      range: TimeRange;
+      filter: "all" | "blocked";
+    },
+  ): SqlFilter[] {
     const { startTime } = getTimeRangeConfig(options.range);
     const filters: SqlFilter[] = [
+      ...this.scopeFilters(options),
       gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
     ];
 
@@ -214,8 +227,34 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     };
   }
 
-  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
-    const filters = [];
+  private scopeFilters(scope: LogScope): SQL[] {
+    if (!scope.excludedHostnames?.length) {
+      return [];
+    }
+    const filter = or(
+      isNull(this.columns.hostname),
+      notInArray(this.columns.hostname, scope.excludedHostnames),
+    );
+    return filter ? [filter] : [];
+  }
+
+  protected async clientFilter(client: string): Promise<SQL> {
+    return sql`LOWER(${this.columns.clientName}) LIKE LOWER(${`%${client}%`})`;
+  }
+
+  protected getClientRankingIndexHints(
+    _range: TimeRange,
+    _filter: "all" | "blocked",
+  ): { useIndex: string[] } | undefined {
+    return undefined;
+  }
+
+  private async buildLogFilters(options: QueryLogFilters): Promise<SQL[]> {
+    const filters = this.scopeFilters(options);
+
+    if (options.maxId !== undefined && this.columns.id) {
+      filters.push(lte(this.columns.id, options.maxId));
+    }
 
     if (options.search) {
       filters.push(
@@ -228,20 +267,73 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     }
 
     if (options.client) {
-      filters.push(
-        sql`LOWER(${this.columns.clientName}) LIKE LOWER(${`%${options.client}%`})`,
-      );
+      filters.push(await this.clientFilter(options.client));
     }
 
     if (options.questionType) {
       filters.push(eq(this.columns.questionType, options.questionType));
     }
 
-    const countQuery = this.db
+    return filters;
+  }
+
+  async getQueryLogCount(options: QueryLogFilters): Promise<number> {
+    const result = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(this.table)
-      .where(filters.length > 0 ? and(...filters) : undefined);
+      .where(and(...(await this.buildLogFilters(options))));
+    return Number(result[0]?.count ?? 0);
+  }
 
+  async getQueryLogSnapshot() {
+    if (!this.columns.id) {
+      return undefined;
+    }
+
+    const result = await this.db
+      .select({ id: sql<number>`max(${this.columns.id})` })
+      .from(this.table);
+
+    return Number(result[0]?.id ?? 0);
+  }
+
+  async getQueryLogCountSince(
+    options: QueryLogFilters,
+    since: Date,
+  ): Promise<number> {
+    const timestamp = gte(
+      this.columns.requestTs,
+      this.formatDateTimeForFilter(since),
+    );
+    const result = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(this.table)
+      .where(
+        and(
+          ...(await this.buildLogFilters(options)),
+          since.getTime() <= 0
+            ? or(timestamp, isNull(this.columns.requestTs))
+            : timestamp,
+        ),
+      );
+
+    return Number(result[0]?.count ?? 0);
+  }
+
+  getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]> {
+    return this.readQueryLogRows(options);
+  }
+
+  protected queryLogTimestampOrder(): SQL {
+    return desc(this.columns.requestTs);
+  }
+
+  protected async readQueryLogRows(
+    options: QueryLogsOptions,
+    extraFilters: SQL[] = [],
+    indexHints?: { useIndex: string[] },
+  ): Promise<LogEntry[]> {
+    const filters = [...(await this.buildLogFilters(options)), ...extraFilters];
     const selectFields: Record<string, Column | SQL> = {
       requestTs: this.columns.requestTs,
       clientIp: this.columns.clientIp,
@@ -262,53 +354,65 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       selectFields.id = this.columns.id;
     }
 
+    const order = [
+      this.queryLogTimestampOrder(),
+      ...(this.columns.id
+        ? [desc(this.columns.id)]
+        : [
+            asc(this.columns.questionName),
+            asc(this.columns.clientIp),
+            asc(this.columns.questionType),
+            asc(this.columns.responseType),
+            asc(this.columns.answer),
+          ]),
+    ];
+    const seekById = options.offset > 0 && this.columns.id;
     const query = this.db
-      .select(selectFields)
-      .from(this.table)
-      .orderBy(desc(this.columns.requestTs))
+      .select(seekById ? { id: seekById } : selectFields)
+      .from(this.table, indexHints)
+      .orderBy(...order)
       .limit(options.limit)
       .offset(options.offset)
       .where(filters.length > 0 ? and(...filters) : undefined);
 
-    const [countResult, rows] = await Promise.all([countQuery, query]);
-    const count = countResult?.[0]?.count ?? 0;
+    let rows = await query;
 
-    return {
-      items: rows.map((row: Record<string, unknown>) =>
-        this.mapRowToLogEntry(row),
-      ),
-      totalCount: Number(count),
-    };
+    if (seekById && rows.length > 0) {
+      rows = await this.db
+        .select(selectFields)
+        .from(this.table)
+        .where(
+          and(
+            ...filters,
+            inArray(
+              seekById,
+              rows.map((row: Record<string, unknown>) => Number(row.id)),
+            ),
+          ),
+        )
+        .orderBy(...order);
+    }
+    return rows.map((row: Record<string, unknown>) =>
+      this.mapRowToLogEntry(row),
+    );
   }
 
-  async getStats24h(): Promise<StatsResult> {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const result = await this.db
-      .select({
-        totalQueries: sql<number>`count(*)`,
-        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
-      })
-      .from(this.table)
-      .where(
-        gte(this.columns.requestTs, this.formatDateTimeForFilter(oneDayAgo)),
-      );
-
-    return {
-      totalQueries: Number(result[0]?.totalQueries ?? 0),
-      blocked: Number(result[0]?.blocked ?? 0),
-    };
+  getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
+    return readQueryLogPage(this, options);
   }
 
-  async getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]> {
+  async getQueriesOverTime(
+    options: LogScope & {
+      range: TimeRange;
+      domain?: string;
+      client?: string;
+    },
+  ): Promise<QueriesOverTimeEntry[]> {
     const { startTime, interval } = getTimeRangeConfig(options.range);
     const bucketExpr = this.getBucketExpression(options.range);
 
     const filters = [
+      ...this.scopeFilters(options),
       gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
     ];
 
@@ -339,15 +443,17 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return fillTimeBuckets(result, startTime, interval, options.range);
   }
 
-  async getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
+  async getTopDomains(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const filters = this.buildRangeFilters(options);
 
-    const result = await this.db
+    const query = this.db
       .select({
         domain: this.columns.questionName,
         count: sql<number>`count(*)`,
@@ -362,9 +468,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionName)),
         asc(this.columns.questionName),
-      )
-      .limit(options.limit)
-      .offset(options.offset);
+      );
+    const result = await (options.limit === undefined
+      ? query
+      : query.limit(options.limit).offset(options.offset));
 
     const { totalQueriesCount, totalCount } = await this.resolveGroupedTotals({
       row: result[0],
@@ -387,15 +494,17 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     };
   }
 
-  async getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
+  async getTopClients(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopClientEntry[]; totalCount: number }> {
     const filters = this.buildRangeFilters(options);
 
-    const result = await this.db
+    const query = this.db
       .select({
         client: this.columns.clientName,
         total: sql<number>`count(*)`,
@@ -403,16 +512,20 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         totalCount: sql<number>`count(*) over ()`,
         totalQueriesCount: sql<number>`sum(count(*)) over ()`,
       })
-      .from(this.table)
+      .from(
+        this.table,
+        this.getClientRankingIndexHints(options.range, options.filter),
+      )
       .where(and(...filters))
       .groupBy(this.columns.clientName)
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.clientName)),
         asc(this.columns.clientName),
-      )
-      .limit(options.limit)
-      .offset(options.offset);
+      );
+    const result = await (options.limit === undefined
+      ? query
+      : query.limit(options.limit).offset(options.offset));
 
     const { totalQueriesCount, totalCount } = await this.resolveGroupedTotals({
       row: result[0],
@@ -435,14 +548,20 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     };
   }
 
-  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
+  async getQueryTypesBreakdown(
+    range: TimeRange,
+    scope: LogScope = {},
+  ): Promise<QueryTypeEntry[]> {
     const { startTime } = getTimeRangeConfig(range);
 
     const totalResult = await this.db
       .select({ count: sql<number>`count(*)` })
       .from(this.table)
       .where(
-        gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
+        and(
+          gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
+          ...this.scopeFilters(scope),
+        ),
       );
     const totalCount = Number(totalResult[0]?.count ?? 0);
 
@@ -453,7 +572,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       })
       .from(this.table)
       .where(
-        gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
+        and(
+          gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
+          ...this.scopeFilters(scope),
+        ),
       )
       .groupBy(this.columns.questionType)
       .orderBy(
@@ -467,6 +589,25 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       count: Number(row.count),
       percentage: totalCount > 0 ? (Number(row.count) / totalCount) * 100 : 0,
     }));
+  }
+
+  async getStats24h(): Promise<StatsResult> {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const result = await this.db
+      .select({
+        totalQueries: sql<number>`count(*)`,
+        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
+      })
+      .from(this.table)
+      .where(
+        gte(this.columns.requestTs, this.formatDateTimeForFilter(oneDayAgo)),
+      );
+
+    return {
+      totalQueries: Number(result[0]?.totalQueries ?? 0),
+      blocked: Number(result[0]?.blocked ?? 0),
+    };
   }
 
   async searchDomains(options: {
@@ -561,7 +702,7 @@ function fillTimeBuckets(
   const dataMap = new Map(data.map((d) => [d.timeBucket, d]));
   const results: QueriesOverTimeEntry[] = [];
   const now = Date.now();
-  let current = startTime.getTime();
+  let current = Math.floor(startTime.getTime() / interval) * interval;
 
   while (current <= now) {
     const date = new Date(current);

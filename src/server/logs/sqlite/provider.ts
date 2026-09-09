@@ -2,6 +2,7 @@ import { sql, type Column, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import Database from "better-sqlite3";
 
+import { cachedConnection } from "~/server/logs/connection-cache";
 import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 import { logEntries } from "~/server/logs/sqlite/schema";
@@ -9,11 +10,19 @@ import { logEntries } from "~/server/logs/sqlite/schema";
 export class SQLiteLogProvider extends BaseSqlLogProvider {
   private readonly dbFile: Database.Database;
 
-  constructor(options: { filePath: string }) {
-    const dbFile = new Database(options.filePath, {
-      readonly: true,
-      fileMustExist: true,
-    });
+  constructor(options: {
+    filePath: string;
+    connections?: Map<string, Database.Database>;
+  }) {
+    const dbFile = cachedConnection(
+      options.filePath,
+      options.connections,
+      () =>
+        new Database(options.filePath, {
+          readonly: true,
+          fileMustExist: true,
+        }),
+    );
     dbFile.pragma("busy_timeout = 5000");
 
     const db = drizzle(dbFile, { schema: { logEntries } });

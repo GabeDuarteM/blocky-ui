@@ -565,7 +565,15 @@ export function createSeedData(): LogEntry[] {
     return tsB.localeCompare(tsA);
   });
 
-  return entries;
+  return entries.map((entry, index) => ({
+    ...entry,
+    hostname:
+      index % 3 === 0
+        ? null
+        : index % 3 === 1
+          ? "blocky-instance-1"
+          : "blocky-instance-2",
+  }));
 }
 
 export function countEntriesInRange(

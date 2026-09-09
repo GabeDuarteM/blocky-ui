@@ -1,22 +1,30 @@
+import type {
+  StatsResult,
+  SearchDomainEntry,
+  SearchClientEntry,
+} from "./types";
+import {
+  searchDomainsInEntries,
+  searchClientsInEntries,
+} from "./aggregation-utils";
+import { isEntryInScope } from "~/server/logs/scope";
 import { type TimeRange } from "~/lib/constants";
 import type {
   LogProvider,
+  LogScope,
+  QueryLogsOptions,
+  QueryLogFilters,
   LogEntry,
-  StatsResult,
   QueriesOverTimeEntry,
   TopDomainEntry,
   TopClientEntry,
   QueryTypeEntry,
-  SearchDomainEntry,
-  SearchClientEntry,
 } from "./types";
 import {
   aggregateQueriesOverTime,
   aggregateTopDomains,
   aggregateTopClients,
   aggregateQueryTypes,
-  searchDomainsInEntries,
-  searchClientsInEntries,
 } from "./aggregation-utils";
 
 interface CacheEntry {
@@ -67,19 +75,31 @@ function filterByBlocked(
 export abstract class BaseMemoryLogProvider implements LogProvider {
   private readonly entriesCache = new Map<TimeRange, CacheEntry>();
 
-  abstract getQueryLogs(options: {
-    limit: number;
-    offset: number;
-    search?: string;
-    responseType?: string;
-    client?: string;
-  }): Promise<{ items: LogEntry[]; totalCount: number }>;
+  abstract getQueryLogs(
+    options: QueryLogsOptions,
+  ): Promise<{ items: LogEntry[]; totalCount: number }>;
 
-  abstract getStats24h(): Promise<StatsResult>;
+  async getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]> {
+    return (await this.getQueryLogs(options)).items;
+  }
+
+  async getQueryLogCount(options: QueryLogFilters): Promise<number> {
+    return (await this.getQueryLogs({ ...options, limit: 0, offset: 0 }))
+      .totalCount;
+  }
 
   protected abstract fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]>;
 
-  protected getEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+  protected async getEntriesInRange(
+    range: TimeRange,
+    scope: LogScope = {},
+  ): Promise<LogEntry[]> {
+    return (await this.getUnfilteredEntriesInRange(range)).filter((entry) =>
+      isEntryInScope(entry, scope),
+    );
+  }
+
+  private getUnfilteredEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
     const cached = this.entriesCache.get(range);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
       return cached.promise;
@@ -97,12 +117,14 @@ export abstract class BaseMemoryLogProvider implements LogProvider {
     return promise;
   }
 
-  async getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
+  async getQueriesOverTime(
+    options: LogScope & {
+      range: TimeRange;
+      domain?: string;
+      client?: string;
+    },
+  ): Promise<QueriesOverTimeEntry[]> {
+    const entries = await this.getEntriesInRange(options.range, options);
     const filtered = filterByDomainAndClient(
       entries,
       options.domain,
@@ -111,31 +133,55 @@ export abstract class BaseMemoryLogProvider implements LogProvider {
     return aggregateQueriesOverTime(filtered, options.range);
   }
 
-  async getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    const entries = await this.getEntriesInRange(options.range);
+  async getTopDomains(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
+    const entries = await this.getEntriesInRange(options.range, options);
     const filtered = filterByBlocked(entries, options.filter);
-    return aggregateTopDomains(filtered, options.limit, options.offset);
+    return aggregateTopDomains(
+      filtered,
+      options.limit ?? filtered.length,
+      options.offset,
+    );
   }
 
-  async getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    const entries = await this.getEntriesInRange(options.range);
+  async getTopClients(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopClientEntry[]; totalCount: number }> {
+    const entries = await this.getEntriesInRange(options.range, options);
     const filtered = filterByBlocked(entries, options.filter);
-    return aggregateTopClients(filtered, options.limit, options.offset);
+    return aggregateTopClients(
+      filtered,
+      options.limit ?? filtered.length,
+      options.offset,
+    );
   }
 
-  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
-    const entries = await this.getEntriesInRange(range);
+  async getQueryTypesBreakdown(
+    range: TimeRange,
+    scope: LogScope = {},
+  ): Promise<QueryTypeEntry[]> {
+    const entries = await this.getEntriesInRange(range, scope);
     return aggregateQueryTypes(entries);
+  }
+
+  async getStats24h(): Promise<StatsResult> {
+    const entries = await this.getEntriesInRange("24h");
+    return {
+      totalQueries: entries.length,
+      blocked: entries.filter((entry) => entry.responseType === "BLOCKED")
+        .length,
+    };
   }
 
   async searchDomains(options: {

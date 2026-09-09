@@ -1,15 +1,20 @@
+import {
+  type SearchClientEntry,
+  type SearchDomainEntry,
+  type StatsResult,
+} from "~/server/logs/types";
+import { readQueryLogPage } from "~/server/logs/query-page";
 import ky from "ky";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import {
   type LogEntry,
+  type LogScope,
+  type QueryLogFilters,
   type LogProvider,
   type QueriesOverTimeEntry,
   type QueryLogsOptions,
   type QueryLogsResult,
   type QueryTypeEntry,
-  type SearchClientEntry,
-  type SearchDomainEntry,
-  type StatsResult,
   type TopClientEntry,
   type TopDomainEntry,
 } from "~/server/logs/types";
@@ -37,17 +42,12 @@ function rangeToVlBucket(range: TimeRange): string {
   }
 }
 
-// Escape user input for use inside a VL field:~"..." regex filter.
-// VictoriaLogs does not support backslash escape sequences inside its
-// double-quoted regex strings — e.g. \. causes a parse error when users
-// filter by IP address. Use RE2 bracket expressions ([.], [*], etc.) so
-// that no backslash characters appear in the produced pattern.
-// " is escaped as ["] to prevent closing the surrounding string literal.
-// [ is escaped as [[] (RE2 character class containing [).
-// ] and \ are left unescaped; they are never present in DNS names or IPs
-// and a stray ] or \ produces a benign regex error rather than injection.
-function escapeRegex(s: string): string {
-  return s.replace(/["[.+*?^${}()|]/g, (c) => (c === "[" ? "[[]" : `[${c}]`));
+function regexFilter(
+  field: "question_name" | "client_names",
+  value: string,
+): string {
+  const pattern = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return `${field}:~${JSON.stringify(`(?i)${pattern}`)}`;
 }
 
 // Normalise a VL timestamp to a consistent key format for bucket lookups.
@@ -104,7 +104,9 @@ export class VictoriaLogsProvider implements LogProvider {
   ): Promise<Record<string, string>[]> {
     try {
       const searchParams = new URLSearchParams({ query: logql });
-      if (params.start) searchParams.set("start", params.start);
+      if (params.start) {
+        searchParams.set("start", params.start);
+      }
       if (params.limit !== undefined)
         searchParams.set("limit", String(params.limit));
 
@@ -139,69 +141,76 @@ export class VictoriaLogsProvider implements LogProvider {
       responseCode: raw.response_code || null,
       responseType: raw.response_type || null,
       questionType: raw.question_type || null,
-      hostname: null,
+      hostname: raw.instance || null,
       effectiveTldp: null,
       id: null,
     };
   }
 
-  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
-    const { limit, offset, search, responseType, client, questionType } =
-      options;
-
-    const filters = [BASE_FILTER];
-    if (responseType) filters.push(`response_type:${responseType}`);
-    if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
-    if (questionType) filters.push(`question_type:${questionType}`);
-    if (search) filters.push(`question_name:~"(?i)${escapeRegex(search)}"`);
-
-    const baseQuery = filters.join(" AND ");
-
-    const [entries, countResult] = await Promise.all([
-      this.queryRaw(
-        `${baseQuery} | sort by (_time desc, question_name asc) | offset ${offset} | limit ${limit}`,
+  private scopeQuery(scope: LogScope): string {
+    return [
+      BASE_FILTER,
+      ...(scope.excludedHostnames ?? []).map(
+        (hostname) => `NOT instance:exact(${JSON.stringify(hostname)})`,
       ),
-      this.queryRaw(`${baseQuery} | stats count() as total`),
-    ]);
-
-    return {
-      items: entries.map((r) => this.mapEntry(r)),
-      totalCount: Number(countResult[0]?.total ?? 0),
-    };
+    ].join(" AND ");
   }
 
-  async getStats24h(): Promise<StatsResult> {
-    // VictoriaLogs does not support conditional aggregation (count(if(...))),
-    // so total and blocked counts require separate queries.
-    const [totalResult, blockedResult] = await Promise.all([
-      this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
-        start: "24h",
-      }),
-      this.queryRaw(
-        `${BASE_FILTER} AND response_type:BLOCKED | stats count() as blocked`,
-        { start: "24h" },
-      ),
-    ]);
-
-    return {
-      totalQueries: Number(totalResult[0]?.total ?? 0),
-      blocked: Number(blockedResult[0]?.blocked ?? 0),
-    };
+  private logQuery(options: QueryLogFilters): string {
+    const { search, responseType, client, questionType } = options;
+    const filters = [this.scopeQuery(options)];
+    if (responseType) {
+      filters.push(`response_type:exact(${JSON.stringify(responseType)})`);
+    }
+    if (client) {
+      filters.push(regexFilter("client_names", client));
+    }
+    if (questionType) {
+      filters.push(`question_type:exact(${JSON.stringify(questionType)})`);
+    }
+    if (search) {
+      filters.push(regexFilter("question_name", search));
+    }
+    return filters.join(" AND ");
   }
 
-  async getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]> {
+  async getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]> {
+    const entries = await this.queryRaw(
+      `${this.logQuery(options)} | sort by (_time desc, question_name asc, client_ip asc, question_type asc, response_type asc, answer asc, instance asc) | offset ${options.offset} | limit ${options.limit}`,
+    );
+    return entries.map((entry) => this.mapEntry(entry));
+  }
+
+  async getQueryLogCount(options: QueryLogFilters): Promise<number> {
+    const result = await this.queryRaw(
+      `${this.logQuery(options)} | stats count() as total`,
+    );
+    return Number(result[0]?.total ?? 0);
+  }
+
+  getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
+    return readQueryLogPage(this, options);
+  }
+
+  async getQueriesOverTime(
+    options: LogScope & {
+      range: TimeRange;
+      domain?: string;
+      client?: string;
+    },
+  ): Promise<QueriesOverTimeEntry[]> {
     const { range, domain, client } = options;
     const { startTime, interval } = getTimeRangeConfig(range);
     const start = startTime.toISOString();
     const bucket = rangeToVlBucket(range);
 
-    const filters = [BASE_FILTER];
-    if (domain) filters.push(`question_name:~"(?i)${escapeRegex(domain)}"`);
-    if (client) filters.push(`client_names:~"(?i)${escapeRegex(client)}"`);
+    const filters = [this.scopeQuery(options)];
+    if (domain) {
+      filters.push(regexFilter("question_name", domain));
+    }
+    if (client) {
+      filters.push(regexFilter("client_names", client));
+    }
     const base = filters.join(" AND ");
 
     const [totalRows, blockedRows, cachedRows] = await Promise.all([
@@ -253,22 +262,41 @@ export class VictoriaLogsProvider implements LogProvider {
     );
   }
 
-  async getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
-    const { range, limit, offset, filter } = options;
+  private rankedQuery(
+    options: LogScope & {
+      filter: "all" | "blocked";
+      limit?: number;
+      offset: number;
+    },
+  ) {
+    const base = this.scopeQuery(options);
+    return {
+      base:
+        options.filter === "blocked"
+          ? `${base} AND response_type:BLOCKED`
+          : base,
+      pagination:
+        options.limit === undefined
+          ? ""
+          : `| offset ${options.offset} | limit ${options.limit}`,
+    };
+  }
+
+  async getTopDomains(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
+    const { range, filter } = options;
     const start = rangeToVlStart(range);
-    const base =
-      filter === "blocked"
-        ? `${BASE_FILTER} AND response_type:BLOCKED`
-        : BASE_FILTER;
+    const { base, pagination } = this.rankedQuery(options);
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | offset ${offset} | limit ${limit}`,
+        `${base} | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) ${pagination}`,
         { start },
       ),
       // Number of distinct domains (for pagination totalCount).
@@ -298,7 +326,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     if (filter === "all" && items.length > 0) {
       const blockedRows = await this.queryRaw(
-        `${BASE_FILTER} AND response_type:BLOCKED | stats by (question_name) count() as blocked`,
+        `${this.scopeQuery(options)} AND response_type:BLOCKED | stats by (question_name) count() as blocked`,
         { start },
       );
       const blockedByDomain = new Map(
@@ -315,22 +343,21 @@ export class VictoriaLogsProvider implements LogProvider {
     return { items, totalCount };
   }
 
-  async getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }> {
-    const { range, limit, offset, filter } = options;
+  async getTopClients(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopClientEntry[]; totalCount: number }> {
+    const { range, filter } = options;
     const start = rangeToVlStart(range);
-    const base =
-      filter === "blocked"
-        ? `${BASE_FILTER} AND response_type:BLOCKED`
-        : BASE_FILTER;
+    const { base, pagination } = this.rankedQuery(options);
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
-        `${base} | stats by (client_names) count() as total | format "<lc:client_names>" as __client_sort | sort by (total desc, __client_sort asc) | offset ${offset} | limit ${limit}`,
+        `${base} | stats by (client_names) count() as total | format "<lc:client_names>" as __client_sort | sort by (total desc, __client_sort asc) ${pagination}`,
         { start },
       ),
       // Same chained-stats pattern as getTopDomains for null-entry inclusion.
@@ -357,7 +384,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     if (filter === "all" && items.length > 0) {
       const blockedRows = await this.queryRaw(
-        `${BASE_FILTER} AND response_type:BLOCKED | stats by (client_names) count() as blocked`,
+        `${this.scopeQuery(options)} AND response_type:BLOCKED | stats by (client_names) count() as blocked`,
         { start },
       );
       const blockedByClient = new Map(
@@ -374,9 +401,12 @@ export class VictoriaLogsProvider implements LogProvider {
     return { items, totalCount };
   }
 
-  async getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]> {
+  async getQueryTypesBreakdown(
+    range: TimeRange,
+    scope: LogScope = {},
+  ): Promise<QueryTypeEntry[]> {
     const rows = await this.queryRaw(
-      `${BASE_FILTER} | stats by (question_type) count() as count | format "<lc:question_type>" as __qtype_sort | sort by (count desc, __qtype_sort asc)`,
+      `${this.scopeQuery(scope)} | stats by (question_type) count() as count | format "<lc:question_type>" as __qtype_sort | sort by (count desc, __qtype_sort asc)`,
       { start: rangeToVlStart(range) },
     );
     const totalCount = rows.reduce((s, r) => s + Number(r.count), 0);
@@ -390,6 +420,25 @@ export class VictoriaLogsProvider implements LogProvider {
     });
   }
 
+  async getStats24h(): Promise<StatsResult> {
+    // VictoriaLogs does not support conditional aggregation (count(if(...))),
+    // so total and blocked counts require separate queries.
+    const [totalResult, blockedResult] = await Promise.all([
+      this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
+        start: "24h",
+      }),
+      this.queryRaw(
+        `${BASE_FILTER} AND response_type:BLOCKED | stats count() as blocked`,
+        { start: "24h" },
+      ),
+    ]);
+
+    return {
+      totalQueries: Number(totalResult[0]?.total ?? 0),
+      blocked: Number(blockedResult[0]?.blocked ?? 0),
+    };
+  }
+
   async searchDomains(options: {
     range: TimeRange;
     query: string;
@@ -398,7 +447,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `${BASE_FILTER} AND question_name:~"(?i)${escapeRegex(options.query)}" | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND ${regexFilter("question_name", options.query)} | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
@@ -415,7 +464,7 @@ export class VictoriaLogsProvider implements LogProvider {
     if (!options.query.trim()) return [];
 
     const rows = await this.queryRaw(
-      `${BASE_FILTER} AND client_names:~"(?i)${escapeRegex(options.query)}" | stats by (client_names) count() as count | format "<lc:client_names>" as __client_sort | sort by (count desc, __client_sort asc) | limit ${options.limit}`,
+      `${BASE_FILTER} AND ${regexFilter("client_names", options.query)} | stats by (client_names) count() as count | format "<lc:client_names>" as __client_sort | sort by (count desc, __client_sort asc) | limit ${options.limit}`,
       { start: rangeToVlStart(options.range) },
     );
     return rows.map((r) => ({
