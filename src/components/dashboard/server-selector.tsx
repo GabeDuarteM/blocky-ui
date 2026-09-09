@@ -149,6 +149,66 @@ function ServerList({ label, selected, servers, onToggle }: SelectionProps) {
   );
 }
 
+export function ServerSelector({
+  description,
+  ...props
+}: SelectionProps & { description: string }) {
+  const connecting = props.servers.some(
+    (server) => server.online === undefined,
+  );
+  const selection =
+    props.selected.length === props.servers.length
+      ? "All servers"
+      : `${props.selected.length} ${props.selected.length === 1 ? "server" : "servers"}`;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          aria-label={`${props.label}: ${selection}`}
+          className="bg-card dark:bg-card dark:hover:bg-accent gap-2"
+        >
+          <ServerIcon className="text-muted-foreground size-4" />
+          <span className="text-muted-foreground">{props.label}:</span>
+          {selection}
+          <span className="h-4 border-l" />
+          <span
+            className={cn(
+              "flex items-center gap-1.5 text-xs",
+              props.servers.some((server) => server.online === false) &&
+                "text-amber-400",
+            )}
+          >
+            <span
+              className={cn(
+                "size-1.5 rounded-full",
+                connecting
+                  ? "bg-muted-foreground"
+                  : props.servers.every((server) => server.online)
+                    ? "bg-emerald-400"
+                    : "bg-amber-400",
+              )}
+            />
+            {connecting
+              ? "Connecting"
+              : `${props.servers.filter((server) => server.online).length}/${props.servers.length} online`}
+          </span>
+          <ChevronDown className="text-muted-foreground size-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="bg-popover dark:bg-popover w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden p-0"
+      >
+        <p className="text-muted-foreground border-b px-3 py-3 text-xs">
+          {description}
+        </p>
+        <ServerList {...props} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function ActionTargets({
   actionLabel,
   matchTriggerWidth = true,

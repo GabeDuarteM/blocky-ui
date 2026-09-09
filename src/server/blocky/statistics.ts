@@ -67,12 +67,3 @@ export function createStatisticsSnapshot(statistics: BlockyStatistics) {
     },
   };
 }
-
-export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> {
-  const { blockyApi } = await import("~/server/blocky/client");
-  try {
-    return await readBlockyStatistics(blockyApi);
-  } catch {
-    return null;
-  }
-}

@@ -26,6 +26,8 @@ import {
   ActiveFilterChip,
   type ChartFilter,
 } from "./chart-filter-combobox";
+import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
+import { useDashboardServers } from "~/components/dashboard/server-context";
 import { api } from "~/trpc/react";
 import { cn } from "~/lib/utils";
 
@@ -227,15 +229,19 @@ export function QueriesOverTimeChart({
     });
   }, []);
 
-  const { data, isLoading, isPlaceholderData } =
-    api.stats.queriesOverTime.useQuery(
-      {
-        range,
-        domain: filter?.type === "domain" ? filter.value : undefined,
-        client: filter?.type === "client" ? filter.value : undefined,
-      },
-      { placeholderData: (prev) => prev },
-    );
+  const dashboard = useDashboardServers();
+  const options = {
+    range,
+    domain: filter?.type === "domain" ? filter.value : undefined,
+    client: filter?.type === "client" ? filter.value : undefined,
+  };
+  const connected = api.logs.queriesOverTime.useQuery({
+    ...options,
+    serverIds: dashboard.selection.selected("view"),
+  });
+  const { isLoading, isPlaceholderData } = connected;
+  const data = connected.data?.items;
+  useLogDiagnostics("chart", connected.data?.diagnostics);
   const showLoading = isLoading || isPlaceholderData;
 
   const formatXAxisTick = useCallback(

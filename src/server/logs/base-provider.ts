@@ -1,12 +1,3 @@
-import {
-  type StatsResult,
-  type SearchDomainEntry,
-  type SearchClientEntry,
-} from "~/server/logs/types";
-import {
-  searchDomainsInEntries,
-  searchClientsInEntries,
-} from "~/server/logs/aggregation-utils";
 import { isEntryInScope } from "~/server/logs/scope";
 import { type TimeRange } from "~/lib/constants";
 import {
@@ -173,32 +164,5 @@ export abstract class BaseMemoryLogProvider implements LogProvider {
   ): Promise<QueryTypeEntry[]> {
     const entries = await this.getEntriesInRange(range, scope);
     return aggregateQueryTypes(entries);
-  }
-
-  async getStats24h(): Promise<StatsResult> {
-    const entries = await this.getEntriesInRange("24h");
-    return {
-      totalQueries: entries.length,
-      blocked: entries.filter((entry) => entry.responseType === "BLOCKED")
-        .length,
-    };
-  }
-
-  async searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchDomainsInEntries(entries, options.query, options.limit);
-  }
-
-  async searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]> {
-    const entries = await this.getEntriesInRange(options.range);
-    return searchClientsInEntries(entries, options.query, options.limit);
   }
 }

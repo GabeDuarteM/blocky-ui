@@ -1,5 +1,3 @@
-import { getConfiguration } from "~/server/config";
-import { createBlockyServers } from "~/server/blocky/servers";
 /**
  * YOU PROBABLY DON'T NEED TO EDIT THIS FILE, UNLESS:
  * 1. You want to modify request context (see Part 1).
@@ -12,7 +10,9 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError, z } from "zod";
 
-import { createLogProvider, getLogCoordinator } from "~/server/logs";
+import { createBlockyServers } from "~/server/blocky/servers";
+import { getConfiguration } from "~/server/config";
+import { getLogCoordinator } from "~/server/logs";
 import { env } from "~/env";
 import {
   DEFAULT_DEMO_CONFIGURATION,
@@ -38,10 +38,6 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     : DEFAULT_DEMO_CONFIGURATION;
   const isDemoServiceAvailable = (service: DemoService) =>
     demoConfiguration.services[service];
-  const logProvider = isDemoServiceAvailable("queryLogs")
-    ? await createLogProvider()
-    : undefined;
-
   const configuration = await getConfiguration();
 
   return {
@@ -49,7 +45,6 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     logs: await getLogCoordinator(),
     servers: createBlockyServers(configuration),
     isDemoServiceAvailable,
-    logProvider,
     ...opts,
   };
 };

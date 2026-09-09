@@ -1,8 +1,3 @@
-import {
-  type SearchClientEntry,
-  type SearchDomainEntry,
-  type StatsResult,
-} from "~/server/logs/types";
 import { readQueryLogPage } from "~/server/logs/query-page";
 import ky from "ky";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
@@ -418,56 +413,5 @@ export class VictoriaLogsProvider implements LogProvider {
         percentage: totalCount > 0 ? (count / totalCount) * 100 : 0,
       };
     });
-  }
-
-  async getStats24h(): Promise<StatsResult> {
-    const [totalResult, blockedResult] = await Promise.all([
-      this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
-        start: "24h",
-      }),
-      this.queryRaw(
-        `${BASE_FILTER} AND response_type:BLOCKED | stats count() as blocked`,
-        { start: "24h" },
-      ),
-    ]);
-
-    return {
-      totalQueries: Number(totalResult[0]?.total ?? 0),
-      blocked: Number(blockedResult[0]?.blocked ?? 0),
-    };
-  }
-
-  async searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]> {
-    if (!options.query.trim()) return [];
-
-    const rows = await this.queryRaw(
-      `${BASE_FILTER} AND ${regexFilter("question_name", options.query)} | stats by (question_name) count() as count | format "<lc:question_name>" as __qname_sort | sort by (count desc, __qname_sort asc) | limit ${options.limit}`,
-      { start: rangeToVlStart(options.range) },
-    );
-    return rows.map((r) => ({
-      domain: r.question_name || "unknown",
-      count: Number(r.count),
-    }));
-  }
-
-  async searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]> {
-    if (!options.query.trim()) return [];
-
-    const rows = await this.queryRaw(
-      `${BASE_FILTER} AND ${regexFilter("client_names", options.query)} | stats by (client_names) count() as count | format "<lc:client_names>" as __client_sort | sort by (count desc, __client_sort asc) | limit ${options.limit}`,
-      { start: rangeToVlStart(options.range) },
-    );
-    return rows.map((r) => ({
-      client: r.client_names || "unknown",
-      count: Number(r.count),
-    }));
   }
 }

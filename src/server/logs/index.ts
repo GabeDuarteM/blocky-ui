@@ -1,4 +1,3 @@
-import { type LogProvider } from "~/server/logs/types";
 import { env } from "~/env";
 import { getConfiguration } from "~/server/config";
 import { createLogCoordinator } from "~/server/logs/coordinator";
@@ -15,32 +14,4 @@ export function getLogCoordinator() {
   );
 
   return coordinator;
-}
-
-let legacyProvider: Promise<LogProvider | undefined> | undefined;
-
-export function createLogProvider() {
-  legacyProvider ??= getConfiguration()
-    .then(async (configuration) => {
-      if (env.DEMO_MODE) {
-        return new DemoLogProvider();
-      }
-
-      const server = Object.values(configuration.servers)[0];
-      const source =
-        server?.logs && configuration.logSources[server.logs.source];
-
-      if (!source) {
-        return undefined;
-      }
-
-      const { initializeLogSource } = await import("~/server/logs/factory");
-      return initializeLogSource(source);
-    })
-    .catch((error: unknown) => {
-      legacyProvider = undefined;
-      throw error;
-    });
-
-  return legacyProvider;
 }

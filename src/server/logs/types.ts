@@ -112,33 +112,4 @@ export interface LogProvider {
     range: TimeRange,
     scope?: LogScope,
   ): Promise<QueryTypeEntry[]>;
-
-  getStats24h(): Promise<StatsResult>;
-
-  searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]>;
-
-  searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]>;
-}
-
-export interface StatsResult {
-  totalQueries: number;
-  blocked: number;
-}
-
-export interface SearchDomainEntry {
-  domain: string;
-  count: number;
-}
-
-export interface SearchClientEntry {
-  client: string;
-  count: number;
 }

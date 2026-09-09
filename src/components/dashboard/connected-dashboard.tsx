@@ -3,7 +3,10 @@
 import { useCallback, useState } from "react";
 import { Dashboard } from "~/components/dashboard/dashboard";
 import { ServerContext } from "~/components/dashboard/server-context";
-import { ActionTargets } from "~/components/dashboard/server-selector";
+import {
+  ActionTargets,
+  ServerSelector,
+} from "~/components/dashboard/server-selector";
 import { useServerSelection } from "~/hooks/use-server-selection";
 import { api, type RouterOutputs } from "~/trpc/react";
 
@@ -111,8 +114,17 @@ export function ConnectedDashboard({
         reportDiagnostics,
       }}
     >
-      {hasDiagnostics && (
+      {(servers.length > 1 || hasDiagnostics) && (
         <div className="mb-6 space-y-3">
+          {servers.length > 1 && (
+            <ServerSelector
+              label="Showing"
+              description="View statistics and logs by server"
+              selected={selection.selected("view")}
+              servers={pickerServers}
+              onToggle={(id) => selection.toggle("view", id)}
+            />
+          )}
           {hasDiagnostics && (
             <div
               role="status"
@@ -149,6 +161,9 @@ export function ConnectedDashboard({
       )}
       <Dashboard
         showLogs={servers.some((server) => server.hasLogs)}
+        showServerColumn={
+          servers.length > 1 || servers.some((server) => server.hasMappedLogs)
+        }
         blockingControls={controls("blocking", "Blocking targets")}
         maintenanceControls={controls("maintenance", "Operation targets")}
         queryControls={controls("query", "Query targets")}

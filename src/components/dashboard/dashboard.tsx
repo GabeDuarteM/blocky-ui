@@ -13,11 +13,13 @@ import { useDemoConfiguration } from "~/demo/context";
 
 export function Dashboard({
   showLogs,
+  showServerColumn = false,
   blockingControls,
   maintenanceControls,
   queryControls,
 }: {
   showLogs: boolean;
+  showServerColumn?: boolean;
   blockingControls?: ReactNode;
   maintenanceControls?: ReactNode;
   queryControls?: ReactNode;
@@ -34,7 +36,9 @@ export function Dashboard({
       </div>
       {showLogFeatures ? <ChartsSection /> : <StatisticsTopLists />}
       <QueryTool controls={queryControls} />
-      {showLogFeatures ? <QueryLogs /> : null}
+      {showLogFeatures ? (
+        <QueryLogs showServerColumn={showServerColumn} />
+      ) : null}
     </div>
   );
 }

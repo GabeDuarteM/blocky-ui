@@ -1,8 +1,3 @@
-import {
-  type StatsResult,
-  type SearchDomainEntry,
-  type SearchClientEntry,
-} from "~/server/logs/types";
 import { readQueryLogPage } from "~/server/logs/query-page";
 /**
  * Base class for SQL database log providers (MySQL, PostgreSQL, etc.)
@@ -592,99 +587,6 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       type: row.type ?? "unknown",
       count: Number(row.count),
       percentage: totalCount > 0 ? (Number(row.count) / totalCount) * 100 : 0,
-    }));
-  }
-
-  async getStats24h(): Promise<StatsResult> {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-
-    const result = await this.db
-      .select({
-        totalQueries: sql<number>`count(*)`,
-        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
-      })
-      .from(this.table)
-      .where(
-        gte(this.columns.requestTs, this.formatDateTimeForFilter(oneDayAgo)),
-      );
-
-    return {
-      totalQueries: Number(result[0]?.totalQueries ?? 0),
-      blocked: Number(result[0]?.blocked ?? 0),
-    };
-  }
-
-  async searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]> {
-    if (!options.query.trim()) {
-      return [];
-    }
-
-    const { startTime } = getTimeRangeConfig(options.range);
-
-    const result = await this.db
-      .select({
-        domain: this.columns.questionName,
-        count: sql<number>`count(*)`,
-      })
-      .from(this.table)
-      .where(
-        and(
-          gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
-          sql`LOWER(${this.columns.questionName}) LIKE LOWER(${`%${options.query}%`})`,
-        ),
-      )
-      .groupBy(this.columns.questionName)
-      .orderBy(
-        desc(sql`count(*)`),
-        asc(this.getTextSortExpression(this.columns.questionName)),
-        asc(this.columns.questionName),
-      )
-      .limit(options.limit);
-
-    return result.map((row: { domain: string | null; count: number }) => ({
-      domain: row.domain ?? "unknown",
-      count: Number(row.count),
-    }));
-  }
-
-  async searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]> {
-    if (!options.query.trim()) {
-      return [];
-    }
-
-    const { startTime } = getTimeRangeConfig(options.range);
-
-    const result = await this.db
-      .select({
-        client: this.columns.clientName,
-        count: sql<number>`count(*)`,
-      })
-      .from(this.table)
-      .where(
-        and(
-          gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
-          sql`LOWER(${this.columns.clientName}) LIKE LOWER(${`%${options.query}%`})`,
-        ),
-      )
-      .groupBy(this.columns.clientName)
-      .orderBy(
-        desc(sql`count(*)`),
-        asc(this.getTextSortExpression(this.columns.clientName)),
-        asc(this.columns.clientName),
-      )
-      .limit(options.limit);
-
-    return result.map((row: { client: string | null; count: number }) => ({
-      client: row.client ?? "unknown",
-      count: Number(row.count),
     }));
   }
 }

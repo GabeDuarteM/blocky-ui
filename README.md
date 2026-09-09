@@ -113,7 +113,7 @@ docker run -d \
 
 ## ⚙️ Configuration
 
-BlockyUI is configured via environment variables in all deployment methods.
+Configure BlockyUI with environment variables, or use a YAML file for multiple servers.
 
 | Variable                     | Required    | Default                 | Description                                                                                                              |
 | ---------------------------- | ----------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -124,6 +124,30 @@ BlockyUI is configured via environment variables in all deployment methods.
 | `QUERY_LOG_TARGET`           | No          | None                    | Connection string, SQLite file path, or log folder path for the same target as Blocky's `queryLog.target`.               |
 | `INSTANCE_NAME`              | No          | None                    | Custom label shown in the browser tab title. Useful for identifying multiple instances.                                  |
 | `DEMO_MODE`                  | No          | `false`                 | Enables a kiosk mode with mocked data and actions. Useful if you just want to see how it looks.                          |
+
+### Multiple servers
+
+Set `BLOCKY_UI_CONFIG=/config/blocky-ui.yml` to load a YAML file. Start with [blocky-ui.example.yml](blocky-ui.example.yml). Mount the file read-only when running in Docker:
+
+```yaml
+environment:
+  BLOCKY_UI_CONFIG: /config/blocky-ui.yml
+volumes:
+  - ./blocky-ui.yml:/config/blocky-ui.yml:ro
+  - ./office-logs:/logs/office:ro
+```
+
+Restart Blocky UI after changing the file. Server IDs such as `nas` identify saved selections, so keep them stable when changing a display name or URL. New servers start selected. View, blocking, maintenance, and DNS queries each have their own selection.
+
+The YAML file replaces `BLOCKY_API_URL`, `BLOCKY_REQUEST_HEADERS`, and the `QUERY_LOG_*` settings. Without a file, existing environment configuration still works. Each server accepts an optional `headers` mapping for authenticated APIs. URLs, headers, and log credentials stay on the server.
+
+Define each log store once under `logSources`. Servers sharing a store reference the same source ID and provide the hostname written by Blocky. Console sources use the `instance` field for this mapping. A source used by just one server can omit `hostname`, which treats the source as dedicated to that server. Unmapped records in shared sources remain visible as Unknown, including in charts and rankings.
+
+Supported source types are `mysql`, `postgresql`, `timescale`, `sqlite`, `csv`, `csv-client`, and `console`. Console sources also require `consoleProvider: victorialogs`; their target is the VictoriaLogs base URL. Use paths accessible inside the container for file sources.
+
+Live statistics come from each server's `/api/stats` endpoint. Configure direct instance URLs to avoid alternating between replicas behind a load balancer. These counters retain Blocky's time-window and restart limits; log history does not replace them. Cache entries count the entries stored across selected servers, including copies held by more than one server. Log history remains available when a Blocky API is offline. Counts and history aggregates are cached for 30 seconds after loading; expensive first loads still depend on the underlying store. Log rows can load before the total page count.
+
+Blocking commands go to the selected API URLs. Blocky instances sharing Redis can propagate blocking changes to each other through Blocky's own synchronization. Selection does not isolate those instances. Blocky UI refreshes every configured server's blocking status after commands.
 
 ### Common Setups
 
