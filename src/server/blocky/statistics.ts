@@ -1,12 +1,14 @@
+import { type KyInstance } from "ky";
 import { z } from "zod";
-
-import { blockyApi } from "~/server/blocky/client";
 
 const countByNameSchema = z.record(z.string(), z.number());
 
 const statisticsSchema = z.object({
+  byResponseType: countByNameSchema,
   summary: z.object({
     queries: z.number(),
+    cached: z.number(),
+    forwarded: z.number(),
     blocked: z.number(),
     dropped: z.number(),
     errors: z.number(),
@@ -27,24 +29,8 @@ const statisticsSchema = z.object({
 
 export type BlockyStatistics = z.infer<typeof statisticsSchema>;
 
-export function parseBlockyStatistics(value: unknown): BlockyStatistics | null {
-  const result = statisticsSchema.safeParse(value);
-  return result.success ? result.data : null;
-}
-
-export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> {
-  try {
-    const response = await blockyApi.get("api/stats", {
-      throwHttpErrors: false,
-    });
-    if (!response.ok) {
-      return null;
-    }
-
-    return parseBlockyStatistics(await response.json());
-  } catch {
-    return null;
-  }
+export async function readBlockyStatistics(client: KyInstance) {
+  return statisticsSchema.parse(await client.get("api/stats").json());
 }
 
 export function createStatisticsSnapshot(statistics: BlockyStatistics) {
@@ -80,4 +66,13 @@ export function createStatisticsSnapshot(statistics: BlockyStatistics) {
       clients: statistics.topClients,
     },
   };
+}
+
+export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> {
+  const { blockyApi } = await import("~/server/blocky/client");
+  try {
+    return await readBlockyStatistics(blockyApi);
+  } catch {
+    return null;
+  }
 }

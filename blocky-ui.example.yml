@@ -1,0 +1,26 @@
+servers:
+  nas:
+    name: NAS
+    url: http://blocky:4000
+    logs:
+      source: home
+      hostname: blocky
+  raspberry:
+    name: Raspberry Pi
+    url: http://raspberry:4000
+    logs:
+      source: home
+      hostname: blocky-raspberry
+  office:
+    name: Office
+    url: http://office-blocky:4000
+    logs:
+      source: office
+
+logSources:
+  home:
+    type: mysql
+    target: mysql://blocky:change-me@database:3306/blocky
+  office:
+    type: csv
+    target: /logs/office

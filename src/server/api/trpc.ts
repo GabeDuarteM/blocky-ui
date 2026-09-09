@@ -1,3 +1,5 @@
+import { getConfiguration } from "~/server/config";
+import { createBlockyServers } from "~/server/blocky/servers";
 /**
  * YOU PROBABLY DON'T NEED TO EDIT THIS FILE, UNLESS:
  * 1. You want to modify request context (see Part 1).
@@ -40,7 +42,11 @@ export const createTRPCContext = async (opts: { headers: Headers }) => {
     ? await createLogProvider()
     : undefined;
 
+  const configuration = await getConfiguration();
+
   return {
+    configuration,
+    servers: createBlockyServers(configuration),
     isDemoServiceAvailable,
     logProvider,
     ...opts,

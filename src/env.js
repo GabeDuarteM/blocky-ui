@@ -7,6 +7,7 @@ export const env = createEnv({
    * isn't built with invalid env vars.
    */
   server: {
+    BLOCKY_UI_CONFIG: z.string().optional(),
     QUERY_LOG_TYPE: z
       .enum([
         "mysql",
@@ -44,12 +45,23 @@ export const env = createEnv({
    * middlewares) or client-side so we need to destruct manually.
    */
   runtimeEnv: {
-    QUERY_LOG_TYPE: process.env.QUERY_LOG_TYPE,
-    QUERY_LOG_CONSOLE_PROVIDER: process.env.QUERY_LOG_CONSOLE_PROVIDER,
-    QUERY_LOG_TARGET: process.env.QUERY_LOG_TARGET,
+    BLOCKY_UI_CONFIG: process.env.BLOCKY_UI_CONFIG,
+    QUERY_LOG_TYPE: process.env.BLOCKY_UI_CONFIG
+      ? undefined
+      : process.env.QUERY_LOG_TYPE,
+    QUERY_LOG_CONSOLE_PROVIDER: process.env.BLOCKY_UI_CONFIG
+      ? undefined
+      : process.env.QUERY_LOG_CONSOLE_PROVIDER,
+    QUERY_LOG_TARGET: process.env.BLOCKY_UI_CONFIG
+      ? undefined
+      : process.env.QUERY_LOG_TARGET,
     NODE_ENV: process.env.NODE_ENV,
-    BLOCKY_API_URL: process.env.BLOCKY_API_URL,
-    BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_REQUEST_HEADERS,
+    BLOCKY_API_URL: process.env.BLOCKY_UI_CONFIG
+      ? undefined
+      : process.env.BLOCKY_API_URL,
+    BLOCKY_REQUEST_HEADERS: process.env.BLOCKY_UI_CONFIG
+      ? undefined
+      : process.env.BLOCKY_REQUEST_HEADERS,
     DEMO_MODE: process.env.DEMO_MODE === "true",
     INSTANCE_NAME: process.env.INSTANCE_NAME,
     // NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
