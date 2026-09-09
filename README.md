@@ -161,6 +161,10 @@ bun dev
 
 Visit `http://localhost:3000` to access BlockyUI.
 
+### Test providers with real query logs
+
+Use `bun run log-data --help` to export a read-only MySQL snapshot and copy it into disposable MySQL, PostgreSQL, Timescale, SQLite, CSV or VictoriaLogs stores. See the [data transfer guide](scripts/log-data/README.md) for setup, timezone handling and format differences.
+
 ## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=gabeduartem/blocky-ui&type=date&legend=top-left)](https://www.star-history.com/#gabeduartem/blocky-ui&type=date&legend=top-left)
