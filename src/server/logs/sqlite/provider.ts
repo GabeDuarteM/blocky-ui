@@ -9,6 +9,7 @@ import { logEntries } from "~/server/logs/sqlite/schema";
 
 export class SQLiteLogProvider extends BaseSqlLogProvider {
   private readonly dbFile: Database.Database;
+  private readonly ownsConnection: boolean;
 
   constructor(options: {
     filePath: string;
@@ -34,10 +35,13 @@ export class SQLiteLogProvider extends BaseSqlLogProvider {
     });
 
     this.dbFile = dbFile;
+    this.ownsConnection = !options.connections;
   }
 
   async close(): Promise<void> {
-    this.dbFile.close();
+    if (this.ownsConnection) {
+      this.dbFile.close();
+    }
   }
 
   protected getTextSortExpression(column: Column): SQL {

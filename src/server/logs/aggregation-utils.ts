@@ -57,7 +57,7 @@ export function aggregateQueriesOverTime(
   }
   for (const entry of entries) {
     const time = new Date(entry.requestTs ?? 0).getTime();
-    if (time < startTime.getTime()) {
+    if (time < startTime.getTime() || time > now) {
       continue;
     }
     const bucket = buckets.get(Math.floor(time / interval) * interval);

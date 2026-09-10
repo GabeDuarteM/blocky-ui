@@ -14,3 +14,14 @@ it.each([
     expect(normalizeLogTimestamp(input)).toBe(expected);
   },
 );
+
+it("preserves local wall-clock interpretation for timezone-less CSV dates", () => {
+  const value = "2026-09-05 12:30:00.100";
+
+  expect(normalizeLogTimestamp(value, "local")).toBe(
+    new Date(value).toISOString(),
+  );
+  expect(normalizeLogTimestamp("2026-09-05T14:30:00+02:00", "local")).toBe(
+    "2026-09-05T12:30:00.000Z",
+  );
+});

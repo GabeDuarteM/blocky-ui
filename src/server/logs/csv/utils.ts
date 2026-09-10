@@ -1,3 +1,4 @@
+import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import { isEntryInScope } from "~/server/logs/scope";
 import * as fs from "fs";
 import { pipeline } from "node:stream/promises";
@@ -18,7 +19,7 @@ function parseLogFields(value: unknown): LogEntry | null {
   const parsedDuration = fields[3] ? parseInt(fields[3], 10) : NaN;
 
   return {
-    requestTs: fields[0] || null,
+    requestTs: normalizeLogTimestamp(fields[0] || null, "local"),
     clientIp: fields[1] || null,
     clientName: fields[2] || null,
     durationMs: Number.isNaN(parsedDuration) ? null : parsedDuration,
