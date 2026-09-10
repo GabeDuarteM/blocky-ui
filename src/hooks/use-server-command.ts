@@ -70,9 +70,10 @@ export function useServerCommand(scope: "blocking" | "maintenance") {
   async function retry(command: Command, targets: string[]) {
     if (command.action === "enable" || command.action === "disable") {
       try {
-        const statuses = await utils.servers.blockingStatus.fetch({
-          serverIds: targets,
-        });
+        const statuses = await utils.servers.blockingStatus.fetch(
+          { serverIds: targets },
+          { staleTime: 0 },
+        );
         const pending = statuses
           .filter((result) => {
             if (!result.success) {
