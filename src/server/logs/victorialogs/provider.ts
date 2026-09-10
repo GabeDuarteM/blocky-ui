@@ -421,8 +421,6 @@ export class VictoriaLogsProvider implements LogProvider {
   }
 
   async getStats24h(): Promise<StatsResult> {
-    // VictoriaLogs does not support conditional aggregation (count(if(...))),
-    // so total and blocked counts require separate queries.
     const [totalResult, blockedResult] = await Promise.all([
       this.queryRaw(`${BASE_FILTER} | stats count() as total`, {
         start: "24h",
