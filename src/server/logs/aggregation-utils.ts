@@ -1,7 +1,5 @@
 import { type TimeRange } from "~/lib/constants";
 import {
-  type SearchDomainEntry,
-  type SearchClientEntry,
   type LogEntry,
   type QueriesOverTimeEntry,
   type TopDomainEntry,
