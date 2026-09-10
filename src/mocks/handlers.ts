@@ -1,3 +1,4 @@
+import { DEMO_SERVER_ID_HEADER } from "~/demo/config";
 import { http, HttpResponse } from "msw";
 import { env } from "~/env";
 
@@ -18,14 +19,30 @@ interface BlockingState extends BlockingStatus {
   disabledAt?: number;
 }
 
-let blockingState: BlockingState = {
-  enabled: true,
-  autoEnableInSec: 0,
-  disabledGroups: [],
-};
+const blockingStates = new Map<string, BlockingState>();
+
+function getBlockingState(request: Request): BlockingState {
+  const id = request.headers.get(DEMO_SERVER_ID_HEADER) ?? "default";
+  const existing = blockingStates.get(id);
+
+  if (existing) {
+    return existing;
+  }
+
+  const state: BlockingState = {
+    enabled: true,
+    autoEnableInSec: 0,
+    disabledGroups: [],
+  };
+  blockingStates.set(id, state);
+
+  return state;
+}
 
 export const handlers = [
-  http.get(`${env.BLOCKY_API_URL}/api/blocking/status`, () => {
+  http.get(`${env.BLOCKY_API_URL}/api/blocking/status`, ({ request }) => {
+    const blockingState = getBlockingState(request);
+    let remainingSeconds = blockingState.autoEnableInSec;
     if (
       !blockingState.enabled &&
       blockingState.disabledAt &&
@@ -35,35 +52,35 @@ export const handlers = [
       const elapsedSeconds = Math.floor(
         (now - blockingState.disabledAt) / 1000,
       );
-      const remainingSeconds = Math.max(
+      remainingSeconds = Math.max(
         0,
         blockingState.autoEnableInSec - elapsedSeconds,
       );
 
       if (remainingSeconds === 0) {
-        blockingState = {
+        Object.assign(blockingState, {
           enabled: true,
           autoEnableInSec: 0,
           disabledGroups: [],
-        };
-      } else {
-        blockingState.autoEnableInSec = remainingSeconds;
+          disabledAt: undefined,
+        });
       }
     }
 
     return HttpResponse.json<BlockingStatus>({
       enabled: blockingState.enabled,
-      autoEnableInSec: blockingState.autoEnableInSec,
+      autoEnableInSec: remainingSeconds,
       disabledGroups: blockingState.disabledGroups,
     });
   }),
 
-  http.get(`${env.BLOCKY_API_URL}/api/blocking/enable`, () => {
-    blockingState = {
+  http.get(`${env.BLOCKY_API_URL}/api/blocking/enable`, ({ request }) => {
+    Object.assign(getBlockingState(request), {
       enabled: true,
       autoEnableInSec: 0,
       disabledGroups: [],
-    };
+      disabledAt: undefined,
+    });
     return new HttpResponse(null, { status: 200 });
   }),
 
@@ -92,12 +109,12 @@ export const handlers = [
       }
     }
 
-    blockingState = {
+    Object.assign(getBlockingState(request), {
       enabled: false,
       autoEnableInSec: seconds,
       disabledGroups: groups,
       disabledAt: seconds > 0 ? Date.now() : undefined,
-    };
+    });
 
     return new HttpResponse(null, { status: 200 });
   }),

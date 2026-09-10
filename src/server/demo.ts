@@ -1,5 +1,9 @@
 import { env } from "~/env";
-import { demoServers, type DemoServerCount } from "~/demo/config";
+import {
+  demoServers,
+  DEMO_SERVER_ID_HEADER,
+  type DemoServerCount,
+} from "~/demo/config";
 import { type Configuration } from "~/server/config/schema";
 import { createLogCoordinator } from "~/server/logs/coordinator";
 import { DemoLogProvider } from "~/server/logs/demo-provider";
@@ -13,7 +17,7 @@ function createDemoScenario(count: DemoServerCount) {
         {
           name,
           url: env.BLOCKY_API_URL,
-          headers: {},
+          headers: { [DEMO_SERVER_ID_HEADER]: id },
           logs: { source: id },
         },
       ]),

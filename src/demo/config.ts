@@ -1,3 +1,4 @@
+export const DEMO_SERVER_ID_HEADER = "x-blocky-demo-server";
 export const DEMO_SERVER_COUNT_HEADER = "x-blocky-demo-server-count";
 export const DEMO_SERVER_COUNTS = [1, 2, 3, 5, 10] as const;
 export type DemoServerCount = (typeof DEMO_SERVER_COUNTS)[number];
