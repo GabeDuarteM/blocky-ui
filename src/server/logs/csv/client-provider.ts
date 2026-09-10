@@ -1,14 +1,18 @@
 import * as fs from "fs";
 import * as path from "path";
 import { type TimeRange } from "~/lib/constants";
-import type { LogEntry, QueryLogsOptions, QueryLogsResult } from "../types";
-import { getTimeRangeConfig } from "../aggregation-utils";
-import { BaseMemoryLogProvider } from "../base-provider";
+import {
+  type LogEntry,
+  type QueryLogsOptions,
+  type QueryLogsResult,
+} from "~/server/logs/types";
+import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 import {
   streamAndParseEntries,
   createFilterFn,
   createTimeFilter,
-} from "./utils";
+} from "~/server/logs/csv/utils";
 
 const DATE_PATTERN = /^(\d{4}-\d{2}-\d{2})_.+\.log$/;
 

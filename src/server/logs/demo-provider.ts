@@ -1,13 +1,13 @@
 import { isEntryInScope } from "~/server/logs/scope";
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogEntry,
-  LogScope,
-  QueryLogsOptions,
-  QueryLogsResult,
-} from "./types";
-import { getTimeRangeConfig } from "./aggregation-utils";
-import { BaseMemoryLogProvider } from "./base-provider";
+import {
+  type LogEntry,
+  type LogScope,
+  type QueryLogsOptions,
+  type QueryLogsResult,
+} from "~/server/logs/types";
+import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 
 /**
  * Demo log provider that uses mock data.

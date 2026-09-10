@@ -1,7 +1,7 @@
-import type {
-  StatsResult,
-  SearchDomainEntry,
-  SearchClientEntry,
+import {
+  type StatsResult,
+  type SearchDomainEntry,
+  type SearchClientEntry,
 } from "~/server/logs/types";
 import { readQueryLogPage } from "~/server/logs/query-page";
 /**
@@ -28,17 +28,17 @@ import {
 } from "drizzle-orm";
 import { type TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import type {
-  LogProvider,
-  LogScope,
-  QueryLogFilters,
-  LogEntry,
-  QueriesOverTimeEntry,
-  TopDomainEntry,
-  TopClientEntry,
-  QueryTypeEntry,
-  QueryLogsOptions,
-  QueryLogsResult,
+import {
+  type LogProvider,
+  type LogScope,
+  type QueryLogFilters,
+  type LogEntry,
+  type QueriesOverTimeEntry,
+  type TopDomainEntry,
+  type TopClientEntry,
+  type QueryTypeEntry,
+  type QueryLogsOptions,
+  type QueryLogsResult,
 } from "~/server/logs/types";
 
 /**

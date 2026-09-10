@@ -1,12 +1,13 @@
-import type { SearchDomainEntry, SearchClientEntry } from "./types";
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogEntry,
-  QueriesOverTimeEntry,
-  TopDomainEntry,
-  TopClientEntry,
-  QueryTypeEntry,
-} from "./types";
+import {
+  type SearchDomainEntry,
+  type SearchClientEntry,
+  type LogEntry,
+  type QueriesOverTimeEntry,
+  type TopDomainEntry,
+  type TopClientEntry,
+  type QueryTypeEntry,
+} from "~/server/logs/types";
 
 export interface TimeRangeConfig {
   startTime: Date;

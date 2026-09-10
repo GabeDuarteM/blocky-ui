@@ -30,7 +30,7 @@ import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 import { type LogEntry, type LogProvider } from "~/server/logs/types";
-import { createSeedData } from "./seed-data";
+import { createSeedData } from "~/server/logs/__tests__/seed-data";
 
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS log_entries (
@@ -182,7 +182,7 @@ export async function setupMysql(entries: LogEntry[]): Promise<{
   }
 }
 
-async function setupPostgres(entries: LogEntry[]): Promise<{
+export async function setupPostgres(entries: LogEntry[]): Promise<{
   provider: PostgreSQLLogProvider;
   container: StartedPostgreSqlContainer;
 }> {

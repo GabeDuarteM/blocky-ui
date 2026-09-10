@@ -1,31 +1,31 @@
-import type {
-  StatsResult,
-  SearchDomainEntry,
-  SearchClientEntry,
-} from "./types";
+import {
+  type StatsResult,
+  type SearchDomainEntry,
+  type SearchClientEntry,
+} from "~/server/logs/types";
 import {
   searchDomainsInEntries,
   searchClientsInEntries,
-} from "./aggregation-utils";
+} from "~/server/logs/aggregation-utils";
 import { isEntryInScope } from "~/server/logs/scope";
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogProvider,
-  LogScope,
-  QueryLogsOptions,
-  QueryLogFilters,
-  LogEntry,
-  QueriesOverTimeEntry,
-  TopDomainEntry,
-  TopClientEntry,
-  QueryTypeEntry,
-} from "./types";
+import {
+  type LogProvider,
+  type LogScope,
+  type QueryLogsOptions,
+  type QueryLogFilters,
+  type LogEntry,
+  type QueriesOverTimeEntry,
+  type TopDomainEntry,
+  type TopClientEntry,
+  type QueryTypeEntry,
+} from "~/server/logs/types";
 import {
   aggregateQueriesOverTime,
   aggregateTopDomains,
   aggregateTopClients,
   aggregateQueryTypes,
-} from "./aggregation-utils";
+} from "~/server/logs/aggregation-utils";
 
 interface CacheEntry {
   promise: Promise<LogEntry[]>;

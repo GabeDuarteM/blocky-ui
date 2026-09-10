@@ -2,12 +2,21 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
+import { type Pool } from "mysql2/promise";
+import { type Sql } from "postgres";
+import { MySQLLogProvider } from "~/server/logs/mysql/provider";
+import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 import { afterEach, expect, it, vi } from "vitest";
 import { aggregateQueriesOverTime } from "~/server/logs/aggregation-utils";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { SQLiteLogProvider } from "~/server/logs/sqlite/provider";
-import { entryToCsvLine, makeEntry } from "~/server/logs/__tests__/setup";
+import {
+  entryToCsvLine,
+  makeEntry,
+  setupMysql,
+  setupPostgres,
+} from "~/server/logs/__tests__/setup";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -84,3 +93,61 @@ it("leaves shared SQLite connections open for their cache owner", async () => {
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+it.each([
+  {
+    name: "MySQL",
+    setup: setupMysql,
+    cache(connectionUri: string) {
+      const connections = new Map<string, Pool>();
+      return {
+        provider: () => new MySQLLogProvider({ connectionUri, connections }),
+        async close() {
+          for (const connection of connections.values()) {
+            await connection.end();
+          }
+        },
+      };
+    },
+  },
+  {
+    name: "PostgreSQL",
+    setup: setupPostgres,
+    cache(connectionUri: string) {
+      const connections = new Map<string, Sql>();
+      return {
+        provider: () =>
+          new PostgreSQLLogProvider({ connectionUri, connections }),
+        async close() {
+          for (const connection of connections.values()) {
+            await connection.end();
+          }
+        },
+      };
+    },
+  },
+])(
+  "leaves shared $name connections open for their cache owner",
+  async ({ setup, cache }) => {
+    const fixture = await setup([makeEntry()]);
+    const shared = cache(fixture.container.getConnectionUri());
+
+    try {
+      const first = shared.provider();
+      const second = shared.provider();
+      await first.close();
+
+      expect(await second.getQueryLogCount({})).toBe(1);
+      await second.close();
+
+      const third = shared.provider();
+      expect(await third.getQueryLogCount({})).toBe(1);
+      await third.close();
+    } finally {
+      await shared.close();
+      await fixture.provider.close();
+      await fixture.container.stop();
+    }
+  },
+  60_000,
+);

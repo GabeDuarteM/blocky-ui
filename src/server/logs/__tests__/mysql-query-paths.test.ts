@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createConnection } from "mysql2/promise";
-import { makeEntry, setupMysql } from "./setup";
+import { makeEntry, setupMysql } from "~/server/logs/__tests__/setup";
 
 const rowCount = 70_000;
 const timestamp = Date.now() - rowCount * 1000;

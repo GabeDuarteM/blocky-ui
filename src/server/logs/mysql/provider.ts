@@ -13,6 +13,7 @@ const RECENT_SEARCH_ROWS = 65_536;
 export class MySQLLogProvider extends BaseSqlLogProvider {
   private readonly pool: ReturnType<typeof createPool>;
   private readonly mysqlDb;
+  private readonly ownsConnection: boolean;
 
   constructor(options: {
     connectionUri: string;
@@ -36,6 +37,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     });
 
     this.pool = pool;
+    this.ownsConnection = !options.connections;
     this.mysqlDb = db;
   }
 
@@ -111,7 +113,9 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
   }
 
   async close(): Promise<void> {
-    await this.pool.end();
+    if (this.ownsConnection) {
+      await this.pool.end();
+    }
   }
 
   protected getBucketExpression(range: TimeRange): SQL {

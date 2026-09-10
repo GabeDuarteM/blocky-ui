@@ -9,6 +9,7 @@ import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
   private readonly conn: ReturnType<typeof postgres>;
+  private readonly ownsConnection: boolean;
 
   constructor(options: {
     connectionUri: string;
@@ -33,10 +34,13 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
     });
 
     this.conn = conn;
+    this.ownsConnection = !options.connections;
   }
 
   async close(): Promise<void> {
-    await this.conn.end();
+    if (this.ownsConnection) {
+      await this.conn.end();
+    }
   }
 
   protected queryLogTimestampOrder(): SQL {

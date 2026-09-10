@@ -4,7 +4,7 @@ import * as fs from "fs";
 import { pipeline } from "node:stream/promises";
 import { parse } from "csv-parse";
 import { z } from "zod";
-import type { LogEntry, QueryLogsOptions } from "../types";
+import { type LogEntry, type QueryLogsOptions } from "~/server/logs/types";
 
 const fieldsSchema = z.array(z.string()).min(11);
 
