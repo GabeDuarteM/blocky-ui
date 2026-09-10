@@ -1,5 +1,5 @@
 import { appendFile, mkdir } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { type RecordEntry } from "./record";
 
 export type FileDestination = "csv" | "csv-client" | "console";
@@ -73,6 +73,7 @@ export async function importFiles(
   output: string,
   records: AsyncIterable<RecordEntry>,
 ) {
+  await mkdir(dirname(output), { recursive: true, mode: 0o700 });
   await mkdir(output, { mode: 0o700 });
   let count = 0;
   const buffers = new Map<string, string[]>();

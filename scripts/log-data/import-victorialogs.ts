@@ -8,6 +8,9 @@ export async function importVictoriaLogs(
   records: AsyncIterable<RecordEntry>,
 ) {
   const base = new URL(target);
+  if (!base.pathname.endsWith("/")) {
+    base.pathname += "/";
+  }
 
   async function count() {
     const response = await fetch(new URL("select/logsql/query", base), {

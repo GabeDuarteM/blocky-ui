@@ -20,19 +20,13 @@ const manifestSchema = z.object({
   lastTimestamp: z.iso.datetime().nullable(),
 });
 
-export async function writeSnapshot(
-  directory: string,
-  records: AsyncIterable<RecordEntry>,
-  sourceOffset: string,
-) {
-  await mkdir(directory, { mode: 0o700 });
+function snapshotSummary() {
   const digest = fingerprint();
   let firstTimestamp: string | null = null;
   let lastTimestamp: string | null = null;
 
-  async function* lines() {
-    for await (const value of records) {
-      const record = recordSchema.parse(value);
+  return {
+    add(record: RecordEntry) {
       digest.add(record);
       firstTimestamp =
         firstTimestamp === null || record.requestTs < firstTimestamp
@@ -42,6 +36,25 @@ export async function writeSnapshot(
         lastTimestamp === null || record.requestTs > lastTimestamp
           ? record.requestTs
           : lastTimestamp;
+    },
+    result() {
+      return { ...digest.result(), firstTimestamp, lastTimestamp };
+    },
+  };
+}
+
+export async function writeSnapshot(
+  directory: string,
+  records: AsyncIterable<RecordEntry>,
+  sourceOffset: string,
+) {
+  await mkdir(directory, { mode: 0o700 });
+  const digest = snapshotSummary();
+
+  async function* lines() {
+    for await (const value of records) {
+      const record = recordSchema.parse(value);
+      digest.add(record);
       yield `${JSON.stringify(record)}\n`;
     }
   }
@@ -61,8 +74,6 @@ export async function writeSnapshot(
     sourceOffset,
     createdAt: new Date().toISOString(),
     ...digest.result(),
-    firstTimestamp,
-    lastTimestamp,
   });
   await writeFile(
     join(directory, "manifest.json"),
@@ -97,7 +108,7 @@ export async function verifySnapshot(directory: string) {
   const manifest = manifestSchema.parse(
     JSON.parse(await readFile(join(directory, "manifest.json"), "utf8")),
   );
-  const digest = fingerprint();
+  const digest = snapshotSummary();
 
   for await (const record of readSnapshot(directory)) {
     digest.add(record);
@@ -107,7 +118,9 @@ export async function verifySnapshot(directory: string) {
 
   if (
     actual.count !== manifest.count ||
-    actual.fingerprint !== manifest.fingerprint
+    actual.fingerprint !== manifest.fingerprint ||
+    actual.firstTimestamp !== manifest.firstTimestamp ||
+    actual.lastTimestamp !== manifest.lastTimestamp
   ) {
     throw new TransferError("Snapshot contents do not match the manifest.");
   }

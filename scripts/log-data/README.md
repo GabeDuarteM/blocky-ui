@@ -45,7 +45,7 @@ Exports stream in primary-key order under a read-only, repeatable-read MySQL tra
 
 MySQL DATETIME does not store a timezone. The default interpretation is UTC. Set `--offset +02:00` only when that fixed offset matches how your source wrote the entire selected dataset. A dataset spanning daylight-saving changes in local wall time cannot be unambiguously reconstructed using a single offset.
 
-Imports preserve event timestamps by default. To move the dataset into a dashboard's current time window, add `--latest-at 2026-09-09T12:00:00.000Z`. This shifts every event by the same amount, preserving spacing. `--hostname blocky-two` changes the instance hostname. The command reports the shift and override. Import the same snapshot into multiple fresh stores to compare providers or instance counts without repeatedly reading production.
+Imports preserve event timestamps by default. To move the dataset into a dashboard's current time window, add `--latest-at "<UTC ISO timestamp>"`, replacing the placeholder with the desired current UTC timestamp. This shifts every event by the same amount, preserving spacing. `--hostname blocky-two` changes the instance hostname. The command reports the shift and override. Import the same snapshot into multiple fresh stores to compare providers or instance counts without repeatedly reading production.
 
 ## Comparing the dashboard
 
