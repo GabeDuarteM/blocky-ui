@@ -57,7 +57,7 @@ export function DataTable<TData, TValue>({
   const showPageCount =
     pageCount !== undefined &&
     pageIndex < Math.max(1, pageCount) &&
-    (!hasNextPage || pageIndex < pageCount - 1);
+    hasNextPage === pageIndex < pageCount - 1;
 
   const handlePageSizeChange = (value: string) => {
     onPageSizeChange(Number(value));

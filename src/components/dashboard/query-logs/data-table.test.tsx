@@ -45,6 +45,13 @@ describe("query log pagination with a cached total", () => {
     expect(html).not.toContain(" / ");
   });
 
+  it("hides a stale total when fresh rows end before it", () => {
+    const html = renderTable(2, false);
+
+    expect(html).toMatch(/<span[^>]*>1<\/span>/);
+    expect(html).not.toContain(" / ");
+  });
+
   it("shows page totals again when the count catches up", () => {
     expect(renderTable(2, false, 1)).toContain("2 / 2");
   });
