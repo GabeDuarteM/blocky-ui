@@ -5,6 +5,7 @@ import {
   createStatisticsSnapshot,
   fetchBlockyStatistics,
 } from "~/server/blocky/statistics";
+import type { StatsResult } from "~/server/logs/types";
 
 const timeRangeSchema = z.enum(TIME_RANGES);
 const topListTypeSchema = z.enum(["domains", "clients"]);
@@ -22,6 +23,29 @@ const searchSchema = z.object({
   limit: z.number().min(1).max(50).default(10),
 });
 
+/**
+ * Derives the overview's traffic counters from query-log totals.
+ *
+ * Mirrors blocky's own `curatedSummary()` (stats/collector.go): the cache hit
+ * rate is measured against lookups (cached + forwarded) rather than all
+ * queries, because a blocked or locally-answered query never consults the
+ * cache. Averaging duration here — instead of in each provider — keeps the
+ * result identical no matter which backend supplied the sums.
+ */
+function overviewFromLogs(stats: StatsResult) {
+  const { totalQueries, blocked, cached, forwarded, durationSum } = stats;
+  const lookups = cached + forwarded;
+
+  return {
+    totalQueries,
+    blocked,
+    blockedPercentage: totalQueries > 0 ? (blocked / totalQueries) * 100 : 0,
+    cacheHitRate: lookups > 0 ? (cached / lookups) * 100 : 0,
+    avgResponseMs:
+      totalQueries > 0 ? Math.trunc(durationSum / totalQueries) : 0,
+  };
+}
+
 export const statsRouter = createTRPCRouter({
   snapshot: publicProcedure.query(async ({ ctx }) => {
     if (!ctx.isDemoServiceAvailable("statistics")) {
@@ -32,7 +56,39 @@ export const statsRouter = createTRPCRouter({
     if (!statistics) {
       return null;
     }
-    return createStatisticsSnapshot(statistics);
+
+    const snapshot = createStatisticsSnapshot(statistics);
+    if (!ctx.logProvider) {
+      return snapshot;
+    }
+
+    // Blocky's /api/stats is per-instance and in-memory: it only counts the
+    // queries the responding instance served, and resets whenever it restarts.
+    // When a query log is configured it spans every instance and survives
+    // restarts, so prefer it for the traffic counters. The remaining fields
+    // (cache size, list sizes) are current blocky state and stay as reported.
+    //
+    // The query log is a separate service and can be unreachable, so treat it
+    // as best-effort: if it fails, or reports no queries at all while blocky
+    // says it served some, keep blocky's numbers rather than blanking the
+    // cards. Providers signal failure inconsistently — some throw, others log
+    // and return zeroes — so guard against both.
+    let stats: StatsResult;
+    try {
+      stats = await ctx.logProvider.getStats24h();
+    } catch (error) {
+      console.error("Failed to read statistics from the query log:", error);
+      return snapshot;
+    }
+
+    if (stats.totalQueries === 0 && snapshot.overview.totalQueries > 0) {
+      return snapshot;
+    }
+
+    return {
+      ...snapshot,
+      overview: { ...snapshot.overview, ...overviewFromLogs(stats) },
+    };
   }),
 
   queriesOverTime: publicProcedure

@@ -12,11 +12,17 @@ import {
   and,
   eq,
   gte,
+  inArray,
   type SQL,
   type Column,
 } from "drizzle-orm";
 import { type TimeRange } from "~/lib/constants";
-import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import {
+  BLOCKED_RESPONSE_TYPES,
+  CACHED_RESPONSE_TYPES,
+  FORWARDED_RESPONSE_TYPES,
+  getTimeRangeConfig,
+} from "~/server/logs/aggregation-utils";
 import type {
   LogProvider,
   LogEntry,
@@ -284,10 +290,16 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   async getStats24h(): Promise<StatsResult> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+    const countWhereTypeIn = (types: string[]) =>
+      sql<number>`sum(case when ${inArray(this.columns.responseType, types)} then 1 else 0 end)`;
+
     const result = await this.db
       .select({
         totalQueries: sql<number>`count(*)`,
-        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
+        blocked: countWhereTypeIn(BLOCKED_RESPONSE_TYPES),
+        cached: countWhereTypeIn(CACHED_RESPONSE_TYPES),
+        forwarded: countWhereTypeIn(FORWARDED_RESPONSE_TYPES),
+        durationSum: sql<number>`sum(coalesce(${this.columns.durationMs}, 0))`,
       })
       .from(this.table)
       .where(
@@ -297,6 +309,9 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return {
       totalQueries: Number(result[0]?.totalQueries ?? 0),
       blocked: Number(result[0]?.blocked ?? 0),
+      cached: Number(result[0]?.cached ?? 0),
+      forwarded: Number(result[0]?.forwarded ?? 0),
+      durationSum: Number(result[0]?.durationSum ?? 0),
     };
   }
 

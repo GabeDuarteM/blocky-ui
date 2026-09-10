@@ -211,6 +211,25 @@ function defineProviderTests(providerName: string) {
         expect(result.totalQueries).toBe(expected.total);
         expect(result.blocked).toBe(expected.blocked);
       });
+
+      it("counts cached and forwarded lookups", async () => {
+        const expected = countEntriesInRange(seedData, "24h");
+        const result = await provider.getStats24h();
+
+        expect(result.cached).toBe(expected.cached);
+        expect(result.forwarded).toBe(expected.forwarded);
+
+        // The seed carries CONDITIONAL entries, so a provider that forwards on
+        // RESOLVED alone cannot pass this.
+        expect(expected.forwarded).toBeGreaterThan(0);
+        expect(expected.cached).toBeGreaterThan(0);
+      });
+
+      it("sums durations over the same entries it counts", async () => {
+        const expected = countEntriesInRange(seedData, "24h");
+        const result = await provider.getStats24h();
+        expect(result.durationSum).toBe(expected.durationSum);
+      });
     });
 
     describe("getQueriesOverTime", () => {
@@ -904,6 +923,9 @@ describe("cross-provider consistency", () => {
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalQueries).toBe(baseline.totalQueries);
       expect(current.blocked).toBe(baseline.blocked);
+      expect(current.cached).toBe(baseline.cached);
+      expect(current.forwarded).toBe(baseline.forwarded);
+      expect(current.durationSum).toBe(baseline.durationSum);
     });
   });
 

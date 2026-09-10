@@ -14,6 +14,7 @@ import {
   createFilterFn,
   createTimeFilter,
   computeStats,
+  EMPTY_STATS,
 } from "./utils";
 
 /**
@@ -104,7 +105,7 @@ export class CsvLogProvider extends BaseMemoryLogProvider {
   async getStats24h(): Promise<StatsResult> {
     const logFile = await this.findLatestLogFile();
     if (!logFile) {
-      return { totalQueries: 0, blocked: 0 };
+      return EMPTY_STATS;
     }
 
     try {
@@ -116,7 +117,7 @@ export class CsvLogProvider extends BaseMemoryLogProvider {
       return computeStats(entries);
     } catch (error) {
       console.error("Error getting stats:", error);
-      return { totalQueries: 0, blocked: 0 };
+      return EMPTY_STATS;
     }
   }
 
