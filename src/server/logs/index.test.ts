@@ -59,3 +59,20 @@ describe("log coordinator lifetime", () => {
     expect(initializeLogSource).toHaveBeenCalledTimes(2);
   });
 });
+
+it("retries a legacy provider after initialization fails", async () => {
+  initializeLogSource.mockRejectedValueOnce(
+    new Error("Temporarily unavailable"),
+  );
+  const { createLogProvider } = await import("~/server/logs");
+
+  await expect(createLogProvider()).rejects.toThrow("Temporarily unavailable");
+  const [first, second] = await Promise.all([
+    createLogProvider(),
+    createLogProvider(),
+  ]);
+
+  expect(first).toBeDefined();
+  expect(second).toBe(first);
+  expect(initializeLogSource).toHaveBeenCalledTimes(2);
+});

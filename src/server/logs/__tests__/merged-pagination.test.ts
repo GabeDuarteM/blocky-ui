@@ -72,3 +72,52 @@ it.each(["csv", "postgres"] as const)(
   },
   60_000,
 );
+
+it("keeps SQL timestamp ties stable across deep merged pages", async () => {
+  const fixtures = await Promise.all(
+    ["a", "b"].map((source) =>
+      setupPostgres(
+        Array.from({ length: 400 }, (_, index) =>
+          makeEntry({
+            requestTs: "2026-09-10T12:00:00.000Z",
+            questionName: `${source}-${String(index).padStart(3, "0")}.test`,
+          }),
+        ),
+      ),
+    ),
+  );
+  for (const fixture of fixtures) {
+    cleanup.push(async () => {
+      await fixture.provider.close();
+      await fixture.container.stop();
+    });
+  }
+  const configuration = parseConfiguration({
+    servers: {
+      a: { url: "http://a", logs: { source: "a" } },
+      b: { url: "http://b", logs: { source: "b" } },
+    },
+    logSources: {
+      a: { type: "csv", target: "a" },
+      b: { type: "csv", target: "b" },
+    },
+  });
+  const coordinator = createLogCoordinator(configuration, async (source) => {
+    const fixture = fixtures[source.target === "a" ? 0 : 1];
+    if (!fixture) {
+      throw new Error("Missing SQL fixture");
+    }
+    return fixture.provider;
+  });
+  const complete = await coordinator.rows(["a", "b"], {
+    offset: 0,
+    limit: 800,
+  });
+  expect(complete.items).toHaveLength(800);
+
+  for (const offset of [256, 257, 350, 395, 400, 401, 600, 790]) {
+    const page = await coordinator.rows(["a", "b"], { offset, limit: 20 });
+    expect(page.diagnostics).toEqual([]);
+    expect(page.items).toEqual(complete.items.slice(offset, offset + 20));
+  }
+}, 60_000);

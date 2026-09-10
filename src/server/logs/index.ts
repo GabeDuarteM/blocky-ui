@@ -20,21 +20,27 @@ export function getLogCoordinator() {
 let legacyProvider: Promise<LogProvider | undefined> | undefined;
 
 export function createLogProvider() {
-  legacyProvider ??= getConfiguration().then(async (configuration) => {
-    if (env.DEMO_MODE) {
-      return new DemoLogProvider();
-    }
+  legacyProvider ??= getConfiguration()
+    .then(async (configuration) => {
+      if (env.DEMO_MODE) {
+        return new DemoLogProvider();
+      }
 
-    const server = Object.values(configuration.servers)[0];
-    const source = server?.logs && configuration.logSources[server.logs.source];
+      const server = Object.values(configuration.servers)[0];
+      const source =
+        server?.logs && configuration.logSources[server.logs.source];
 
-    if (!source) {
-      return undefined;
-    }
+      if (!source) {
+        return undefined;
+      }
 
-    const { initializeLogSource } = await import("~/server/logs/factory");
-    return initializeLogSource(source);
-  });
+      const { initializeLogSource } = await import("~/server/logs/factory");
+      return initializeLogSource(source);
+    })
+    .catch((error: unknown) => {
+      legacyProvider = undefined;
+      throw error;
+    });
 
   return legacyProvider;
 }
