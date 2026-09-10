@@ -227,13 +227,17 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     };
   }
 
+  protected hostnameExpression(): SQL {
+    return sql`${this.columns.hostname}`;
+  }
+
   private scopeFilters(scope: LogScope): SQL[] {
     if (!scope.excludedHostnames?.length) {
       return [];
     }
     const filter = or(
       isNull(this.columns.hostname),
-      notInArray(this.columns.hostname, scope.excludedHostnames),
+      notInArray(this.hostnameExpression(), scope.excludedHostnames),
     );
     return filter ? [filter] : [];
   }

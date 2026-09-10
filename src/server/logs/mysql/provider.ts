@@ -76,6 +76,10 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     return this.readQueryLogRows(options, [], { useIndex: ["PRIMARY"] });
   }
 
+  protected hostnameExpression(): SQL {
+    return sql`CAST(${logEntries.hostname} AS BINARY)`;
+  }
+
   protected async clientFilter(client: string): Promise<SQL> {
     const clients = this.mysqlDb
       .selectDistinct({ name: logEntries.clientName })

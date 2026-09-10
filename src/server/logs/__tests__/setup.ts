@@ -151,7 +151,7 @@ function entryToMysqlRow(entry: LogEntry): unknown[] {
   ];
 }
 
-async function setupMysql(entries: LogEntry[]): Promise<{
+export async function setupMysql(entries: LogEntry[]): Promise<{
   provider: MySQLLogProvider;
   container: StartedMySqlContainer;
 }> {
@@ -166,8 +166,8 @@ async function setupMysql(entries: LogEntry[]): Promise<{
     try {
       await connection.execute(CREATE_TABLE_SQL);
 
-      if (entries.length > 0) {
-        const rows = entries.map(entryToMysqlRow);
+      for (let offset = 0; offset < entries.length; offset += 1000) {
+        const rows = entries.slice(offset, offset + 1000).map(entryToMysqlRow);
         await connection.query(INSERT_SQL, [rows]);
       }
     } finally {
