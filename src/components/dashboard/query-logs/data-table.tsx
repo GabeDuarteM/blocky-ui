@@ -54,6 +54,10 @@ export function DataTable<TData, TValue>({
   isLoading,
 }: DataTableProps<TData, TValue>) {
   const [sorting] = useState<SortingState>([]);
+  const showPageCount =
+    pageCount !== undefined &&
+    pageIndex < Math.max(1, pageCount) &&
+    (!hasNextPage || pageIndex < pageCount - 1);
 
   const handlePageSizeChange = (value: string) => {
     onPageSizeChange(Number(value));
@@ -178,7 +182,7 @@ export function DataTable<TData, TValue>({
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          {pageCount === undefined ? (
+          {!showPageCount ? (
             <span className="px-3 text-xs tabular-nums">{pageIndex + 1}</span>
           ) : (
             <PageNumbers
@@ -193,11 +197,7 @@ export function DataTable<TData, TValue>({
             className="h-7 w-7"
             aria-label="Next page"
             onClick={() => onPageChange(pageIndex + 1)}
-            disabled={
-              pageCount === undefined
-                ? !hasNextPage
-                : pageIndex >= pageCount - 1
-            }
+            disabled={!hasNextPage}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
