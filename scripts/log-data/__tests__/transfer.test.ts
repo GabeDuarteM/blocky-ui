@@ -56,7 +56,7 @@ function importSnapshot() {
 }
 
 async function blocky(type: string, target: string, output?: string) {
-  const container = new GenericContainer("ghcr.io/0xerr0r/blocky:v0.34.0")
+  const container = new GenericContainer("ghcr.io/0xerr0r/blocky:v0.35.0")
     .withNetwork(network)
     .withExposedPorts(4000)
     .withCopyContentToContainer([
