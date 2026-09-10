@@ -10,6 +10,7 @@ import {
 import {
   mkdtemp,
   chmod,
+  cp,
   readFile,
   readdir,
   rm,
@@ -267,7 +268,9 @@ describe("portable Blocky logs", () => {
     await chmod(folder, 0o777);
     const writer = await blocky("sqlite", "/data/blocky.db", folder);
     await writer.stop();
-    const target = join(folder, "blocky.db");
+    const importedFolder = join(directory, "sqlite-import");
+    await cp(folder, importedFolder, { recursive: true });
+    const target = join(importedFolder, "blocky.db");
 
     async function* broken() {
       for (let index = 0; index < 501; index++) {
