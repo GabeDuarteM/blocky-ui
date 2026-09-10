@@ -70,7 +70,6 @@ VictoriaLogs imports check the final indexed count, not a full content fingerpri
 
 Keep snapshots and imported data outside the repository. They contain real browsing history. New snapshot and file directories use owner-only permissions. A failed snapshot has no completion manifest and cannot pass verification.
 
-The integration tests use a pinned Blocky image to verify native schemas and log formats. Renovate tracks the container image versions in the tests and opens update PRs, so CI checks compatibility before an update is merged.
 
 ```sh
 bun run test scripts/log-data/__tests__/transfer.test.ts
