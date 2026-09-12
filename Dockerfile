@@ -13,7 +13,7 @@ FROM deps AS builder
 COPY . .
 RUN bun run build
 
-# Select better-sqlite3's bundled addon on the target platform; the Next.js build runs on amd64.
+# Prepare better-sqlite3 on the target platform; the Next.js build runs on amd64.
 FROM node:22-alpine AS native-sqlite
 WORKDIR /app
 ARG BETTER_SQLITE3_VERSION
@@ -24,9 +24,16 @@ RUN test -n "${BETTER_SQLITE3_VERSION}" \
     --ignore-scripts \
     --package-lock=false \
     "better-sqlite3@${BETTER_SQLITE3_VERSION}" \
-  && mkdir /native \
+  && addon="prebuilds/linuxmusl-$(node -p process.arch).node" \
+  && if [ ! -f "node_modules/better-sqlite3/${addon}" ]; then \
+    apk add --no-cache g++ make python3 && \
+    npm exec --yes --package=node-gyp@12.2.0 -- \
+      node-gyp rebuild --release --directory=node_modules/better-sqlite3 || exit 1; \
+    addon="build/Release/better_sqlite3.node"; \
+  fi \
   && node -e 'const db = require("better-sqlite3")(); db.prepare("SELECT 1").get(); db.close()' \
-  && cp "node_modules/better-sqlite3/prebuilds/linuxmusl-$(node -p process.arch).node" /native/ \
+  && mkdir -p "/native/$(dirname "${addon}")" \
+  && cp "node_modules/better-sqlite3/${addon}" "/native/${addon}" \
   && rm -rf node_modules /root/.cache /root/.npm
 
 FROM node:22-alpine AS runner
@@ -43,7 +50,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=native-sqlite --chown=nextjs:nodejs \
   /native/ \
-  ./node_modules/better-sqlite3/prebuilds/
+  ./node_modules/better-sqlite3/
 
 USER nextjs
 
