@@ -5,10 +5,9 @@ import { env } from "~/env";
 import { appRouter } from "~/server/api/root";
 import { createTRPCContext } from "~/server/api/trpc";
 import { initMocks } from "~/mocks/init";
+import { getConfiguration } from "~/server/config";
 
-if (env.DEMO_MODE) {
-  void initMocks();
-}
+let mocks: Promise<void> | undefined;
 
 /**
  * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
@@ -20,8 +19,15 @@ const createContext = async (req: NextRequest) => {
   });
 };
 
-const handler = (req: NextRequest) =>
-  fetchRequestHandler({
+async function handler(req: NextRequest) {
+  const { demoMode } = await getConfiguration();
+
+  if (demoMode) {
+    mocks ??= initMocks();
+    await mocks;
+  }
+
+  return fetchRequestHandler({
     endpoint: "/api/trpc",
     req,
     router: appRouter,
@@ -35,5 +41,6 @@ const handler = (req: NextRequest) =>
           }
         : undefined,
   });
+}
 
 export { handler as GET, handler as POST };

@@ -17,11 +17,6 @@ export interface LogEntry {
   id?: number | null;
 }
 
-export interface StatsResult {
-  totalQueries: number;
-  blocked: number;
-}
-
 export interface QueriesOverTimeEntry {
   time: string;
   total: number;
@@ -49,23 +44,21 @@ export interface QueryTypeEntry {
   percentage: number;
 }
 
-export interface SearchDomainEntry {
-  domain: string;
-  count: number;
+export interface LogScope {
+  excludedHostnames?: string[];
 }
 
-export interface SearchClientEntry {
-  client: string;
-  count: number;
-}
-
-export interface QueryLogsOptions {
-  limit: number;
-  offset: number;
+export interface QueryLogFilters extends LogScope {
+  maxId?: number;
   search?: string;
   responseType?: string;
   client?: string;
   questionType?: string;
+}
+
+export interface QueryLogsOptions extends QueryLogFilters {
+  limit: number;
+  offset: number;
 }
 
 export interface QueryLogsResult {
@@ -78,39 +71,45 @@ export interface LogProvider {
 
   getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult>;
 
-  getStats24h(): Promise<StatsResult>;
+  getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]>;
 
-  getQueriesOverTime(options: {
-    range: TimeRange;
-    domain?: string;
-    client?: string;
-  }): Promise<QueriesOverTimeEntry[]>;
+  getQueryLogCount(options: QueryLogFilters): Promise<number>;
 
-  getTopDomains(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopDomainEntry[]; totalCount: number }>;
+  getQueryLogSnapshot?(): Promise<number | undefined>;
 
-  getTopClients(options: {
-    range: TimeRange;
-    limit: number;
-    offset: number;
-    filter: "all" | "blocked";
-  }): Promise<{ items: TopClientEntry[]; totalCount: number }>;
+  getQueryLogCountSince?(
+    options: QueryLogFilters,
+    since: Date,
+  ): Promise<number>;
 
-  getQueryTypesBreakdown(range: TimeRange): Promise<QueryTypeEntry[]>;
+  getQueriesOverTime(
+    options: LogScope & {
+      range: TimeRange;
+      domain?: string;
+      client?: string;
+    },
+  ): Promise<QueriesOverTimeEntry[]>;
 
-  searchDomains(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchDomainEntry[]>;
+  getTopDomains(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopDomainEntry[]; totalCount: number }>;
 
-  searchClients(options: {
-    range: TimeRange;
-    query: string;
-    limit: number;
-  }): Promise<SearchClientEntry[]>;
+  getTopClients(
+    options: LogScope & {
+      range: TimeRange;
+      limit?: number;
+      offset: number;
+      filter: "all" | "blocked";
+    },
+  ): Promise<{ items: TopClientEntry[]; totalCount: number }>;
+
+  getQueryTypesBreakdown(
+    range: TimeRange,
+    scope?: LogScope,
+  ): Promise<QueryTypeEntry[]>;
 }

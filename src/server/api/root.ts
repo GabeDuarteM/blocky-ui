@@ -1,5 +1,5 @@
-import { blockyRouter } from "~/server/api/routers/blocky";
-import { statsRouter } from "~/server/api/routers/stats";
+import { logsRouter } from "~/server/api/routers/logs";
+import { serversRouter } from "~/server/api/routers/servers";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -8,8 +8,8 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  blocky: blockyRouter,
-  stats: statsRouter,
+  servers: serversRouter,
+  logs: logsRouter,
 });
 
 // export type definition of API

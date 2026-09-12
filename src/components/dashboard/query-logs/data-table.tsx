@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
 import { PageNumbers } from "~/components/ui/page-numbers";
 import { useState } from "react";
@@ -32,7 +33,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  pageCount: number;
+  pageCount?: number;
+  hasNextPage?: boolean;
   pageIndex: number;
   onPageChange: (pageIndex: number) => void;
   pageSize: number;
@@ -44,6 +46,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   pageCount,
+  hasNextPage = false,
   pageIndex,
   onPageChange,
   pageSize,
@@ -51,6 +54,10 @@ export function DataTable<TData, TValue>({
   isLoading,
 }: DataTableProps<TData, TValue>) {
   const [sorting] = useState<SortingState>([]);
+  const showPageCount =
+    pageCount !== undefined &&
+    pageIndex < Math.max(1, pageCount) &&
+    hasNextPage === pageIndex < pageCount - 1;
 
   const handlePageSizeChange = (value: string) => {
     onPageSizeChange(Number(value));
@@ -110,13 +117,15 @@ export function DataTable<TData, TValue>({
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length} className="h-120">
-                    <div className="flex h-full items-center justify-center">
-                      <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
-                    </div>
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: pageSize }, (_, index) => (
+                  <TableRow key={index} className="h-12">
+                    {table.getVisibleLeafColumns().map((column) => (
+                      <TableCell key={column.id}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
               ) : table.getRowModel().rows?.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -167,22 +176,28 @@ export function DataTable<TData, TValue>({
             variant="outline"
             size="icon"
             className="h-7 w-7"
+            aria-label="Previous page"
             onClick={() => onPageChange(pageIndex - 1)}
             disabled={pageIndex === 0}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <PageNumbers
-            currentPage={pageIndex}
-            totalPages={pageCount || 1}
-            onPageChange={onPageChange}
-          />
+          {!showPageCount ? (
+            <span className="px-3 text-xs tabular-nums">{pageIndex + 1}</span>
+          ) : (
+            <PageNumbers
+              currentPage={pageIndex}
+              totalPages={pageCount || 1}
+              onPageChange={onPageChange}
+            />
+          )}
           <Button
             variant="outline"
             size="icon"
             className="h-7 w-7"
+            aria-label="Next page"
             onClick={() => onPageChange(pageIndex + 1)}
-            disabled={pageIndex >= pageCount - 1}
+            disabled={!hasNextPage}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>

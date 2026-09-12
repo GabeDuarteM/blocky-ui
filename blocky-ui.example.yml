@@ -1,0 +1,72 @@
+# Copy this file to blocky-ui.yml and set the env BLOCKY_UI_CONFIG to its path.
+# For a basic setup, only servers and a url are needed.
+
+servers:
+  # Give each server a short key, such as nas, raspberry, office or similars.
+  nas:
+    # Name of the server, displayed on the UI. Optional
+    name: NAS
+    # The address of this Blocky instance
+    # Statistics and commands use each server's Blocky API. Enable statistics
+    # in Blocky's configuration to display its live counters in the dashboard.
+    # https://0xerr0r.github.io/blocky/latest/configuration/#statistics
+    url: http://blocky:4000
+
+    # Optional headers for the Blocky API, for example authentication.
+    # headers:
+    #   Authorization: Bearer your-token-here
+
+    # Optional. For the query-log table and history charts, enable query
+    # logging in Blocky and connect its source here:
+    # https://0xerr0r.github.io/blocky/latest/configuration/#query-logging
+    # The source must match a name under logSources.
+    logs:
+      source: home
+      # When servers share a log source, use the hostname recorded by Blocky
+      # to tell their queries apart. For VictoriaLogs, use the instance field.
+      # Omit hostname if this source contains logs from only this server.
+      hostname: blocky
+
+  # Add more entries under servers to connect other Blocky instances.
+  # raspberry:
+  #   name: Raspberry Pi
+  #   url: http://raspberry:4000
+  #   logs:
+  #     source: postgresql
+  #     hostname: blocky-raspberry
+
+# Define each database or log folder once, even if several servers use it.
+# This lets BlockyUI combine their history without counting the source twice.
+# Records that cannot be matched to a server still appear as Unknown on the UI.
+logSources:
+  home:
+    type: mysql
+    target: mysql://blocky:change-me@database:3306/blocky
+
+  # PostgreSQL and Timescale use PostgreSQL connection URLs.
+  # postgres:
+  #   type: postgresql
+  #   target: postgresql://blocky:change-me@database:5432/blocky
+  # timescale:
+  #   type: timescale
+  #   target: postgresql://blocky:change-me@database:5432/blocky
+
+  # File paths must be accessible to the BlockyUI process.
+  # sqlite:
+  #   type: sqlite
+  #   target: /logs/blocky.db
+  # daily:
+  #   type: csv
+  #   target: /logs/daily
+  # clients:
+  #   type: csv-client
+  #   target: /logs/clients
+
+  # For Blocky's console query logs collected by VictoriaLogs.
+  # console:
+  #   type: console
+  #   consoleProvider: victorialogs
+  #   target: http://victoria-logs:9428
+
+# Optional label for the browser tab, separate from individual server names.
+# instanceName: Home DNS

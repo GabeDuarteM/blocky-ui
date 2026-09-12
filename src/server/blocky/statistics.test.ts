@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   createStatisticsSnapshot,
-  parseBlockyStatistics,
   type BlockyStatistics,
 } from "~/server/blocky/statistics";
 
@@ -10,8 +9,11 @@ function createStatistics(
   overrides?: Partial<BlockyStatistics>,
 ): BlockyStatistics {
   return {
+    byResponseType: { CACHED: 90, RESOLVED: 60, BLOCKED: 50 },
     summary: {
       queries: 200,
+      cached: 90,
+      forwarded: 30,
       blocked: 50,
       dropped: 0,
       errors: 0,
@@ -56,8 +58,11 @@ describe("createStatisticsSnapshot", () => {
 
   it("returns a zero blocked percentage when no queries were recorded", () => {
     const statistics = createStatistics({
+      byResponseType: {},
       summary: {
         queries: 0,
+        cached: 0,
+        forwarded: 0,
         blocked: 0,
         dropped: 0,
         errors: 0,
@@ -69,25 +74,5 @@ describe("createStatisticsSnapshot", () => {
     expect(
       createStatisticsSnapshot(statistics).overview.blockedPercentage,
     ).toBe(0);
-  });
-});
-
-describe("parseBlockyStatistics", () => {
-  it("keeps the fields used by BlockyUI and ignores the rest", () => {
-    const statistics = createStatistics();
-
-    expect(
-      parseBlockyStatistics({
-        ...statistics,
-        start: "2026-07-10T12:00:00Z",
-        end: "2026-07-11T12:00:00Z",
-        byResponseType: { BLOCKED: 50 },
-        perHour: [],
-      }),
-    ).toEqual(statistics);
-  });
-
-  it("returns null for a malformed payload", () => {
-    expect(parseBlockyStatistics({ summary: {} })).toBeNull();
   });
 });

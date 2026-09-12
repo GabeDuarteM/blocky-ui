@@ -1,45 +1,58 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DEMO_CONFIGURATION_HEADER } from "~/demo/config";
-
-const mocks = vi.hoisted(() => {
-  const logProvider = {};
-
-  return {
-    logProvider,
-    createLogProvider: vi.fn(async () => logProvider),
-  };
-});
+import { describe, expect, it, vi } from "vitest";
+import {
+  DEMO_CONFIGURATION_HEADER,
+  DEMO_SERVER_COUNT_HEADER,
+  DEMO_SERVER_COUNTS,
+} from "~/demo/config";
 
 vi.mock("~/env", () => ({
   env: {
     BLOCKY_API_URL: "http://localhost:4000",
     BLOCKY_REQUEST_HEADERS: undefined,
-    DEMO_MODE: true,
+    DEMO_MODE: false,
   },
 }));
 
-vi.mock("~/server/logs", () => ({
-  createLogProvider: mocks.createLogProvider,
+vi.mock("~/server/config", () => ({
+  getConfiguration: async () => ({
+    demoMode: true,
+    servers: { configured: { url: "http://configured:4000", headers: {} } },
+    logSources: {},
+  }),
 }));
 
-import { blockyRouter } from "~/server/api/routers/blocky";
-import { statsRouter } from "~/server/api/routers/stats";
+import { serversRouter } from "~/server/api/routers/servers";
+import { logsRouter } from "~/server/api/routers/logs";
 import { createTRPCContext } from "~/server/api/trpc";
 
 function createHeaders(enabledServices?: string): Headers {
   const headers = new Headers();
-
   if (enabledServices) {
     headers.set(DEMO_CONFIGURATION_HEADER, enabledServices);
   }
-
   return headers;
 }
 
 describe("demo request configuration", () => {
-  beforeEach(() => {
-    mocks.createLogProvider.mockClear();
-  });
+  it.each(DEMO_SERVER_COUNTS)(
+    "provides %s servers with matching query logs",
+    async (count) => {
+      const context = await createTRPCContext({
+        headers: new Headers({ [DEMO_SERVER_COUNT_HEADER]: String(count) }),
+      });
+      const servers = await serversRouter.createCaller(context).list();
+      expect(servers).toHaveLength(count);
+
+      for (const server of servers) {
+        const result = await logsRouter.createCaller(context).rows({
+          serverIds: [server.id],
+          limit: 1,
+        });
+        expect(result.diagnostics).toEqual([]);
+        expect(result.items[0]?.serverId).toBe(server.id);
+      }
+    },
+  );
 
   it.each([
     ["blockyApi", true, false, false],
@@ -52,18 +65,9 @@ describe("demo request configuration", () => {
       const context = await createTRPCContext({
         headers: createHeaders(enabledServices),
       });
-
       expect(context.isDemoServiceAvailable("blockyApi")).toBe(blockyApi);
       expect(context.isDemoServiceAvailable("statistics")).toBe(statistics);
       expect(context.isDemoServiceAvailable("queryLogs")).toBe(queryLogs);
-
-      if (queryLogs) {
-        expect(context.logProvider).toBe(mocks.logProvider);
-        expect(mocks.createLogProvider).toHaveBeenCalledOnce();
-      } else {
-        expect(context.logProvider).toBeUndefined();
-        expect(mocks.createLogProvider).not.toHaveBeenCalled();
-      }
     },
   );
 
@@ -73,26 +77,24 @@ describe("demo request configuration", () => {
       const context = await createTRPCContext({
         headers: createHeaders(enabledServices),
       });
-
       expect(context.isDemoServiceAvailable("blockyApi")).toBe(true);
       expect(context.isDemoServiceAvailable("statistics")).toBe(true);
       expect(context.isDemoServiceAvailable("queryLogs")).toBe(true);
-      expect(context.logProvider).toBe(mocks.logProvider);
     },
   );
 
-  it("returns the real unavailable states when services are disabled", async () => {
-    const context = await createTRPCContext({
-      headers: createHeaders("none"),
-    });
-    const blockyCaller = blockyRouter.createCaller(context);
-    const statsCaller = statsRouter.createCaller(context);
-
-    await expect(blockyCaller.blockingStatus()).rejects.toMatchObject({
+  it("returns unavailable states when services are disabled", async () => {
+    const context = await createTRPCContext({ headers: createHeaders("none") });
+    const servers = serversRouter.createCaller(context);
+    const logs = logsRouter.createCaller(context);
+    const scope = { serverIds: ["default"] };
+    await expect(servers.blockingStatus(scope)).rejects.toMatchObject({
       code: "SERVICE_UNAVAILABLE",
-      message:
-        "Unable to reach Blocky API at http://localhost:4000. Please check if the API server is running.",
+      message: "Unable to reach the Blocky API.",
     });
-    await expect(statsCaller.snapshot()).resolves.toBeNull();
+    await expect(servers.statistics(scope)).resolves.toEqual([]);
+    await expect(logs.rows(scope)).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+    });
   });
 });

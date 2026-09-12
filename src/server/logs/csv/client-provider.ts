@@ -1,20 +1,18 @@
 import * as fs from "fs";
 import * as path from "path";
 import { type TimeRange } from "~/lib/constants";
-import type {
-  LogEntry,
-  StatsResult,
-  QueryLogsOptions,
-  QueryLogsResult,
-} from "../types";
-import { getTimeRangeConfig } from "../aggregation-utils";
-import { BaseMemoryLogProvider } from "../base-provider";
+import {
+  type LogEntry,
+  type QueryLogsOptions,
+  type QueryLogsResult,
+} from "~/server/logs/types";
+import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 import {
   streamAndParseEntries,
   createFilterFn,
   createTimeFilter,
-  computeStats,
-} from "./utils";
+} from "~/server/logs/csv/utils";
 
 const DATE_PATTERN = /^(\d{4}-\d{2}-\d{2})_.+\.log$/;
 
@@ -124,27 +122,8 @@ export class CsvClientLogProvider extends BaseMemoryLogProvider {
     };
   }
 
-  async getStats24h(): Promise<StatsResult> {
-    const logFiles = await this.findLatestDateFiles();
-    if (logFiles.length === 0) {
-      return { totalQueries: 0, blocked: 0 };
-    }
-
-    try {
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const filterFn = createTimeFilter(oneDayAgo);
-      const entriesArrays = await Promise.all(
-        logFiles.map((filePath) => streamAndParseEntries(filePath, filterFn)),
-      );
-      return computeStats(entriesArrays.flat());
-    } catch (error) {
-      console.error("Error getting stats:", error);
-      return { totalQueries: 0, blocked: 0 };
-    }
-  }
-
   protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
-    const logFiles = await this.findLatestDateFiles();
+    const logFiles = await this.findLatestDateFiles({ throwOnError: true });
     if (logFiles.length === 0) return [];
 
     const { startTime } = getTimeRangeConfig(range);

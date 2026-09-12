@@ -1,5 +1,10 @@
 "use client";
 
+import { useServerCommand } from "~/hooks/use-server-command";
+import { ActionLayout } from "~/components/dashboard/action-layout";
+
+import { type ReactNode } from "react";
+
 import { Activity, Shield, XCircle } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import {
@@ -9,62 +14,45 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { toast } from "sonner";
-import { api } from "~/trpc/react";
 
-export function Operations() {
-  const clearCacheMutation = api.blocky.cacheClear.useMutation({
-    onSuccess: () => {
-      toast.success("Cache has been cleared");
-    },
-    onError: (error) => {
-      toast.error("Failed to clear cache", {
-        description: error.message,
-      });
-    },
-  });
-
-  const refreshListsMutation = api.blocky.listsRefresh.useMutation({
-    onSuccess: () => {
-      toast.success("Lists have been refreshed");
-    },
-    onError: (error) => {
-      toast.error("Failed to refresh lists", {
-        description: error.message,
-      });
-    },
-  });
-
+export function Operations({ controls }: { controls?: ReactNode }) {
+  const command = useServerCommand("maintenance");
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5" />
-          Operations
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Operations
+          </span>
         </CardTitle>
         <CardDescription>
           Perform maintenance operations on the DNS server
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <Button
-          variant="outline"
-          className="flex w-full items-center gap-2"
-          onClick={() => clearCacheMutation.mutate()}
-          disabled={clearCacheMutation.isPending}
-        >
-          <XCircle className="h-4 w-4" />
-          Clear DNS Cache
-        </Button>
-        <Button
-          variant="outline"
-          className="flex w-full items-center gap-2"
-          onClick={() => refreshListsMutation.mutate()}
-          disabled={refreshListsMutation.isPending}
-        >
-          <Shield className="h-4 w-4" />
-          Reload Allow/Denylists
-        </Button>
+      <CardContent>
+        <ActionLayout controls={controls}>
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="flex w-full items-center gap-2"
+              onClick={() => void command.execute({ action: "clearCache" })}
+              disabled={command.isPending}
+            >
+              <XCircle className="h-4 w-4" />
+              Clear DNS Cache
+            </Button>
+            <Button
+              variant="outline"
+              className="flex w-full items-center gap-2"
+              onClick={() => void command.execute({ action: "refreshLists" })}
+              disabled={command.isPending}
+            >
+              <Shield className="h-4 w-4" />
+              Reload Allow/Denylists
+            </Button>
+          </div>
+        </ActionLayout>
       </CardContent>
     </Card>
   );

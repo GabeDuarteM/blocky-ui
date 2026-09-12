@@ -1,5 +1,7 @@
 "use client";
 
+import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useLogTopList } from "~/hooks/use-log-top-list";
 import { useState } from "react";
 import { Globe, Users, type LucideIcon } from "lucide-react";
 
@@ -43,10 +45,14 @@ export function TopListTable({
   onPageChange,
 }: TopListTableProps) {
   const [filter, setFilter] = useState<TopListFilter>("all");
-  const query = api.stats.topList.useQuery(
-    { type, range, limit, offset: page * limit, filter },
-    { placeholderData: (previous) => previous },
-  );
+  const dashboard = useDashboardServers();
+  const query = useLogTopList({
+    type,
+    range,
+    limit,
+    offset: page * limit,
+    filter,
+  });
   const utils = api.useUtils();
   const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];
@@ -56,12 +62,13 @@ export function TopListTable({
     currentPage: page,
     totalPages,
     prefetchPage: (targetPage) => {
-      void utils.stats.topList.prefetch({
+      void utils.logs.topList.prefetch({
         type,
         range,
         limit,
         offset: targetPage * limit,
         filter,
+        serverIds: dashboard.selection.selected("view"),
       });
     },
   });

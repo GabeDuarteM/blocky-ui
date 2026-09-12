@@ -1,6 +1,9 @@
-import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { createLogCoordinator } from "~/server/logs/coordinator";
+import { parseConfiguration } from "~/server/config/schema";
+import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { type LogEntry, type LogProvider } from "~/server/logs/types";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import { setupProviders } from "./setup";
 import { countEntriesInRange } from "./seed-data";
 
@@ -58,7 +61,162 @@ function defineProviderTests(providerName: string) {
       provider = p;
     });
 
+    it("searches provider rankings through the coordinator", async () => {
+      const configuration = parseConfiguration({
+        servers: { test: { url: "http://test", logs: { source: "test" } } },
+        logSources: { test: { type: "csv", target: "test" } },
+      });
+      const logs = createLogCoordinator(configuration, async () => provider);
+
+      for (const type of ["domains", "clients"] as const) {
+        const query = type === "domains" ? "GOOGLE.COM" : "LAP";
+        const result = await logs.search(["test"], {
+          type,
+          range: "30d",
+          query,
+          limit: 1,
+        });
+        const matching = entriesInRange("30d").filter((entry) =>
+          (type === "domains" ? entry.questionName : entry.clientName)
+            ?.toLowerCase()
+            .includes(query.toLowerCase()),
+        );
+
+        expect(result.diagnostics).toEqual([]);
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0]?.count).toBe(matching.length);
+      }
+
+      expect(
+        (
+          await logs.search(["test"], {
+            type: "domains",
+            range: "30d",
+            query: "not-present.invalid",
+            limit: 10,
+          })
+        ).items,
+      ).toEqual([]);
+    });
+
+    it("excludes known hostnames while retaining unknown logs across rows and aggregates", async () => {
+      const scope = { excludedHostnames: ["blocky-instance-1"] };
+      const expected = seedData.filter(
+        (entry) => entry.hostname !== "blocky-instance-1",
+      );
+      const recent = entriesInRange("24h").filter(
+        (entry) => entry.hostname !== "blocky-instance-1",
+      );
+      const [rows, count, chart, domains, clients, types] = await Promise.all([
+        provider.getQueryLogRows({ ...scope, limit: 100, offset: 0 }),
+        provider.getQueryLogCount(scope),
+        provider.getQueriesOverTime({ ...scope, range: "24h" }),
+        provider.getTopDomains({
+          ...scope,
+          range: "24h",
+          offset: 0,
+          filter: "all",
+        }),
+        provider.getTopClients({
+          ...scope,
+          range: "24h",
+          offset: 0,
+          filter: "all",
+        }),
+        provider.getQueryTypesBreakdown("24h", scope),
+      ]);
+      expect(count).toBe(expected.length);
+      expect(rows).toHaveLength(expected.length);
+      expect(rows.some((entry) => entry.hostname === null)).toBe(true);
+      expect(
+        rows.every((entry) => entry.hostname !== "blocky-instance-1"),
+      ).toBe(true);
+      expect(chart.reduce((sum, bucket) => sum + bucket.total, 0)).toBe(
+        recent.length,
+      );
+      expect(domains.items.reduce((sum, item) => sum + item.count, 0)).toBe(
+        recent.length,
+      );
+      expect(clients.items.reduce((sum, item) => sum + item.total, 0)).toBe(
+        recent.length,
+      );
+      expect(types.reduce((sum, item) => sum + item.count, 0)).toBe(
+        recent.length,
+      );
+      expect(await provider.getQueryLogCount({})).toBe(seedData.length);
+    });
+
     describe("getQueryLogs", () => {
+      it("applies an ID boundary to both row reads and counts", async () => {
+        const snapshot = await provider.getQueryLogSnapshot?.();
+
+        if (snapshot === undefined) {
+          return;
+        }
+
+        const all = await provider.getQueryLogRows({
+          offset: 0,
+          limit: seedData.length,
+        });
+        const maxId = Math.floor(snapshot / 2);
+        const expected = all.filter((row) => (row.id ?? 0) <= maxId);
+        const [rows, count] = await Promise.all([
+          provider.getQueryLogRows({ maxId, offset: 2, limit: 5 }),
+          provider.getQueryLogCount({ maxId }),
+        ]);
+
+        expect(rows).toEqual(expected.slice(2, 7));
+        expect(count).toBe(expected.length);
+      });
+
+      it("counts scoped records at inclusive timestamp boundaries for indexed pagination", async () => {
+        if (!provider.getQueryLogCountSince) {
+          return;
+        }
+
+        const filters = {
+          excludedHostnames: ["blocky-instance-1"],
+          questionType: "A",
+        };
+        const rows = await provider.getQueryLogRows({
+          ...filters,
+          offset: 0,
+          limit: seedData.length,
+        });
+
+        for (const row of rows.slice(0, 5)) {
+          const timestamp = new Date(
+            normalizeLogTimestamp(row.requestTs) ?? 0,
+          ).getTime();
+
+          for (const delta of [0, 1]) {
+            const since = new Date(timestamp + delta);
+            const count = await provider.getQueryLogCountSince(filters, since);
+
+            expect(count).toBe(
+              rows.filter(
+                (entry) =>
+                  new Date(normalizeLogTimestamp(entry.requestTs) ?? 0) >=
+                  since,
+              ).length,
+            );
+          }
+        }
+      });
+
+      it.each(['"', "\\", "[", "|"])(
+        "treats %s as literal search text",
+        async (search) => {
+          const result = await provider.getQueryLogs({
+            limit: 10,
+            offset: 0,
+            search,
+          });
+          expect(result.totalCount).toBe(0);
+          expect(result.items).toEqual([]);
+        },
+      );
+
       it("returns all entries with correct totalCount", async () => {
         const result = await provider.getQueryLogs({ limit: 100, offset: 0 });
         expect(result.totalCount).toBe(seedData.length);
@@ -201,15 +359,6 @@ function defineProviderTests(providerName: string) {
         for (const item of result.items) {
           expect(item.clientName).not.toBeNull();
         }
-      });
-    });
-
-    describe("getStats24h", () => {
-      it("returns correct totalQueries and blocked", async () => {
-        const expected = countEntriesInRange(seedData, "24h");
-        const result = await provider.getStats24h();
-        expect(result.totalQueries).toBe(expected.total);
-        expect(result.blocked).toBe(expected.blocked);
       });
     });
 
@@ -663,108 +812,6 @@ function defineProviderTests(providerName: string) {
         expect(totalPercentage).toBeCloseTo(100, 0);
       });
     });
-
-    describe("searchDomains", () => {
-      it("partial match with correct count", async () => {
-        const result = await provider.searchDomains({
-          range: "30d",
-          query: "google",
-          limit: 10,
-        });
-        const googleEntry = result.find((r) => r.domain === "google.com");
-        expect(googleEntry).toBeDefined();
-        const expectedCount = entriesInRange("30d").filter(
-          (e) => e.questionName === "google.com",
-        ).length;
-        expect(googleEntry?.count).toBe(expectedCount);
-      });
-
-      it("case-insensitive", async () => {
-        const result = await provider.searchDomains({
-          range: "30d",
-          query: "GITHUB",
-          limit: 10,
-        });
-        const domains = result.map((r) => r.domain);
-        expect(domains).toContain("GitHub.com");
-      });
-
-      it("respects limit", async () => {
-        const result = await provider.searchDomains({
-          range: "30d",
-          query: "o",
-          limit: 2,
-        });
-        expect(result.length).toBeLessThanOrEqual(2);
-      });
-
-      it("query containing a dot must not produce backslash sequences that break VictoriaLogs", async () => {
-        const result = await provider.searchDomains({
-          range: "30d",
-          query: "google.com",
-          limit: 10,
-        });
-        const googleEntry = result.find((r) => r.domain === "google.com");
-        expect(googleEntry).toBeDefined();
-        const expectedCount = entriesInRange("30d").filter(
-          (e) => e.questionName === "google.com",
-        ).length;
-        expect(googleEntry?.count).toBe(expectedCount);
-      });
-
-      it("empty query returns empty array", async () => {
-        const result = await provider.searchDomains({
-          range: "30d",
-          query: "",
-          limit: 10,
-        });
-        expect(result).toHaveLength(0);
-      });
-    });
-
-    describe("searchClients", () => {
-      it("partial match with correct count", async () => {
-        const result = await provider.searchClients({
-          range: "30d",
-          query: "lap",
-          limit: 10,
-        });
-        const laptopEntry = result.find((r) => r.client === "laptop");
-        expect(laptopEntry).toBeDefined();
-        const expectedCount = entriesInRange("30d").filter(
-          (e) => e.clientName === "laptop",
-        ).length;
-        expect(laptopEntry?.count).toBe(expectedCount);
-      });
-
-      it("case-insensitive", async () => {
-        const result = await provider.searchClients({
-          range: "30d",
-          query: "PHONE",
-          limit: 10,
-        });
-        const clients = result.map((r) => r.client);
-        expect(clients).toContain("Phone");
-      });
-
-      it("respects limit", async () => {
-        const result = await provider.searchClients({
-          range: "30d",
-          query: "e",
-          limit: 1,
-        });
-        expect(result.length).toBeLessThanOrEqual(1);
-      });
-
-      it("empty query returns empty array", async () => {
-        const result = await provider.searchClients({
-          range: "30d",
-          query: "",
-          limit: 10,
-        });
-        expect(result).toHaveLength(0);
-      });
-    });
   });
 }
 
@@ -776,6 +823,23 @@ defineProviderTests("csv-client");
 defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
+  it("aligns chart buckets and counts across database, file, and console sources", async () => {
+    const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now());
+    try {
+      const charts = await Promise.all(
+        [...providers.values()].map((provider) =>
+          provider.getQueriesOverTime({ range: "24h" }),
+        ),
+      );
+      const baseline = charts[0];
+      for (const chart of charts.slice(1)) {
+        expect(chart).toEqual(baseline);
+      }
+    } finally {
+      clock.mockRestore();
+    }
+  });
+
   const providerNames = [
     "mysql",
     "postgres",
@@ -898,15 +962,6 @@ describe("cross-provider consistency", () => {
     });
   });
 
-  it("getStats24h returns identical results across all providers", async () => {
-    const results = await queryAllProviders((p) => p.getStats24h());
-
-    compareAcrossProviders(results, (baseline, current) => {
-      expect(current.totalQueries).toBe(baseline.totalQueries);
-      expect(current.blocked).toBe(baseline.blocked);
-    });
-  });
-
   it("getQueriesOverTime totals match across all providers", async () => {
     for (const range of ["1h", "24h", "7d", "30d"] as const) {
       const results = await queryAllProviders((p) =>
@@ -927,40 +982,6 @@ describe("cross-provider consistency", () => {
         expect(currentTotals.total).toBe(baselineTotals.total);
         expect(currentTotals.blocked).toBe(baselineTotals.blocked);
         expect(currentTotals.cached).toBe(baselineTotals.cached);
-      });
-    }
-  });
-
-  it("searchDomains returns identical results across all providers", async () => {
-    for (const query of ["google", "blocked", "GITHUB", "google.com"]) {
-      const results = await queryAllProviders((p) =>
-        p.searchDomains({ range: "30d", query, limit: 100 }),
-      );
-
-      compareAcrossProviders(results, (baseline, current) => {
-        expect(current.map((e) => e.domain)).toEqual(
-          baseline.map((e) => e.domain),
-        );
-        for (let j = 0; j < baseline.length; j++) {
-          expect(current[j]?.count).toBe(baseline[j]?.count);
-        }
-      });
-    }
-  });
-
-  it("searchClients returns identical results across all providers", async () => {
-    for (const query of ["lap", "Phone", "server"]) {
-      const results = await queryAllProviders((p) =>
-        p.searchClients({ range: "30d", query, limit: 100 }),
-      );
-
-      compareAcrossProviders(results, (baseline, current) => {
-        expect(current.map((e) => e.client)).toEqual(
-          baseline.map((e) => e.client),
-        );
-        for (let j = 0; j < baseline.length; j++) {
-          expect(current[j]?.count).toBe(baseline[j]?.count);
-        }
       });
     }
   });

@@ -1,5 +1,7 @@
 "use client";
 
+import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
+import { useDashboardServers } from "~/components/dashboard/server-context";
 import { api } from "~/trpc/react";
 import { History, RefreshCw } from "lucide-react";
 import {
@@ -40,9 +42,23 @@ import {
 import { toast } from "sonner";
 import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 
-export function QueryLogs() {
+const serverColumns: typeof columns = [
+  { accessorKey: "hostname", header: "Server" },
+  ...columns,
+];
+
+export function QueryLogs({
+  showServerColumn = false,
+}: {
+  showServerColumn?: boolean;
+}) {
+  const dashboard = useDashboardServers();
+  const serverIds = dashboard.selection.selected("view");
+  const scopeKey = serverIds.join(",");
+  const [pageState, setPageState] = useState({ scopeKey, page: 0 });
+  const pageIndex = pageState.scopeKey === scopeKey ? pageState.page : 0;
+  const setPageIndex = (page: number) => setPageState({ scopeKey, page });
   const [filter, setFilter] = useState<QueryLogFilter>(null);
-  const [pageIndex, setPageIndex] = useState(0);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const [questionTypeFilter, setQuestionTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
@@ -80,27 +96,42 @@ export function QueryLogs() {
     questionType,
   };
 
+  const rows = api.logs.rows.useQuery(
+    { ...searchParams, limit: pageSize + 1, serverIds },
+    {
+      refetchOnWindowFocus: autoRefresh,
+      refetchInterval: autoRefresh ? 30_000 : false,
+    },
+  );
+  const count = api.logs.count.useQuery(
+    { search, client, responseType, questionType, serverIds },
+    {
+      refetchOnWindowFocus: autoRefresh,
+      refetchInterval: autoRefresh ? 30_000 : false,
+    },
+  );
+  useLogDiagnostics("rows", rows.data?.diagnostics);
+  useLogDiagnostics("count", count.data?.diagnostics);
+  const queryLogsData = rows.data && {
+    items: rows.data.items.slice(0, pageSize).map((item) => ({
+      ...item,
+      hostname:
+        dashboard.servers.find((server) => server.id === item.serverId)?.name ??
+        "Unknown",
+    })),
+    totalCount:
+      rows.data.diagnostics.length || count.data?.diagnostics.length
+        ? undefined
+        : count.data?.totalCount,
+  };
   const {
-    data: queryLogsData,
     isFetching: isFetchingLogs,
     isLoading: isLoadingLogs,
     isPlaceholderData: isPlaceholderLogs,
-    refetch,
     error,
-  } = api.blocky.getQueryLogs.useQuery(searchParams, {
-    placeholderData: (previousData) => {
-      if (previousData === undefined) {
-        return undefined;
-      }
-
-      return {
-        items: [],
-        totalCount: previousData.totalCount,
-      };
-    },
-    refetchOnWindowFocus: autoRefresh,
-    refetchInterval: autoRefresh ? 30_000 : false,
-  });
+  } = rows;
+  const refetch = () => Promise.all([rows.refetch(), count.refetch()]);
+  const hasNextPage = (rows.data?.items.length ?? 0) > pageSize;
 
   const handleAutoRefreshChange = (enabled: boolean) => {
     setAutoRefresh(enabled);
@@ -120,22 +151,23 @@ export function QueryLogs() {
     }
   }, [error]);
 
-  const pageCount = Math.ceil((queryLogsData?.totalCount ?? 0) / pageSize);
+  const pageCount =
+    queryLogsData?.totalCount === undefined
+      ? undefined
+      : Math.ceil(queryLogsData.totalCount / pageSize);
   const showLogsLoading = isLoadingLogs || isPlaceholderLogs;
   const utils = api.useUtils();
 
   usePrefetchAdjacentPages({
     enabled: !isFetchingLogs && queryLogsData !== undefined,
     currentPage: pageIndex,
-    totalPages: pageCount,
+    totalPages: pageCount ?? 0,
     prefetchPage: (targetPage) => {
-      void utils.blocky.getQueryLogs.prefetch({
-        search,
-        client,
-        limit: pageSize,
+      void utils.logs.rows.prefetch({
+        ...searchParams,
+        serverIds,
+        limit: pageSize + 1,
         offset: targetPage * pageSize,
-        responseType,
-        questionType,
       });
     },
   });
@@ -235,9 +267,10 @@ export function QueryLogs() {
       </CardHeader>
       <CardContent>
         <DataTable
-          columns={columns}
+          columns={showServerColumn ? serverColumns : columns}
           data={queryLogsData?.items ?? []}
           pageCount={pageCount}
+          hasNextPage={hasNextPage}
           pageIndex={pageIndex}
           onPageChange={setPageIndex}
           pageSize={pageSize}

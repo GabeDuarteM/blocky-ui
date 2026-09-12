@@ -51,5 +51,19 @@
       "matchPackageNames": ["@tanstack/react-query"],
       "schedule": ["every 1 week on friday"]
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^scripts/log-data/__tests__/.*\\.ts$/",
+        "/^src/server/logs/__tests__/.*\\.ts$/"
+      ],
+      "matchStrings": [
+        "[\"\\'](?<depName>[a-z][a-z0-9./_-]*):(?<currentValue>v?[0-9][a-zA-Z0-9._-]*)[\"\\']"
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
   ]
 }

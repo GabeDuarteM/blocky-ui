@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { Globe, ListOrdered, Users, type LucideIcon } from "lucide-react";
 
-import { api } from "~/trpc/react";
+import { useDashboardServers } from "~/components/dashboard/server-context";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "~/components/ui/select";
 import {
   TopListCard,
   TopListEntry,
@@ -83,7 +90,16 @@ function StatisticsTopList({
 
 export function StatisticsTopLists() {
   const [domainFilter, setDomainFilter] = useState<TopListFilter>("all");
-  const { data: snapshot, isLoading } = api.stats.snapshot.useQuery();
+  const dashboard = useDashboardServers();
+  const [serverId, setServerId] = useState<string>();
+  const available =
+    dashboard.statistics?.flatMap((result) =>
+      result.success ? [{ serverId: result.serverId, data: result.data }] : [],
+    ) ?? [];
+  const current =
+    available.find((result) => result.serverId === serverId) ?? available[0];
+  const snapshot = current?.data;
+  const isLoading = dashboard.statisticsLoading;
 
   if (!isLoading && !snapshot) {
     return null;
@@ -101,6 +117,27 @@ export function StatisticsTopLists() {
     <TopListsSection
       description="Most active domains and clients in the last 24 hours"
       icon={ListOrdered}
+      controls={
+        available.length > 1 ? (
+          <Select value={current?.serverId} onValueChange={setServerId}>
+            <SelectTrigger
+              aria-label="Top lists server"
+              className="w-full sm:w-48"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {available.map((result) => (
+                <SelectItem key={result.serverId} value={result.serverId}>
+                  {dashboard.servers.find(
+                    (server) => server.id === result.serverId,
+                  )?.name ?? result.serverId}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : undefined
+      }
     >
       <StatisticsTopList
         title="Top Domains"

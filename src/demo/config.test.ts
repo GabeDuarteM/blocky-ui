@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_DEMO_CONFIGURATION,
   DEMO_CONFIGURATION_HEADER,
+  DEMO_SERVER_COUNT_HEADER,
+  DEMO_SERVER_COUNTS,
   getDemoConfiguration,
   getDemoConfigurationFromHeaders,
   serializeDemoConfiguration,
@@ -9,6 +11,7 @@ import {
 } from "~/demo/config";
 
 const NO_SERVICES: DemoConfiguration = {
+  serverCount: 1,
   services: {
     blockyApi: false,
     statistics: false,
@@ -17,6 +20,7 @@ const NO_SERVICES: DemoConfiguration = {
 };
 
 const API_AND_LOGS: DemoConfiguration = {
+  serverCount: 1,
   services: {
     blockyApi: true,
     statistics: false,
@@ -25,6 +29,19 @@ const API_AND_LOGS: DemoConfiguration = {
 };
 
 describe("demo configuration", () => {
+  it.each(DEMO_SERVER_COUNTS)("reads a server count of %s", (count) => {
+    const headers = new Headers({ [DEMO_SERVER_COUNT_HEADER]: String(count) });
+    expect(getDemoConfigurationFromHeaders(headers).serverCount).toBe(count);
+  });
+
+  it.each(["0", "4", "1000000", "invalid"])(
+    "rejects unsupported count %s",
+    (count) => {
+      const headers = new Headers({ [DEMO_SERVER_COUNT_HEADER]: count });
+      expect(getDemoConfigurationFromHeaders(headers).serverCount).toBe(1);
+    },
+  );
+
   it.each([
     [DEFAULT_DEMO_CONFIGURATION, "blockyApi,statistics,queryLogs"],
     [API_AND_LOGS, "blockyApi,queryLogs"],
@@ -54,6 +71,7 @@ describe("demo configuration", () => {
     });
 
     expect(getDemoConfigurationFromHeaders(headers)).toEqual({
+      serverCount: 1,
       services: {
         blockyApi: false,
         statistics: true,
