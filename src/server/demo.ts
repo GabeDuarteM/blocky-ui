@@ -11,6 +11,7 @@ import { DemoLogProvider } from "~/server/logs/demo-provider";
 function createDemoScenario(count: DemoServerCount) {
   const servers = demoServers(count);
   const configuration: Configuration = {
+    demoMode: true,
     servers: Object.fromEntries(
       servers.map(({ id, name }) => [
         id,

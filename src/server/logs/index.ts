@@ -1,4 +1,3 @@
-import { env } from "~/env";
 import { getConfiguration } from "~/server/config";
 import { createLogCoordinator } from "~/server/logs/coordinator";
 import { DemoLogProvider } from "~/server/logs/demo-provider";
@@ -9,7 +8,7 @@ export function getLogCoordinator() {
   coordinator ??= getConfiguration().then((configuration) =>
     createLogCoordinator(
       configuration,
-      env.DEMO_MODE ? async () => new DemoLogProvider() : undefined,
+      configuration.demoMode ? async () => new DemoLogProvider() : undefined,
     ),
   );
 

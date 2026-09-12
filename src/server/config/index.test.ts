@@ -14,6 +14,7 @@ beforeEach(async () => {
   vi.stubEnv("QUERY_LOG_TARGET", "/legacy/logs");
   vi.stubEnv("QUERY_LOG_CONSOLE_PROVIDER", "");
   vi.stubEnv("DEMO_MODE", "false");
+  vi.stubEnv("INSTANCE_NAME", "Legacy name");
 });
 afterEach(async () => {
   vi.unstubAllEnvs();
@@ -24,6 +25,8 @@ describe("configuration loading", () => {
   it("keeps existing environment-only deployments working", async () => {
     const { getConfiguration } = await import("~/server/config");
     const config = await getConfiguration();
+    expect(config.instanceName).toBe("Legacy name");
+    expect(config.demoMode).toBe(false);
     expect(config.servers.default).toMatchObject({
       url: "http://legacy:4000",
       headers: { Authorization: "test-only" },
@@ -49,12 +52,38 @@ describe("configuration loading", () => {
       headers: {},
     });
     expect(config.logSources).toEqual({});
+    expect(config.instanceName).toBeUndefined();
+    expect(config.demoMode).toBe(false);
     await writeFile(
       path,
       "servers:\n  changed: {url: 'http://changed:4000'}\n",
     );
     expect(await getConfiguration()).toBe(config);
   });
+
+  it.each([true, false])(
+    "loads demoMode=%s and the tab name from YAML",
+    async (demoMode) => {
+      const path = join(directory, "blocky-ui.yml");
+
+      await writeFile(
+        path,
+        `instanceName: Home DNS
+demoMode: ${demoMode}
+servers:
+  nas: {url: 'http://configured:4000'}
+`,
+      );
+      vi.stubEnv("BLOCKY_UI_CONFIG", path);
+      vi.stubEnv("DEMO_MODE", String(!demoMode));
+
+      const { getConfiguration } = await import("~/server/config");
+      const config = await getConfiguration();
+
+      expect(config.instanceName).toBe("Home DNS");
+      expect(config.demoMode).toBe(demoMode);
+    },
+  );
 
   it("does not silently fall back when the configured file is missing", async () => {
     vi.stubEnv("BLOCKY_UI_CONFIG", join(directory, "missing.yml"));
@@ -68,6 +97,7 @@ describe("configuration loading", () => {
     vi.stubEnv("DEMO_MODE", "true");
     vi.stubEnv("QUERY_LOG_TARGET", "");
     const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).demoMode).toBe(true);
     expect((await getConfiguration()).servers.default?.logs).toEqual({
       source: "default",
     });

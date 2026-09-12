@@ -32,6 +32,8 @@ logSources:
 
   it.each([
     "servers: {}",
+    "servers: {one: {url: 'http://one'}}\ndemoMode: yes",
+    "servers: {one: {url: 'http://one'}}\ninstanceName: 42",
     "servers: {one: {url: file:///private}}",
     "servers: {one: {url: 'http://one', logs: {source: missing}}}",
     "servers: {one: {url: 'http://one', urls: 'http://two'}}",

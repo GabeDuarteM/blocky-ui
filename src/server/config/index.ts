@@ -28,6 +28,8 @@ async function loadConfiguration(): Promise<Configuration> {
         }
       : undefined;
   return parseConfiguration({
+    instanceName: env.INSTANCE_NAME,
+    demoMode: env.DEMO_MODE,
     servers: {
       default: {
         name: env.INSTANCE_NAME ?? "Blocky",

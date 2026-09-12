@@ -6,7 +6,6 @@ const { getConfiguration, initializeLogSource } = vi.hoisted(() => ({
   initializeLogSource: vi.fn(),
 }));
 
-vi.mock("~/env", () => ({ env: { DEMO_MODE: false } }));
 vi.mock("~/server/config", () => ({ getConfiguration }));
 vi.mock("~/server/logs/factory", () => ({ initializeLogSource }));
 

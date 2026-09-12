@@ -14,7 +14,6 @@ import { createBlockyServers } from "~/server/blocky/servers";
 import { getDemoScenario } from "~/server/demo";
 import { getConfiguration } from "~/server/config";
 import { getLogCoordinator } from "~/server/logs";
-import { env } from "~/env";
 import {
   DEFAULT_DEMO_CONFIGURATION,
   type DemoService,
@@ -34,15 +33,16 @@ import {
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
-  const demoConfiguration = env.DEMO_MODE
+  const configured = await getConfiguration();
+  const demoConfiguration = configured.demoMode
     ? getDemoConfigurationFromHeaders(opts.headers)
     : DEFAULT_DEMO_CONFIGURATION;
   const isDemoServiceAvailable = (service: DemoService) =>
     demoConfiguration.services[service];
-  const scenario = env.DEMO_MODE
+  const scenario = configured.demoMode
     ? getDemoScenario(demoConfiguration.serverCount)
     : undefined;
-  const configuration = scenario?.configuration ?? (await getConfiguration());
+  const configuration = scenario?.configuration ?? configured;
 
   return {
     configuration,

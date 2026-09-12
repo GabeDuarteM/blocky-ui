@@ -37,6 +37,8 @@ const sourceSchema = z
 
 const configurationSchema = z
   .strictObject({
+    instanceName: z.string().min(1).optional(),
+    demoMode: z.boolean().default(false),
     servers: z
       .record(
         idSchema,

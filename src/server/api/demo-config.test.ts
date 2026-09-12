@@ -9,8 +9,16 @@ vi.mock("~/env", () => ({
   env: {
     BLOCKY_API_URL: "http://localhost:4000",
     BLOCKY_REQUEST_HEADERS: undefined,
-    DEMO_MODE: true,
+    DEMO_MODE: false,
   },
+}));
+
+vi.mock("~/server/config", () => ({
+  getConfiguration: async () => ({
+    demoMode: true,
+    servers: { configured: { url: "http://configured:4000", headers: {} } },
+    logSources: {},
+  }),
 }));
 
 import { serversRouter } from "~/server/api/routers/servers";
