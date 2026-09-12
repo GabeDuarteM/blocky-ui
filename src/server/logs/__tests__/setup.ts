@@ -157,6 +157,9 @@ async function setupMysql(entries: LogEntry[]): Promise<{
 }> {
   const container = await new MySqlContainer("mysql:8.0")
     .withDatabase("test_db")
+    // Podman lists the image's X Protocol port even when it is not mapped.
+    // Testcontainers waits for every listed port, so map this one as well.
+    .withExposedPorts(33060)
     .start();
 
   try {
@@ -188,6 +191,14 @@ async function setupPostgres(entries: LogEntry[]): Promise<{
 }> {
   const container = await new PostgreSqlContainer("postgres:16")
     .withDatabase("test_db")
+    // Rootless Podman may not run the engine's scheduled health checks.
+    // Wait for the temporary and final servers, and the final TCP listener.
+    .withWaitStrategy(
+      Wait.forAll([
+        Wait.forLogMessage("database system is ready to accept connections", 2),
+        Wait.forListeningPorts(),
+      ]),
+    )
     .start();
 
   try {

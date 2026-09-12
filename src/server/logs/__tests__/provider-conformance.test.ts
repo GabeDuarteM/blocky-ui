@@ -13,7 +13,7 @@ beforeAll(async () => {
   providers = result.providers;
   cleanup = result.cleanup;
   seedData = result.seedData;
-}, 60_000);
+}, 300_000);
 
 afterAll(async () => {
   await cleanup();
