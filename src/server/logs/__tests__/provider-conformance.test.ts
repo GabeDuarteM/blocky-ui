@@ -8,7 +8,6 @@ let providers: Map<string, LogProvider>;
 let cleanup: () => Promise<void> = async () => {};
 let seedData: LogEntry[];
 
-// Cold images and Podman's vfs storage can take several minutes to prepare.
 beforeAll(async () => {
   const result = await setupProviders();
   providers = result.providers;

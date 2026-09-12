@@ -13,7 +13,6 @@ FROM deps AS builder
 COPY . .
 RUN bun run build
 
-# Prepare better-sqlite3 on the target platform; the Next.js build runs on amd64.
 FROM node:22-alpine AS native-sqlite
 WORKDIR /app
 ARG BETTER_SQLITE3_VERSION
