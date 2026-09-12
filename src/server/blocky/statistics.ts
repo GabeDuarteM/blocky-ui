@@ -1,6 +1,8 @@
 import { z } from "zod";
 
+import { env } from "~/env";
 import { blockyApi } from "~/server/blocky/client";
+import { withoutLocalDiscoveryDomains } from "~/server/blocky/local-discovery";
 
 const countByNameSchema = z.record(z.string(), z.number());
 
@@ -47,7 +49,10 @@ export async function fetchBlockyStatistics(): Promise<BlockyStatistics | null> 
   }
 }
 
-export function createStatisticsSnapshot(statistics: BlockyStatistics) {
+export function createStatisticsSnapshot(
+  statistics: BlockyStatistics,
+  hideLocalDiscovery: boolean = env.HIDE_LOCAL_DISCOVERY_DOMAINS,
+) {
   const { summary } = statistics;
   const blockedPercentage =
     summary.queries > 0 ? (summary.blocked / summary.queries) * 100 : 0;
@@ -75,8 +80,14 @@ export function createStatisticsSnapshot(statistics: BlockyStatistics) {
       allowlistDomains,
     },
     topLists: {
-      domains: statistics.topDomains,
-      blockedDomains: statistics.topBlockedDomains,
+      // Only the top lists are filtered. The summary counts above still reflect
+      // every query blocky answered.
+      domains: hideLocalDiscovery
+        ? withoutLocalDiscoveryDomains(statistics.topDomains)
+        : statistics.topDomains,
+      blockedDomains: hideLocalDiscovery
+        ? withoutLocalDiscoveryDomains(statistics.topBlockedDomains)
+        : statistics.topBlockedDomains,
       clients: statistics.topClients,
     },
   };

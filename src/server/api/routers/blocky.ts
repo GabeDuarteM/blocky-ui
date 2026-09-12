@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { env } from "~/env";
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   BLOCKY_API_UNAVAILABLE_MESSAGE,
@@ -119,6 +120,11 @@ export const blockyRouter = createTRPCRouter({
 
       return parseBlockyQueryResult(data);
     }),
+  features: publicProcedure.query(() => ({
+    // Only when the operator opts in does the UI offer the toggle.
+    localDiscoveryFilter: env.HIDE_LOCAL_DISCOVERY_DOMAINS,
+  })),
+
   getQueryLogs: publicProcedure
     .input(
       z
@@ -129,6 +135,7 @@ export const blockyRouter = createTRPCRouter({
           responseType: z.enum(BLOCKY_RESPONSE_TYPES).optional(),
           client: z.string().optional(),
           questionType: z.enum(BLOCKY_DNS_RECORD_TYPES).optional(),
+          hideLocalDiscovery: z.boolean().optional(),
         })
         .optional(),
     )
@@ -144,6 +151,7 @@ export const blockyRouter = createTRPCRouter({
         responseType: input?.responseType,
         client: input?.client,
         questionType: input?.questionType,
+        hideLocalDiscovery: input?.hideLocalDiscovery,
       });
     }),
 });

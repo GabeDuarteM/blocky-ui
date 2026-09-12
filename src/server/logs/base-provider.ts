@@ -116,10 +116,16 @@ export abstract class BaseMemoryLogProvider implements LogProvider {
     limit: number;
     offset: number;
     filter: "all" | "blocked";
+    hideLocalDiscovery?: boolean;
   }): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const entries = await this.getEntriesInRange(options.range);
     const filtered = filterByBlocked(entries, options.filter);
-    return aggregateTopDomains(filtered, options.limit, options.offset);
+    return aggregateTopDomains(
+      filtered,
+      options.limit,
+      options.offset,
+      options.hideLocalDiscovery,
+    );
   }
 
   async getTopClients(options: {

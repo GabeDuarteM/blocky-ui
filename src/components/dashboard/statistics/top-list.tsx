@@ -90,6 +90,8 @@ interface TopListCardProps {
   description: string;
   icon: LucideIcon;
   filterControls?: TopListFilterControls;
+  /** Rendered beside the all/blocked toggle in the card header. */
+  headerExtra?: ReactNode;
   isLoading: boolean;
   isEmpty: boolean;
   skeletonRows: number;
@@ -102,6 +104,7 @@ export function TopListCard({
   description,
   icon: Icon,
   filterControls,
+  headerExtra,
   isLoading,
   isEmpty,
   skeletonRows,
@@ -137,6 +140,7 @@ export function TopListCard({
             </CardTitle>
             <CardDescription>{description}</CardDescription>
           </div>
+          {headerExtra}
           {filterControls ? <TopListFilterToggle {...filterControls} /> : null}
         </div>
       </CardHeader>
