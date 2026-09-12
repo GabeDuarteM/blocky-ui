@@ -1,10 +1,11 @@
 import { defineConfig, globalIgnores } from "eslint/config";
+import { fixupConfigRules } from "@eslint/compat";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 // @ts-expect-error -- no types for this plugin
 import drizzle from "eslint-plugin-drizzle";
 
-export default defineConfig([
+const config = defineConfig([
   ...nextVitals,
   ...nextTs,
   globalIgnores([
@@ -66,3 +67,6 @@ export default defineConfig([
     },
   },
 ]);
+
+// Preserve plugin rules that still use APIs removed in ESLint 10.
+export default defineConfig(fixupConfigRules(config));

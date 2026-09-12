@@ -13,21 +13,21 @@ FROM deps AS builder
 COPY . .
 RUN bun run build
 
-# Build better-sqlite3 on the target platform; the Next.js build runs on amd64 and would otherwise trace the wrong native addon.
+# Select better-sqlite3's bundled addon on the target platform; the Next.js build runs on amd64.
 FROM node:22-alpine AS native-sqlite
 WORKDIR /app
 ARG BETTER_SQLITE3_VERSION
 RUN test -n "${BETTER_SQLITE3_VERSION}" \
-  && apk add --no-cache --virtual .build-deps g++ make python3 \
-  && npm_config_build_from_source=true npm install \
+  && npm install \
     --no-save \
     --omit=dev \
+    --ignore-scripts \
     --package-lock=false \
     "better-sqlite3@${BETTER_SQLITE3_VERSION}" \
   && mkdir /native \
-  && cp node_modules/better-sqlite3/build/Release/better_sqlite3.node /native/ \
-  && rm -rf node_modules /root/.cache /root/.npm \
-  && apk del .build-deps
+  && node -e 'const db = require("better-sqlite3")(); db.prepare("SELECT 1").get(); db.close()' \
+  && cp "node_modules/better-sqlite3/prebuilds/linuxmusl-$(node -p process.arch).node" /native/ \
+  && rm -rf node_modules /root/.cache /root/.npm
 
 FROM node:22-alpine AS runner
 WORKDIR /app
@@ -42,8 +42,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=native-sqlite --chown=nextjs:nodejs \
-  /native/better_sqlite3.node \
-  ./node_modules/better-sqlite3/build/Release/better_sqlite3.node
+  /native/ \
+  ./node_modules/better-sqlite3/prebuilds/
 
 USER nextjs
 

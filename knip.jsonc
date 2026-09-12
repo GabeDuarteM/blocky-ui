@@ -4,8 +4,9 @@
   "ignoreBinaries": ["podman"],
   "ignoreExportsUsedInFile": {
     "interface": true,
-    "type": true
+    "type": true,
   },
   "tags": ["-knipignore"],
-  "ignoreDependencies": ["server-only"]
+  // Bun invokes node-gyp implicitly when installing better-sqlite3.
+  "ignoreDependencies": ["server-only", "node-gyp"],
 }
