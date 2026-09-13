@@ -37,6 +37,9 @@ yarn-error.log*
 .env
 .env*.local
 
+blocky-ui*.y*ml
+!blocky-ui.example.yml
+
 # vercel
 .vercel
 

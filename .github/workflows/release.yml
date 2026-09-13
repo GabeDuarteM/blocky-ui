@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       published: ${{ steps.changesets.outputs.published }}
-      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
+      publishedPackages: ${{ steps.changesets.outputs.published-packages }}
     permissions:
       contents: write
       packages: write
@@ -35,19 +35,18 @@ jobs:
 
       - name: Create Release Pull Request
         id: changesets
-        uses: changesets/action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: changesets/action@v2
         with:
-          publish: bun changeset publish
-          commit: "chore: update versions"
-          title: "Release new version"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          publish-script: bun changeset publish
+          commit-message: "chore: update versions"
+          pr-title: "Release new version"
 
       - name: Fix collaborator handles in release notes
         if: steps.changesets.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
           set -euo pipefail
           for version in $(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[].version'); do
