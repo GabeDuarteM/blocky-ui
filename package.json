@@ -80,7 +80,7 @@
     "eslint": "10.10.0",
     "eslint-config-next": "16.3.5",
     "eslint-plugin-drizzle": "0.2.3",
-    "jscpd": "5.0.14",
+    "jscpd": "5.2.0",
     "knip": "6.29.0",
     "msw": "2.15.0",
     "node-gyp": "12.2.0",
