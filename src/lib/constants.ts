@@ -28,6 +28,7 @@ export function isDnsRecordType(value: string): value is DnsRecordType {
 export const BLOCKY_RESPONSE_TYPES = [
   "RESOLVED",
   "BLOCKED",
+  "REBIND",
   "CACHED",
   "CONDITIONAL",
   "CUSTOMDNS",
