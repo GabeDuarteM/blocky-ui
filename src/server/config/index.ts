@@ -8,16 +8,40 @@ import {
 
 let configuration: Promise<Configuration> | undefined;
 
+async function readConfigurationFile(path: string, setting: string) {
+  try {
+    return await readFile(path, "utf8");
+  } catch {
+    throw new Error(`Cannot read the file configured by ${setting}`);
+  }
+}
+
 async function loadConfiguration(): Promise<Configuration> {
   if (env.BLOCKY_UI_CONFIG) {
-    let contents: string;
-    try {
-      contents = await readFile(env.BLOCKY_UI_CONFIG, "utf8");
-    } catch {
-      throw new Error("Cannot read the file configured by BLOCKY_UI_CONFIG");
+    const contents = await readConfigurationFile(
+      env.BLOCKY_UI_CONFIG,
+      "BLOCKY_UI_CONFIG",
+    );
+    const config = parseConfigurationYaml(contents);
+
+    for (const [id, source] of Object.entries(config.logSources)) {
+      const prefix = /^file:(?:\/\/)?/.exec(source.target);
+
+      if (!prefix) {
+        continue;
+      }
+
+      source.target = (
+        await readConfigurationFile(
+          source.target.slice(prefix[0].length),
+          `logSources.${id}.target`,
+        )
+      ).replace(/\r?\n$/, "");
     }
-    return parseConfigurationYaml(contents);
+
+    return parseConfiguration(config);
   }
+
   const logSource = env.DEMO_MODE
     ? { type: "csv", target: "demo" }
     : env.QUERY_LOG_TYPE

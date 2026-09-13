@@ -42,6 +42,8 @@ logSources:
   home:
     type: mysql
     target: mysql://blocky:change-me@database:3306/blocky
+    # Use file:/path to read the complete target from a secret file.
+    # target: file:/run/secrets/query_log_target
 
   # PostgreSQL and Timescale use PostgreSQL connection URLs.
   # postgres:
