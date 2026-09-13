@@ -83,11 +83,13 @@ export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
         tooltipContent = `Resolved by: ${tooltipText}`;
       } else if (responseType === "BLOCKED") {
         tooltipContent = `Group: ${tooltipText}`;
+      } else if (responseType === "REBIND") {
+        tooltipContent = "Blocked by DNS rebinding protection";
       }
 
       let badgeVariant: BadgeVariants = "outline";
 
-      if (responseType === "BLOCKED") {
+      if (responseType === "BLOCKED" || responseType === "REBIND") {
         badgeVariant = "destructive";
       } else if (responseType === "RESOLVED") {
         badgeVariant = "default";
