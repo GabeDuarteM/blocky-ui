@@ -2,6 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
+import { type DatabaseSync } from "node:sqlite";
 import { type Pool } from "mysql2/promise";
 import { type Sql } from "postgres";
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
@@ -72,7 +73,7 @@ it("leaves shared SQLite connections open for their cache owner", async () => {
   const filePath = join(directory, "blocky.db");
   const seed = new Database(filePath);
   seed.close();
-  const connections = new Map<string, Database.Database>();
+  const connections = new Map<string, DatabaseSync>();
 
   try {
     const first = new SQLiteLogProvider({ filePath, connections });

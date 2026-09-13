@@ -241,7 +241,7 @@ export async function setupPostgres(entries: LogEntry[]): Promise<{
   }
 }
 
-function setupSqlite(entries: LogEntry[]): {
+export function setupSqlite(entries: LogEntry[]): {
   provider: SQLiteLogProvider;
   filePath: string;
 } {
