@@ -57,7 +57,7 @@
     "recharts": "3.10.1",
     "sonner": "2.0.8",
     "superjson": "2.2.6",
-    "tailwind-merge": "3.6.0",
+    "tailwind-merge": "3.7.0",
     "yaml": "2.9.1",
     "zod": "4.4.3"
   },
