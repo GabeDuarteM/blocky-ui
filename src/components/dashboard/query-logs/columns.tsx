@@ -1,6 +1,6 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, CoreFeatures } from "@tanstack/react-table";
 import type { LogEntry } from "~/server/logs/types";
 
 import {
@@ -27,7 +27,7 @@ function DomainCell({ domain }: DomainCellProps) {
   );
 }
 
-export const columns: ColumnDef<LogEntry>[] = [
+export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
   {
     accessorKey: "requestTs",
     header: "Time",

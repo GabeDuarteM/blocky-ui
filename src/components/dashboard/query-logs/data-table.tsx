@@ -2,11 +2,11 @@
 
 import {
   flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getSortedRowModel,
+  coreFeatures,
+  useTable,
   type ColumnDef,
-  type SortingState,
+  type CoreFeatures,
+  type RowData,
 } from "@tanstack/react-table";
 
 import {
@@ -27,11 +27,10 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
 import { PageNumbers } from "~/components/ui/page-numbers";
-import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData extends RowData> {
+  columns: ColumnDef<CoreFeatures, TData>[];
   data: TData[];
   pageCount?: number;
   hasNextPage?: boolean;
@@ -42,7 +41,7 @@ interface DataTableProps<TData, TValue> {
   isLoading: boolean;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   pageCount,
@@ -52,8 +51,7 @@ export function DataTable<TData, TValue>({
   pageSize,
   onPageSizeChange,
   isLoading,
-}: DataTableProps<TData, TValue>) {
-  const [sorting] = useState<SortingState>([]);
+}: DataTableProps<TData>) {
   const showPageCount =
     pageCount !== undefined &&
     pageIndex < Math.max(1, pageCount) &&
@@ -61,35 +59,13 @@ export function DataTable<TData, TValue>({
 
   const handlePageSizeChange = (value: string) => {
     onPageSizeChange(Number(value));
-    onPageChange(0); // Reset to first page when changing page size
+    onPageChange(0);
   };
 
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const table = useReactTable({
+  const table = useTable({
+    features: coreFeatures,
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    manualPagination: true,
-    pageCount,
-    state: {
-      sorting,
-      pagination: {
-        pageIndex,
-        pageSize,
-      },
-    },
-    onPaginationChange: (updater) => {
-      if (typeof updater === "function") {
-        const newState = updater({
-          pageIndex,
-          pageSize,
-        });
-        onPageChange(newState.pageIndex);
-      } else {
-        onPageChange(updater.pageIndex);
-      }
-    },
   });
 
   return (
@@ -119,7 +95,7 @@ export function DataTable<TData, TValue>({
               {isLoading ? (
                 Array.from({ length: pageSize }, (_, index) => (
                   <TableRow key={index} className="h-12">
-                    {table.getVisibleLeafColumns().map((column) => (
+                    {table.getAllLeafColumns().map((column) => (
                       <TableCell key={column.id}>
                         <Skeleton className="h-4 w-full" />
                       </TableCell>
@@ -138,7 +114,7 @@ export function DataTable<TData, TValue>({
               ) : (
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} className="h-12">
-                    {row.getVisibleCells().map((cell) => (
+                    {row.getAllCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
