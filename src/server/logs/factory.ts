@@ -1,6 +1,6 @@
 import { type createPool } from "mysql2/promise";
 import { type default as postgres } from "postgres";
-import { type default as Database } from "better-sqlite3";
+import { type DatabaseSync } from "node:sqlite";
 
 import { type Configuration } from "~/server/config/schema";
 import { type LogProvider } from "~/server/logs/types";
@@ -15,7 +15,7 @@ declare global {
     | {
         mysql: Map<string, ReturnType<typeof createPool>>;
         postgres: Map<string, ReturnType<typeof postgres>>;
-        sqlite: Map<string, Database.Database>;
+        sqlite: Map<string, DatabaseSync>;
       }
     | undefined;
 }

@@ -1,6 +1,6 @@
 import { sql, type Column, type SQL } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { DatabaseSync, type SQLInputValue } from "node:sqlite";
 
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { type TimeRange } from "~/lib/constants";
@@ -8,25 +8,34 @@ import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 import { logEntries } from "~/server/logs/sqlite/schema";
 
 export class SQLiteLogProvider extends BaseSqlLogProvider {
-  private readonly dbFile: Database.Database;
+  private readonly dbFile: DatabaseSync;
   private readonly ownsConnection: boolean;
 
   constructor(options: {
     filePath: string;
-    connections?: Map<string, Database.Database>;
+    connections?: Map<string, DatabaseSync>;
   }) {
     const dbFile = cachedConnection(
       options.filePath,
       options.connections,
       () =>
-        new Database(options.filePath, {
-          readonly: true,
-          fileMustExist: true,
+        new DatabaseSync(options.filePath, {
+          readOnly: true,
+          timeout: 5000,
         }),
     );
-    dbFile.pragma("busy_timeout = 5000");
 
-    const db = drizzle(dbFile, { schema: { logEntries } });
+    const db = drizzle(
+      async (query, params: SQLInputValue[], method) => {
+        if (method !== "all" && method !== "values") {
+          throw new Error("SQLite log queries must return rows");
+        }
+        const statement = dbFile.prepare(query);
+        statement.setReturnArrays(true);
+        return { rows: statement.all(...params) };
+      },
+      { schema: { logEntries } },
+    );
 
     super({
       db,

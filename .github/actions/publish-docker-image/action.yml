@@ -58,21 +58,6 @@ runs:
         username: ${{ inputs.dockerhub-username }}
         password: ${{ inputs.dockerhub-password }}
 
-    - name: Resolve native dependency versions
-      id: native-dependencies
-      shell: bash
-      working-directory: ${{ inputs.context }}
-      run: |
-        set -euo pipefail
-
-        better_sqlite3="$(jq -er '.dependencies["better-sqlite3"] | select(type == "string")' package.json)"
-        if [[ ! "${better_sqlite3}" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]]; then
-          echo "better-sqlite3 must use an exact semantic version" >&2
-          exit 1
-        fi
-
-        echo "better_sqlite3=${better_sqlite3}" >> "${GITHUB_OUTPUT}"
-
     - name: Configure build cache
       id: cache
       shell: bash
@@ -138,7 +123,6 @@ runs:
         push: true
         platforms: ${{ inputs.platforms }}
         build-args: |
-          BETTER_SQLITE3_VERSION=${{ steps.native-dependencies.outputs.better_sqlite3 }}
           BUILDER_PLATFORM=linux/amd64
         cache-from: ${{ steps.cache.outputs.from }}
         cache-to: ${{ steps.cache.outputs.to }}
