@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, relative } from "node:path";
+import { stringify } from "yaml";
+import { type Configuration } from "~/server/config/schema";
 
 let directory: string;
 beforeEach(async () => {
@@ -102,4 +104,149 @@ servers:
       source: "default",
     });
   });
+});
+
+async function useYamlLogSources(logSources: Configuration["logSources"]) {
+  const path = join(directory, "blocky-ui.yml");
+  await writeFile(
+    path,
+    stringify({
+      servers: {
+        nas: { url: "http://configured:4000", logs: { source: "home" } },
+      },
+      logSources,
+    }),
+  );
+  vi.stubEnv("BLOCKY_UI_CONFIG", path);
+}
+
+describe("YAML log target secrets", () => {
+  it.each([
+    "mysql",
+    "postgresql",
+    "timescale",
+    "sqlite",
+    "csv",
+    "csv-client",
+    "console",
+  ] as const)("resolves a file target for %s", async (type) => {
+    const path = join(directory, "target");
+    const target = "mysql://user:password@db/blocky";
+    await writeFile(path, target);
+    await useYamlLogSources({
+      home: {
+        type,
+        target: `file:${path}`,
+        ...(type === "console" ? { consoleProvider: "victorialogs" } : {}),
+      },
+    });
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toBe(target);
+  });
+
+  it.each(["file:", "file://"])("accepts the %s prefix", async (prefix) => {
+    const path = join(directory, "target with spaces");
+    await writeFile(path, "/data/query logs");
+    await useYamlLogSources({
+      home: { type: "csv", target: `${prefix}${path}` },
+    });
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toBe(
+      "/data/query logs",
+    );
+  });
+
+  it.each([
+    ["value", "value"],
+    ["value\n", "value"],
+    ["value\r\n", "value"],
+    ["value\n\n", "value\n"],
+    [" value \r\n", " value "],
+    ["value\r", "value\r"],
+  ])("matches Blocky's newline handling for %j", async (contents, expected) => {
+    const path = join(directory, "target");
+    await writeFile(path, contents);
+    await useYamlLogSources({ home: { type: "csv", target: `file:${path}` } });
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toBe(expected);
+  });
+
+  it("resolves relative paths from the working directory, as Blocky does", async () => {
+    const path = join(directory, "target");
+    await writeFile(path, "/data/logs");
+    await useYamlLogSources({
+      home: { type: "csv", target: `file:${relative(process.cwd(), path)}` },
+    });
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toBe(
+      "/data/logs",
+    );
+  });
+
+  it("resolves independent sources once and preserves inline targets", async () => {
+    const home = join(directory, "home");
+    const office = join(directory, "office");
+    await writeFile(home, "/home/logs");
+    await writeFile(office, "/office/logs");
+    await useYamlLogSources({
+      home: { type: "csv", target: `file:${home}` },
+      office: { type: "csv", target: `file:${office}` },
+      inline: { type: "csv", target: "/inline/logs " },
+    });
+
+    const { getConfiguration } = await import("~/server/config");
+    const config = await getConfiguration();
+    expect(config.logSources).toEqual({
+      home: { type: "csv", target: "/home/logs" },
+      office: { type: "csv", target: "/office/logs" },
+      inline: { type: "csv", target: "/inline/logs " },
+    });
+    await writeFile(home, "/changed");
+    expect(await getConfiguration()).toBe(config);
+  });
+
+  it("uses file contents literally without resolving a second file reference", async () => {
+    const path = join(directory, "target");
+    await writeFile(path, "file:/do-not-read");
+    await useYamlLogSources({ home: { type: "csv", target: `file:${path}` } });
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toBe(
+      "file:/do-not-read",
+    );
+  });
+
+  it.each(["missing", "."])(
+    "rejects unreadable file %s without exposing its path",
+    async (name) => {
+      await useYamlLogSources({
+        home: { type: "csv", target: `file:${join(directory, name)}` },
+      });
+
+      const { getConfiguration } = await import("~/server/config");
+      await expect(getConfiguration()).rejects.toThrow(
+        /^Cannot read the file configured by logSources.home.target$/,
+      );
+    },
+  );
+
+  it.each(["", "\n", "\r\n"])(
+    "rejects an empty resolved target %j",
+    async (contents) => {
+      const path = join(directory, "target");
+      await writeFile(path, contents);
+      await useYamlLogSources({
+        home: { type: "csv", target: `file:${path}` },
+      });
+
+      const { getConfiguration } = await import("~/server/config");
+      await expect(getConfiguration()).rejects.toThrow(
+        /^Invalid Blocky UI configuration at: logSources.home.target$/,
+      );
+    },
+  );
 });
