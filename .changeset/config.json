@@ -2,7 +2,10 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": [
     "@changesets/changelog-github",
-    { "repo": "GabeDuarteM/blocky-ui" }
+    {
+      "repo": "GabeDuarteM/blocky-ui",
+      "template": "- {summary}\n  <!-- changeset-credit: {pull}|{commit}|{authors} -->"
+    }
   ],
   "commit": false,
   "fixed": [],

@@ -38,27 +38,17 @@ jobs:
         uses: changesets/action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          version-script: bun run release:version
           publish-script: bun changeset publish
           commit-message: "chore: update versions"
           pr-title: "Release new version"
 
-      - name: Fix collaborator handles in release notes
+      - name: Format GitHub release notes
         if: steps.changesets.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
-        run: |
-          set -euo pipefail
-          for version in $(printf '%s' "$PUBLISHED_PACKAGES" | jq -r '.[].version'); do
-            tag="v${version}"
-            body=$(gh release view "$tag" --json body --jq '.body')
-            # Replace [@handle](https://github.com/handle) with just @handle
-            updated=$(printf '%s' "$body" | sed -E 's/\[@([a-zA-Z0-9_-]+)\]\(https:\/\/github\.com\/\1\)/@\1/g')
-            if [ "$body" != "$updated" ]; then
-              echo "Updating release notes for $tag"
-              printf '%s' "$updated" | gh release edit "$tag" --notes-file -
-            fi
-          done
+        run: bun run release:format
 
   publish-docker:
     name: Publish Docker Images
