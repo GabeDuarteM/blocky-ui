@@ -27,12 +27,12 @@ export const DEMO_SERVICES = [
   {
     id: "statistics",
     label: "Statistics API",
-    description: "Overview statistics and fallback top lists",
+    description: "Overview, 24-hour traffic, and fallback top lists",
   },
   {
     id: "queryLogs",
     label: "Query logs",
-    description: "Charts and query history",
+    description: "Detailed charts and query history",
   },
 ] as const;
 

@@ -15,7 +15,8 @@ BlockyUI is a modern companion dashboard for your [Blocky DNS](https://github.co
 - Statistics sections
   - Overview cards: total queries, blocked requests, cache hit rate, listed domains, average response time (requires [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) enabled on Blocky)
   - Top domains, blocked domains, and clients use Blocky's rolling 24-hour statistics when query logging is not configured
-  - Queries over time and richer top lists with selectable ranges, filtering, and pagination require [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky
+  - Queries over time falls back to hourly total and blocked counts for the last 24 hours when no query logs are configured
+  - Longer chart ranges, domain/client filters, and richer top lists with pagination require [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky
 
 ## 🏁 Getting Started
 
@@ -71,9 +72,9 @@ docker run -d \
 
 ### Statistics and query logs
 
-BlockyUI offers analytics for statistics and historical query logs, also allowing you to go through blocked queries and search specific ones. This is optional and will gracefully fallback if your blocky instance doesn't support it.
+BlockyUI offers analytics for statistics and historical query logs, also allowing you to go through blocked queries and search specific ones. These features are optional, and the dashboard adapts to what your Blocky instance supports.
 
-Enable [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) in Blocky if you want the live overview and Top Lists, and [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) in Blocky and connect its log source in [blocky-ui.yml](blocky-ui.example.yml) if you want the query-log table or history charts with selectable time ranges
+See Blocky's [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) and [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) documentation to enable these features, and [blocky-ui.yml](blocky-ui.example.yml) for connection settings.
 
 ### Local Development
 

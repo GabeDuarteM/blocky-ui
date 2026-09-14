@@ -49,7 +49,7 @@ Imports preserve event timestamps by default. To move the dataset into a dashboa
 
 ## Comparing the dashboard
 
-A snapshot copies query-log history, not the Blocky deployment. The dashboard's overview cards use the live `/api/stats` endpoint. Fresh Blocky processes have fresh counters, cache contents and their own configured blocklists, regardless of the imported history.
+A snapshot copies query-log history, not the Blocky deployment. The dashboard's overview cards use the live `/api/stats` endpoint. When no logs are configured, the traffic chart also uses this endpoint's hourly statistics. Fresh Blocky processes have fresh counters, cache contents and their own configured blocklists, regardless of the imported history.
 
 Select one destination at a time to compare it with the source. Selecting several independent copies combines their events. Snapshots do not receive later source traffic. CSV imports contain all exported days, but the dashboard's CSV readers currently display only the latest day.
 

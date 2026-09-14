@@ -73,17 +73,19 @@ const SKELETON_LEGEND_ITEMS = [
 ] as const;
 
 interface InteractiveLegendProps {
+  series: SeriesKey[];
   visibleSeries: Set<SeriesKey>;
   onToggle: (key: SeriesKey) => void;
 }
 
 function InteractiveLegend({
+  series,
   visibleSeries,
   onToggle,
 }: InteractiveLegendProps) {
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
-      {SERIES_KEYS.map((key) => {
+      {series.map((key) => {
         const config = chartConfig[key];
         const isVisible = visibleSeries.has(key);
         return (
@@ -210,24 +212,7 @@ export function QueriesOverTimeChart({
   range,
   onRangeChange,
 }: QueriesOverTimeChartProps) {
-  const [visibleSeries, setVisibleSeries] = useState<Set<SeriesKey>>(
-    () => new Set(SERIES_KEYS),
-  );
   const [filter, setFilter] = useState<ChartFilter>(null);
-
-  const handleToggle = useCallback((key: SeriesKey) => {
-    setVisibleSeries((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        if (next.size > 1) {
-          next.delete(key);
-        }
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  }, []);
 
   const dashboard = useDashboardServers();
   const options = {
@@ -243,6 +228,68 @@ export function QueriesOverTimeChart({
   const data = connected.data?.items;
   useLogDiagnostics("chart", connected.data?.diagnostics);
   const showLoading = isLoading || isPlaceholderData;
+
+  return (
+    <TrafficChart
+      range={range}
+      data={data}
+      isLoading={showLoading}
+      controls={
+        <>
+          <ChartFilterCombobox
+            value={filter}
+            onChange={setFilter}
+            range={range}
+          />
+          <TimeRangeSelector value={range} onChange={onRangeChange} />
+        </>
+      }
+      activeFilter={
+        filter ? (
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground text-xs">Showing:</span>
+            <ActiveFilterChip filter={filter} onClear={() => setFilter(null)} />
+          </div>
+        ) : undefined
+      }
+    />
+  );
+}
+
+export function TrafficChart({
+  range,
+  data,
+  isLoading,
+  series = SERIES_KEYS,
+  controls,
+  activeFilter,
+}: {
+  range: TimeRange;
+  data:
+    | { time: string; total: number; blocked: number; cached?: number }[]
+    | undefined;
+  isLoading: boolean;
+  series?: SeriesKey[];
+  controls?: ReactNode;
+  activeFilter?: ReactNode;
+}) {
+  const [visibleSeries, setVisibleSeries] = useState<Set<SeriesKey>>(
+    () => new Set(series),
+  );
+
+  const handleToggle = useCallback((key: SeriesKey) => {
+    setVisibleSeries((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        if (next.size > 1) {
+          next.delete(key);
+        }
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
 
   const formatXAxisTick = useCallback(
     (value: string) =>
@@ -275,29 +322,22 @@ export function QueriesOverTimeChart({
                 DNS query volume and blocking activity
               </CardDescription>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-              <ChartFilterCombobox
-                value={filter}
-                onChange={setFilter}
-                range={range}
-              />
-              <TimeRangeSelector value={range} onChange={onRangeChange} />
-            </div>
+            {controls ? (
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+                {controls}
+              </div>
+            ) : null}
           </div>
-          {filter && (
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">Showing:</span>
-              <ActiveFilterChip
-                filter={filter}
-                onClear={() => setFilter(null)}
-              />
-            </div>
-          )}
+          {activeFilter}
         </div>
       </CardHeader>
       <CardContent className="min-w-0">
-        {showLoading ? (
+        {isLoading ? (
           <ChartSkeleton />
+        ) : data?.length === 0 ? (
+          <div className="text-muted-foreground flex h-[220px] items-center justify-center text-sm sm:h-[250px]">
+            No queries recorded yet.
+          </div>
         ) : (
           <ChartContainer
             config={chartConfig}
@@ -344,41 +384,25 @@ export function QueriesOverTimeChart({
               <ChartLegend
                 content={
                   <InteractiveLegend
+                    series={series}
                     visibleSeries={visibleSeries}
                     onToggle={handleToggle}
                   />
                 }
               />
-              {visibleSeries.has("total") && (
-                <Area
-                  type="monotone"
-                  dataKey="total"
-                  stroke="var(--color-total)"
-                  fill="var(--color-total)"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
-                />
-              )}
-              {visibleSeries.has("blocked") && (
-                <Area
-                  type="monotone"
-                  dataKey="blocked"
-                  stroke="var(--color-blocked)"
-                  fill="var(--color-blocked)"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
-                />
-              )}
-              {visibleSeries.has("cached") && (
-                <Area
-                  type="monotone"
-                  dataKey="cached"
-                  stroke="var(--color-cached)"
-                  fill="var(--color-cached)"
-                  fillOpacity={0.2}
-                  strokeWidth={2}
-                />
-              )}
+              {series
+                .filter((key) => visibleSeries.has(key))
+                .map((key) => (
+                  <Area
+                    key={key}
+                    type="monotone"
+                    dataKey={key}
+                    stroke={`var(--color-${key})`}
+                    fill={`var(--color-${key})`}
+                    fillOpacity={0.2}
+                    strokeWidth={2}
+                  />
+                ))}
             </AreaChart>
           </ChartContainer>
         )}

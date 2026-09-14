@@ -8,7 +8,9 @@ servers:
     name: NAS
     # The address of this Blocky instance
     # Statistics and commands use each server's Blocky API. Enable statistics
-    # in Blocky's configuration to display its live counters in the dashboard.
+    # in Blocky's configuration for overview cards and, without configured logs,
+    # Top Lists and a 24-hour chart of hourly total and blocked queries.
+    # Statistics reset when Blocky restarts.
     # https://0xerr0r.github.io/blocky/latest/configuration/#statistics
     url: http://blocky:4000
 
@@ -16,11 +18,12 @@ servers:
     # headers:
     #   Authorization: Bearer your-token-here
 
-    # Optional. For the query-log table and history charts, enable query
-    # logging in Blocky and connect its source here:
+    # Optional connection to this server's stored query logs.
+    # Enables query history, longer chart ranges and filters.
+    # Requires query logging in Blocky:
     # https://0xerr0r.github.io/blocky/latest/configuration/#query-logging
-    # The source must match a name under logSources.
     logs:
+      # Name of an entry under logSources below.
       source: home
       # When servers share a log source, use the hostname recorded by Blocky
       # to tell their queries apart. For VictoriaLogs, use the instance field.
@@ -39,8 +42,14 @@ servers:
 # This lets BlockyUI combine their history without counting the source twice.
 # Records that cannot be matched to a server still appear as Unknown on the UI.
 logSources:
+  # Same name as logs.source above.
   home:
+    # Match queryLog.type in Blocky's configuration.
     type: mysql
+    # Connect to the same storage as Blocky's queryLog.target, using an address
+    # or path accessible from BlockyUI. For MySQL, rewrite Blocky's connection
+    # string as a URL: blocky:change-me@tcp(database:3306)/blocky becomes
+    # mysql://blocky:change-me@database:3306/blocky, as shown below.
     target: mysql://blocky:change-me@database:3306/blocky
     # Use file:/path to read the complete target from a secret file.
     # target: file:/run/secrets/query_log_target
@@ -64,7 +73,8 @@ logSources:
   #   type: csv-client
   #   target: /logs/clients
 
-  # For Blocky's console query logs collected by VictoriaLogs.
+  # For Blocky's queryLog.type: console, with logs collected by VictoriaLogs.
+  # target is the VictoriaLogs URL, not Blocky's queryLog.target.
   # console:
   #   type: console
   #   consoleProvider: victorialogs

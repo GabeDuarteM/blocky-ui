@@ -4,6 +4,13 @@ import { z } from "zod";
 const countByNameSchema = z.record(z.string(), z.number());
 
 const statisticsSchema = z.object({
+  perHour: z.array(
+    z.object({
+      hour: z.iso.datetime({ offset: true }),
+      queries: z.number(),
+      blocked: z.number(),
+    }),
+  ),
   byResponseType: countByNameSchema,
   summary: z.object({
     queries: z.number(),
@@ -47,6 +54,11 @@ export function createStatisticsSnapshot(statistics: BlockyStatistics) {
   );
 
   return {
+    queriesOverTime: statistics.perHour.map(({ hour, queries, blocked }) => ({
+      time: new Date(hour).toISOString(),
+      total: queries,
+      blocked,
+    })),
     overview: {
       totalQueries: summary.queries,
       blocked: summary.blocked,

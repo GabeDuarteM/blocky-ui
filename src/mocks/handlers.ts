@@ -139,6 +139,22 @@ export const handlers = [
   http.get(`${env.BLOCKY_API_URL}/api/stats`, () => {
     const end = new Date();
     const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+    const hour = new Date(end);
+    hour.setUTCMinutes(0, 0, 0);
+    const perHour = Array.from({ length: 24 }, (_, index) => {
+      const fraction = (index + 1) / 24;
+      const previous = index / 24;
+      const share = (value: number) =>
+        Math.round(value * fraction ** 1.5) -
+        Math.round(value * previous ** 1.5);
+
+      return {
+        hour: new Date(hour.getTime() - (23 - index) * 3600000).toISOString(),
+        queries: share(12453),
+        blocked: share(2134),
+        filtered: 0,
+      };
+    });
 
     return HttpResponse.json({
       start: start.toISOString(),
@@ -161,7 +177,7 @@ export const handlers = [
       },
       byQueryType: { A: 9000, AAAA: 3453 },
       byResponseCode: { NOERROR: 12453 },
-      perHour: [],
+      perHour,
       topDomains: [
         { name: "connectivitycheck.gstatic.com", count: 842 },
         { name: "api.github.com", count: 613 },
