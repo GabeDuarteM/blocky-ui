@@ -209,7 +209,7 @@ export async function setupPostgres(entries: LogEntry[]): Promise<{
     try {
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS log_entries (
-          request_ts TIMESTAMPTZ NULL,
+          request_ts TIMESTAMPTZ NOT NULL,
           client_ip TEXT NULL,
           client_name TEXT NULL,
           duration_ms BIGINT NULL,
