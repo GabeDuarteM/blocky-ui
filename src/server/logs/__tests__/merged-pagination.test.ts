@@ -20,7 +20,7 @@ it.each(["csv", "postgres"] as const)(
       questionName: "latest.test",
     });
     const oldest = makeEntry({
-      requestTs: type === "postgres" ? null : "2026-09-10T12:00:01.000Z",
+      requestTs: "2026-09-10T12:00:01.000Z",
       questionName: "oldest.test",
     });
     const first =

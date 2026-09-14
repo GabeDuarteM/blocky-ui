@@ -43,10 +43,6 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
     }
   }
 
-  protected queryLogTimestampOrder(): SQL {
-    return sql`${logEntries.requestTs} desc nulls last`;
-  }
-
   protected formatDateTimeForFilter(date: Date): string {
     return date.toISOString();
   }
