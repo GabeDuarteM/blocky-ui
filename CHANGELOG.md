@@ -1,5 +1,15 @@
 # blocky-ui
 
+## 2.1.1
+
+### Improvements
+
+- Fix speed regression in PostgreSQL query log loading introduced in v2.1.0, especially on large databases.
+
+### Contributions
+
+- fix: use existing postgres index for query logs · [#457](https://github.com/GabeDuarteM/blocky-ui/pull/457) [`43c9146`](https://github.com/GabeDuarteM/blocky-ui/commit/43c9146d1afdf0aad4ddd89a2cb75711b646517b) by [@aclerici38](https://github.com/aclerici38)
+
 ## 2.1.0
 
 ### Minor Changes
