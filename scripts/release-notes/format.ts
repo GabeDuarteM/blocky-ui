@@ -72,16 +72,16 @@ function splitSections(markdown: string) {
 }
 
 function parseEntry(entry: string) {
-  const [firstLine = "", ...lines] = entry.split("\n");
-  const credited = /^(.*?) - (.*)$/.exec(firstLine);
-  const hasCredit =
-    /^\[(?:#\d+|`[a-f0-9]+`)\]\(https?:\/\//.test(firstLine) ||
-    firstLine.startsWith("Thanks ");
-  const title = hasCredit ? credited?.[2] : firstLine;
-  const credit = hasCredit ? credited?.[1] : undefined;
-  if (!title) {
-    throw new Error(`Cannot read Changesets entry: ${firstLine}`);
+  const [title = "", metadata = "", ...lines] = entry.split("\n");
+  const fields =
+    /^  <!-- changeset-credit: ([^|]*)\|([^|]*)\|([^|]*) -->$/.exec(metadata);
+  if (!title || !fields) {
+    throw new Error(`Cannot read Changesets entry: ${title}`);
   }
+  const [, pull, commit, authors] = fields;
+  const credit = [pull, commit, authors ? `by ${authors}` : ""]
+    .filter(Boolean)
+    .join(" ");
   const body = lines.map((line) => line.replace(/^ {2}/, "")).join("\n");
   return { title, credit, sections: splitSections(body) };
 }
@@ -131,11 +131,10 @@ function formatEntries(markdown: string, firstTimeContributors: string) {
     }
     if (credit) {
       const contributionTitle = getContributionTitle(credit);
-      const attribution = credit.replace(/Thanks (.+)!$/, "by $1");
       contributions.add(
         contributionTitle
-          ? `- ${contributionTitle} · ${attribution}`
-          : `- ${attribution}`,
+          ? `- ${contributionTitle} · ${credit}`
+          : `- ${credit}`,
       );
     }
   }

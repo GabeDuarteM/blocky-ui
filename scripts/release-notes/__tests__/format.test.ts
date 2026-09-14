@@ -4,6 +4,7 @@ import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
 import { formatChangelog } from "../format";
 import { formatGithubRelease } from "../github-release";
+import config from "../../../.changeset/config.json";
 
 vi.mock("../contribution-title", () => ({
   getContributionTitle: vi.fn(() => "feat: support multiple servers"),
@@ -54,7 +55,10 @@ async function release(
       commit: commit ?? undefined,
     },
     type,
-    { repo: "org/repo" },
+    {
+      ...config.changelog.find((option) => typeof option === "object"),
+      repo: "org/repo",
+    },
   );
   return `### ${type[0]?.toUpperCase()}${type.slice(1)} Changes\n\n${entry.trim()}`;
 }
@@ -66,6 +70,32 @@ function document(body: string) {
 }
 
 describe("release notes", () => {
+  it.each([
+    "Thanks for improving startup.",
+    "Thanks for improving startup - including cold starts.",
+    "[#42](https://github.com/org/repo/pull/42) - explain the new behavior.",
+    "[`abc1234`](https://github.com/org/repo/commit/abc1234) - document the fix.",
+    "Thanks [@gabe](https://github.com/gabe)! - explain the improvement.",
+  ])("keeps credit-like titles as prose: %s", async (title) => {
+    const input = await release(`${title}\n\nMore details.`, "patch", null);
+    const result = formatChangelog(document(input), "2.0.0");
+    expect(result).toContain(
+      `### Improvements\n\n- ${title}\n\n  More details.`,
+    );
+    expect(result).not.toContain("### Contributions");
+    expect(result).not.toContain("<!-- changeset-credit:");
+  });
+
+  it("keeps a credit-like title separate from real generated credits", async () => {
+    const title = "Thanks [@gabe](https://github.com/gabe)! - improve startup.";
+    const result = formatChangelog(document(await release(title)), "2.0.0");
+    expect(result).toContain(`### Improvements\n\n- ${title}`);
+    expect(result).toContain(
+      "### Contributions\n\n- feat: support multiple servers · [#42]",
+    );
+    expect(result).not.toContain("<!-- changeset-credit:");
+  });
+
   it.each([
     "Fix query filtering.",
     "Fix query filtering.\n\n## Other improvements\n\nHandle empty filters.",
