@@ -9,6 +9,7 @@ import { ServerStatus } from "~/components/dashboard/server-status";
 import { ChartsSection } from "~/components/dashboard/statistics/charts-section";
 import { StatisticsOverview } from "~/components/dashboard/statistics/statistics-overview";
 import { StatisticsTopLists } from "~/components/dashboard/statistics/statistics-top-lists";
+import { StatisticsTrafficChart } from "~/components/dashboard/statistics/statistics-traffic-chart";
 import { useDemoConfiguration } from "~/demo/context";
 
 export function Dashboard({
@@ -34,7 +35,14 @@ export function Dashboard({
         <ServerStatus controls={blockingControls} />
         <Operations controls={maintenanceControls} />
       </div>
-      {showLogFeatures ? <ChartsSection /> : <StatisticsTopLists />}
+      {showLogFeatures ? (
+        <ChartsSection />
+      ) : (
+        <>
+          <StatisticsTrafficChart />
+          <StatisticsTopLists />
+        </>
+      )}
       <QueryTool controls={queryControls} />
       {showLogFeatures ? (
         <QueryLogs showServerColumn={showServerColumn} />
