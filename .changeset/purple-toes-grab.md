@@ -40,10 +40,12 @@ logSources:
 
 ### Read the password from a secret file
 
-Replace the password field with:
+You can now read the password from a file by configuring it with:
 
 ```yaml
 password: file:/run/secrets/db_password
 ```
 
-The file contains only the plain password, without URL encoding. Mount it into the BlockyUI container at that path. This lets BlockyUI read the same password file as your database container instead of requiring a separate secret containing the full connection URL. Inline passwords in structured targets also use plain text, so characters such as `@` and `#` do not need URL encoding.
+The file should contain only the password. Mount it into the BlockyUI container at that path. You can share this file with your database container.
+
+Whether you write the password in the structured configuration or read it from a file, characters such as `@` and `#` do not need URL encoding.
