@@ -5,7 +5,19 @@ export function cachedConnection<T>(
   cache: Map<string, T> | undefined,
   create: () => T,
 ): T {
-  const cacheKey = typeof key === "string" ? key : JSON.stringify(key);
+  const cacheKey =
+    typeof key === "string"
+      ? key
+      : JSON.stringify(key, (_key, value: unknown) => {
+          if (value && typeof value === "object" && !Array.isArray(value)) {
+            return Object.fromEntries(
+              Object.entries(value).sort(([left], [right]) =>
+                left < right ? -1 : left > right ? 1 : 0,
+              ),
+            );
+          }
+          return value;
+        });
   const existing = cache?.get(cacheKey);
 
   if (existing) {
