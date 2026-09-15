@@ -2,7 +2,7 @@
 "blocky-ui": minor
 ---
 
-Structured database connections and password files
+Separate database settings and password files
 
 ## Highlights
 
