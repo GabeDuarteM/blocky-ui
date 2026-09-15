@@ -34,7 +34,8 @@ const sourceSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["target", "host"],
-        message: "Use a hostname or IPv4 address for PostgreSQL connections",
+        message:
+          "Due to upstream driver limitations, IPv6 addresses are not supported here. Use a hostname or IPv4 address.",
       });
     }
 
@@ -121,9 +122,10 @@ export function parseConfiguration(value: unknown) {
   const result = configurationSchema.safeParse(value);
 
   if (!result.success) {
-    const fields = result.error.issues.map(
-      (issue) => issue.path.join(".") || "root",
-    );
+    const fields = result.error.issues.map((issue) => {
+      const path = issue.path.join(".") || "root";
+      return issue.code === "custom" ? `${path}: ${issue.message}` : path;
+    });
 
     throw new Error(`Invalid Blocky UI configuration at: ${fields.join(", ")}`);
   }

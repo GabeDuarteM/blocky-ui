@@ -49,8 +49,9 @@ logSources:
     # Connect to the same database as Blocky's queryLog.target.
     # MySQL, PostgreSQL, and Timescale support this object format.
     target:
-      # Address accessible from BlockyUI. PostgreSQL and Timescale require
-      # a hostname or IPv4 address.
+      # Address accessible from BlockyUI. PostgreSQL and Timescale currently
+      # require a hostname or IPv4 address due to an upstream driver limitation.
+      # https://github.com/porsager/postgres/pull/663
       host: mariadb
       # Optional. Uses the database driver's default when omitted.
       port: 3306

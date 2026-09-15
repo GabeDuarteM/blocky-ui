@@ -133,3 +133,40 @@ logSources:
     },
   });
 });
+
+it.each(["postgresql", "timescale"])(
+  "explains the IPv6 limitation for %s without exposing credentials",
+  (type) => {
+    expect(() =>
+      parseConfigurationYaml(`
+servers:
+  nas:
+    url: http://blocky:4000
+    headers: {Authorization: private-token}
+logSources:
+  home:
+    type: ${type}
+    target:
+      host: "2001:db8::1"
+      username: blocky
+      password: private-password
+      database: blocky
+`),
+    ).toThrow(
+      new Error(
+        "Invalid Blocky UI configuration at: logSources.home.target.host: Due to upstream driver limitations, IPv6 addresses are not supported here. Use a hostname or IPv4 address.",
+      ),
+    );
+  },
+);
+
+it("keeps generic validation errors limited to field paths", () => {
+  expect(() =>
+    parseConfigurationYaml(`
+servers:
+  nas:
+    url: postgres://user:private-password@database/blocky
+    headers: {Authorization: private-token}
+`),
+  ).toThrow(new Error("Invalid Blocky UI configuration at: servers.nas.url"));
+});
