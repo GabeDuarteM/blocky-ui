@@ -46,6 +46,6 @@ You can now read the password from a file by configuring it with:
 password: file:/run/secrets/db_password
 ```
 
-The file should contain only the password. Mount it into the BlockyUI container at that path. You can share this file with your database container.
+The file should contain only the password. Mount it into the BlockyUI container at that path. This lets you reuse the same password file wherever it's needed, including your database.
 
 Whether you write the password in the structured configuration or read it from a file, characters such as `@` and `#` do not need URL encoding.
