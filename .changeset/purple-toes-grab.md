@@ -40,7 +40,7 @@ logSources:
 
 ### Read the password from a secret file
 
-You can now read the password from a file by configuring it with:
+Combined with the settings above, you can now also read the password from a file by configuring it with:
 
 ```yaml
 password: file:/run/secrets/db_password
