@@ -2,6 +2,7 @@ import { sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { type DatabaseTarget } from "~/server/config/schema";
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/postgres/schema";
 import { type TimeRange } from "~/lib/constants";
@@ -12,19 +13,36 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
   private readonly ownsConnection: boolean;
 
   constructor(options: {
-    connectionUri: string;
+    target: string | DatabaseTarget;
     connections?: Map<string, ReturnType<typeof postgres>>;
   }) {
-    const conn = cachedConnection(
-      options.connectionUri,
-      options.connections,
-      () =>
-        postgres(options.connectionUri, {
-          connection: {
-            timezone: "UTC",
-          },
-        }),
-    );
+    const conn = cachedConnection(options.target, options.connections, () => {
+      const settings = { connection: { timezone: "UTC" } };
+      if (typeof options.target === "string") {
+        return postgres(options.target, settings);
+      }
+      const {
+        username,
+        options: driverOptions,
+        ...connection
+      } = options.target;
+      const startup = driverOptions?.connection;
+      return postgres({
+        ...driverOptions,
+        ...connection,
+        hostname: connection.host,
+        user: username,
+        pass: () => connection.password,
+        connection: {
+          ...settings.connection,
+          ...(startup && typeof startup === "object" && !Array.isArray(startup)
+            ? startup
+            : {}),
+          user: username,
+          database: connection.database,
+        },
+      });
+    });
     const db = drizzle(conn, { schema: { logEntries } });
 
     super({

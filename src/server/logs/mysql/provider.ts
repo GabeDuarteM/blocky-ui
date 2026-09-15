@@ -2,6 +2,7 @@ import { desc, gte, inArray, sql, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 
+import { type DatabaseTarget } from "~/server/config/schema";
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/mysql/schema";
 import { type TimeRange } from "~/lib/constants";
@@ -16,18 +17,23 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
   private readonly ownsConnection: boolean;
 
   constructor(options: {
-    connectionUri: string;
+    target: string | DatabaseTarget;
     connections?: Map<string, ReturnType<typeof createPool>>;
   }) {
-    const pool = cachedConnection(
-      options.connectionUri,
-      options.connections,
-      () =>
-        createPool({
-          uri: options.connectionUri,
-          timezone: "+00:00",
-        }),
-    );
+    const pool = cachedConnection(options.target, options.connections, () => {
+      if (typeof options.target === "string") {
+        return createPool({ uri: options.target, timezone: "+00:00" });
+      }
+      const { username, options: driverOptions, ...settings } = options.target;
+      return createPool({
+        timezone: "+00:00",
+        ...structuredClone(driverOptions),
+        ...settings,
+        user: username,
+        password1: undefined,
+        uri: undefined,
+      });
+    });
     const db = drizzle(pool, { schema: { logEntries }, mode: "default" });
 
     super({

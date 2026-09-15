@@ -151,20 +151,38 @@ function entryToMysqlRow(entry: LogEntry): unknown[] {
   ];
 }
 
-export async function setupMysql(entries: LogEntry[]): Promise<{
+function databaseConnectionUrl(
+  container: StartedMySqlContainer | StartedPostgreSqlContainer,
+  protocol: "mysql" | "postgresql",
+  password: string,
+) {
+  const url = new URL(`${protocol}://localhost`);
+  url.hostname = container.getHost();
+  url.port = String(container.getPort());
+  url.username = encodeURIComponent(container.getUsername());
+  url.password = encodeURIComponent(password);
+  url.pathname = encodeURIComponent(container.getDatabase());
+  return url.href;
+}
+
+export async function setupMysql(
+  entries: LogEntry[],
+  password = "test",
+): Promise<{
   provider: MySQLLogProvider;
   container: StartedMySqlContainer;
 }> {
   const container = await new MySqlContainer("mysql:8.0")
     .withDatabase("test_db")
+    .withUserPassword(password)
     // Podman lists the image's X Protocol port even when it is not mapped.
     // Testcontainers waits for every listed port, so map this one as well.
     .withExposedPorts(33060)
     .start();
 
   try {
-    const connectionUri = container.getConnectionUri();
-    const connection = await createConnection(connectionUri);
+    const target = databaseConnectionUrl(container, "mysql", password);
+    const connection = await createConnection(target);
 
     try {
       await connection.execute(CREATE_TABLE_SQL);
@@ -177,7 +195,7 @@ export async function setupMysql(entries: LogEntry[]): Promise<{
       await connection.end();
     }
 
-    const provider = new MySQLLogProvider({ connectionUri });
+    const provider = new MySQLLogProvider({ target });
     return { provider, container };
   } catch (error) {
     await container.stop();
@@ -185,12 +203,16 @@ export async function setupMysql(entries: LogEntry[]): Promise<{
   }
 }
 
-export async function setupPostgres(entries: LogEntry[]): Promise<{
+export async function setupPostgres(
+  entries: LogEntry[],
+  password = "test",
+): Promise<{
   provider: PostgreSQLLogProvider;
   container: StartedPostgreSqlContainer;
 }> {
   const container = await new PostgreSqlContainer("postgres:16")
     .withDatabase("test_db")
+    .withPassword(password)
     // Rootless Podman may not run the engine's scheduled health checks.
     // Wait for the temporary and final servers, and the final TCP listener.
     .withWaitStrategy(
@@ -202,8 +224,8 @@ export async function setupPostgres(entries: LogEntry[]): Promise<{
     .start();
 
   try {
-    const connectionUri = container.getConnectionUri();
-    const conn = postgres(connectionUri);
+    const target = databaseConnectionUrl(container, "postgresql", password);
+    const conn = postgres(target);
     const db = drizzlePg(conn);
 
     try {
@@ -233,7 +255,7 @@ export async function setupPostgres(entries: LogEntry[]): Promise<{
       await conn.end();
     }
 
-    const provider = new PostgreSQLLogProvider({ connectionUri });
+    const provider = new PostgreSQLLogProvider({ target });
     return { provider, container };
   } catch (error) {
     await container.stop();
