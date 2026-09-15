@@ -250,3 +250,85 @@ describe("YAML log target secrets", () => {
     },
   );
 });
+
+describe("separate database connection fields", () => {
+  it.each(["mysql", "postgresql", "timescale"] as const)(
+    "loads a shared password secret for %s without changing its contents",
+    async (type) => {
+      const path = join(directory, "password");
+      const password = " p@ss:/?#%word ";
+      await writeFile(path, `${password}\r\n`);
+      await useYamlLogSources({
+        home: {
+          type,
+          target: {
+            host: "db",
+            port: 1234,
+            username: "user@home",
+            password: `file:${path}`,
+            database: "query logs",
+            options: {
+              connect_timeout: 15,
+              prepare: false,
+              connection: { application_name: "shared secret" },
+            },
+          },
+        },
+      });
+
+      const { getConfiguration } = await import("~/server/config");
+      const target = (await getConfiguration()).logSources.home?.target;
+      expect(target).toEqual({
+        host: "db",
+        port: 1234,
+        username: "user@home",
+        password,
+        database: "query logs",
+        options: {
+          connect_timeout: 15,
+          prepare: false,
+          connection: { application_name: "shared secret" },
+        },
+      });
+    },
+  );
+
+  it("keeps inline passwords literal and uses the driver's default port", async () => {
+    await useYamlLogSources({
+      home: {
+        type: "mysql",
+        target: {
+          host: "db",
+          username: "blocky",
+          password: "p%40ss",
+          database: "blocky",
+        },
+      },
+    });
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).logSources.home?.target).toEqual({
+      host: "db",
+      username: "blocky",
+      password: "p%40ss",
+      database: "blocky",
+    });
+  });
+
+  it("reports an unreadable password file without exposing its path", async () => {
+    await useYamlLogSources({
+      home: {
+        type: "mysql",
+        target: {
+          host: "db",
+          username: "blocky",
+          password: `file:${join(directory, "missing")}`,
+          database: "blocky",
+        },
+      },
+    });
+    const { getConfiguration } = await import("~/server/config");
+    await expect(getConfiguration()).rejects.toThrow(
+      /^Cannot read the file configured by logSources.home.target.password$/,
+    );
+  });
+});

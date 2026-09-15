@@ -32,13 +32,13 @@ export async function initializeLogSource(
   switch (source.type) {
     case "mysql":
       return new MySQLLogProvider({
-        connectionUri: source.target,
+        target: source.target,
         connections: connections.mysql,
       });
     case "postgresql":
     case "timescale":
       return new PostgreSQLLogProvider({
-        connectionUri: source.target,
+        target: source.target,
         connections: connections.postgres,
       });
     case "csv":

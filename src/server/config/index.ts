@@ -16,6 +16,17 @@ async function readConfigurationFile(path: string, setting: string) {
   }
 }
 
+async function resolveFileValue(value: string, setting: string) {
+  const prefix = /^file:(?:\/\/)?/.exec(value);
+  if (!prefix) {
+    return value;
+  }
+
+  return (
+    await readConfigurationFile(value.slice(prefix[0].length), setting)
+  ).replace(/\r?\n$/, "");
+}
+
 async function loadConfiguration(): Promise<Configuration> {
   if (env.BLOCKY_UI_CONFIG) {
     const contents = await readConfigurationFile(
@@ -25,18 +36,15 @@ async function loadConfiguration(): Promise<Configuration> {
     const config = parseConfigurationYaml(contents);
 
     for (const [id, source] of Object.entries(config.logSources)) {
-      const prefix = /^file:(?:\/\/)?/.exec(source.target);
-
-      if (!prefix) {
-        continue;
+      const setting = `logSources.${id}.target`;
+      if (typeof source.target === "string") {
+        source.target = await resolveFileValue(source.target, setting);
+      } else {
+        source.target.password = await resolveFileValue(
+          source.target.password,
+          `${setting}.password`,
+        );
       }
-
-      source.target = (
-        await readConfigurationFile(
-          source.target.slice(prefix[0].length),
-          `logSources.${id}.target`,
-        )
-      ).replace(/\r?\n$/, "");
     }
 
     return parseConfiguration(config);

@@ -99,10 +99,10 @@ it.each([
   {
     name: "MySQL",
     setup: setupMysql,
-    cache(connectionUri: string) {
+    cache(target: string) {
       const connections = new Map<string, Pool>();
       return {
-        provider: () => new MySQLLogProvider({ connectionUri, connections }),
+        provider: () => new MySQLLogProvider({ target, connections }),
         async close() {
           for (const connection of connections.values()) {
             await connection.end();
@@ -114,11 +114,10 @@ it.each([
   {
     name: "PostgreSQL",
     setup: setupPostgres,
-    cache(connectionUri: string) {
+    cache(target: string) {
       const connections = new Map<string, Sql>();
       return {
-        provider: () =>
-          new PostgreSQLLogProvider({ connectionUri, connections }),
+        provider: () => new PostgreSQLLogProvider({ target, connections }),
         async close() {
           for (const connection of connections.values()) {
             await connection.end();
@@ -152,3 +151,54 @@ it.each([
   },
   60_000,
 );
+
+it("reuses the MySQL pool when the driver normalizes nested SSL options", async () => {
+  const target = {
+    host: "localhost",
+    username: "blocky",
+    password: "test",
+    database: "blocky",
+    options: { ssl: {} },
+  };
+  const connections = new Map<string, Pool>();
+
+  try {
+    new MySQLLogProvider({ target, connections });
+    new MySQLLogProvider({ target, connections });
+
+    expect(connections.size).toBe(1);
+    expect(target.options.ssl).toEqual({});
+  } finally {
+    for (const connection of connections.values()) {
+      await connection.end();
+    }
+  }
+});
+
+it("preserves an empty PostgreSQL password when PGPASSWORD is set", async () => {
+  vi.stubEnv("PGPASSWORD", "environment-password");
+  const connections = new Map<string, Sql>();
+
+  try {
+    new PostgreSQLLogProvider({
+      target: {
+        host: "localhost",
+        username: "blocky",
+        password: "",
+        database: "blocky",
+      },
+      connections,
+    });
+    const password: unknown = connections.values().next().value?.options.pass;
+    expect(
+      typeof password === "function"
+        ? Reflect.apply(password, undefined, [])
+        : password,
+    ).toBe("");
+  } finally {
+    vi.unstubAllEnvs();
+    for (const connection of connections.values()) {
+      await connection.end();
+    }
+  }
+});

@@ -4,7 +4,6 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type Configuration } from "~/server/config/schema";
 import { type LogProvider } from "~/server/logs/types";
 
 const providers: LogProvider[] = [];
@@ -32,7 +31,7 @@ describe("database connections across module reloads", () => {
         new Database(sqlite).close();
       }
 
-      const source: Configuration["logSources"][string] =
+      const source =
         type === "sqlite"
           ? { type, target: sqlite }
           : { type, target: `${type}://test:test@127.0.0.1:1/blocky` };

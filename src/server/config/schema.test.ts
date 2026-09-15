@@ -59,3 +59,77 @@ logSources:
     ).toThrow(/^Invalid YAML in Blocky UI configuration$/);
   });
 });
+
+describe("database target validation", () => {
+  it.each([
+    { type: "csv" },
+    { type: "postgresql", target: { host: "2001:db8::1" } },
+    { type: "timescale", target: { host: "2001:db8::1" } },
+    { type: "sqlite" },
+    { type: "console", consoleProvider: "victorialogs" },
+    { target: { host: "" } },
+    { target: { port: 0 } },
+    { target: { port: 65536 } },
+    { target: { port: "3306" } },
+    { target: { username: "" } },
+    { target: { database: "" } },
+    { target: { password: null } },
+    { target: { unexpected: "secret-value" } },
+    { target: { options: "charset=latin1" } },
+    { target: { options: ["latin1"] } },
+    { target: { options: null } },
+  ])("rejects invalid structured targets: %j", (override) => {
+    const value = {
+      servers: { nas: { url: "http://blocky:4000" } },
+      logSources: {
+        home: {
+          type: override.type ?? "mysql",
+          ...(override.consoleProvider
+            ? { consoleProvider: override.consoleProvider }
+            : {}),
+          target: {
+            host: "db",
+            username: "blocky",
+            password: "secret-value",
+            database: "blocky",
+            ...override.target,
+          },
+        },
+      },
+    };
+    expect(() => parseConfigurationYaml(JSON.stringify(value))).toThrow(
+      /^Invalid Blocky UI configuration at: logSources.home/,
+    );
+  });
+});
+
+it("preserves arbitrary native options and nested YAML values", () => {
+  const config = parseConfigurationYaml(`
+servers:
+  nas: {url: 'http://blocky:4000'}
+logSources:
+  home:
+    type: mysql
+    target:
+      host: db
+      username: blocky
+      password: test-only
+      database: blocky
+      options:
+        futureOption: null
+        connectTimeout: 15000
+        ssl:
+          rejectUnauthorized: true
+          ca: [first-certificate, second-certificate]
+`);
+  expect(config.logSources.home?.target).toMatchObject({
+    options: {
+      futureOption: null,
+      connectTimeout: 15000,
+      ssl: {
+        rejectUnauthorized: true,
+        ca: ["first-certificate", "second-certificate"],
+      },
+    },
+  });
+});

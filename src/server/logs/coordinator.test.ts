@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 import { createFilterFn } from "~/server/logs/csv/utils";
 import { createLogCoordinator } from "~/server/logs/coordinator";
-import { parseConfiguration } from "~/server/config/schema";
+import { parseConfiguration, type Configuration } from "~/server/config/schema";
 import {
   type LogEntry,
   type QueryLogFilters,
@@ -311,8 +311,9 @@ describe("multi-source query logs", () => {
         dedicated: { type: "csv", target: "dedicated" },
       },
     });
-    const initialize = vi.fn(async (source: { target: string }) =>
-      source.target === "shared" ? shared : dedicated,
+    const initialize = vi.fn(
+      async (source: Configuration["logSources"][string]) =>
+        source.target === "shared" ? shared : dedicated,
     );
     const logs = createLogCoordinator(configuration, initialize);
     const all = await logs.rows(["a", "b", "c"], { limit: 10, offset: 0 });
@@ -397,12 +398,14 @@ describe("multi-source query logs", () => {
       },
     });
     let offline = true;
-    const initialize = vi.fn(async (source: { target: string }) => {
-      if (source.target === "b" && offline) {
-        throw new Error("secret connection URI");
-      }
-      return available;
-    });
+    const initialize = vi.fn(
+      async (source: Configuration["logSources"][string]) => {
+        if (source.target === "b" && offline) {
+          throw new Error("secret connection URI");
+        }
+        return available;
+      },
+    );
     const logs = createLogCoordinator(configuration, initialize);
     const result = await logs.rows(["a", "b"], { limit: 10, offset: 0 });
     expect(result.items).toHaveLength(1);

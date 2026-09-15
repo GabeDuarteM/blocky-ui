@@ -3,21 +3,41 @@ import { z } from "zod";
 
 const idSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/);
 const headersSchema = z.record(z.string(), z.string());
+const databaseTargetSchema = z.strictObject({
+  host: z.string().min(1),
+  port: z.number().int().min(1).max(65535).optional(),
+  username: z.string().min(1),
+  password: z.string(),
+  database: z.string().min(1),
+  options: z.record(z.string(), z.json()).optional(),
+});
+
 const sourceSchema = z
-  .strictObject({
-    type: z.enum([
-      "mysql",
-      "postgresql",
-      "timescale",
-      "sqlite",
-      "csv",
-      "csv-client",
-      "console",
-    ]),
-    target: z.string().min(1),
-    consoleProvider: z.literal("victorialogs").optional(),
-  })
+  .discriminatedUnion("type", [
+    z.strictObject({
+      type: z.enum(["mysql", "postgresql", "timescale"]),
+      target: z.union([z.string().min(1), databaseTargetSchema]),
+      consoleProvider: z.literal("victorialogs").optional(),
+    }),
+    z.strictObject({
+      type: z.enum(["sqlite", "csv", "csv-client", "console"]),
+      target: z.string().min(1),
+      consoleProvider: z.literal("victorialogs").optional(),
+    }),
+  ])
   .superRefine((source, ctx) => {
+    if (
+      (source.type === "postgresql" || source.type === "timescale") &&
+      typeof source.target !== "string" &&
+      source.target.host.includes(":")
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["target", "host"],
+        message: "Use a hostname or IPv4 address for PostgreSQL connections",
+      });
+    }
+
     if (source.type === "console" && !source.consoleProvider) {
       ctx.addIssue({
         code: "custom",
@@ -95,8 +115,9 @@ const configurationSchema = z
   });
 
 export type Configuration = z.infer<typeof configurationSchema>;
+export type DatabaseTarget = z.infer<typeof databaseTargetSchema>;
 
-export function parseConfiguration(value: unknown): Configuration {
+export function parseConfiguration(value: unknown) {
   const result = configurationSchema.safeParse(value);
 
   if (!result.success) {
@@ -110,7 +131,7 @@ export function parseConfiguration(value: unknown): Configuration {
   return result.data;
 }
 
-export function parseConfigurationYaml(contents: string): Configuration {
+export function parseConfigurationYaml(contents: string) {
   let value: unknown;
 
   try {

@@ -46,12 +46,30 @@ logSources:
   home:
     # Match queryLog.type in Blocky's configuration.
     type: mysql
-    # Connect to the same storage as Blocky's queryLog.target, using an address
-    # or path accessible from BlockyUI. For MySQL, rewrite Blocky's connection
-    # string as a URL: blocky:change-me@tcp(database:3306)/blocky becomes
-    # mysql://blocky:change-me@database:3306/blocky, as shown below.
-    target: mysql://blocky:change-me@database:3306/blocky
-    # Use file:/path to read the complete target from a secret file.
+    # Connect to the same database as Blocky's queryLog.target.
+    # MySQL, PostgreSQL, and Timescale support this object format.
+    target:
+      # Address accessible from BlockyUI. PostgreSQL and Timescale require
+      # a hostname or IPv4 address.
+      host: mariadb
+      # Optional. Uses the database driver's default when omitted.
+      port: 3306
+      username: blocky
+      # Use the plain password, without URL encoding. Also accepts
+      # file:/run/secrets/db_password or file:///run/secrets/db_password.
+      password: change-me
+      database: blocky
+      # Optional native driver settings. Names and value types depend on the driver.
+      # These override provider defaults; the connection fields above take priority.
+      # PostgreSQL examples include ssl: require and connect_timeout: 15.
+      # options:
+      #   connectionLimit: 5
+      #   connectTimeout: 30000
+
+    # You can also use a connection URL or read it from a secret file.
+    # For MySQL, rewrite Blocky's connection string as a URL:
+    # blocky:change-me@tcp(mariadb:3306)/blocky becomes the URL below.
+    # target: mysql://blocky:change-me@mariadb:3306/blocky
     # target: file:/run/secrets/query_log_target
 
   # PostgreSQL and Timescale use PostgreSQL connection URLs.
