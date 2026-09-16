@@ -87,7 +87,7 @@
     "msw": "2.15.0",
     "node-gyp": "13.0.2",
     "postcss": "8.5.28",
-    "prettier": "3.9.6",
+    "prettier": "3.9.7",
     "prettier-plugin-tailwindcss": "0.8.1",
     "tailwindcss": "4.3.3",
     "testcontainers": "12.1.0",
