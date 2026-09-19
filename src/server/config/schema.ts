@@ -134,23 +134,58 @@ export function parseConfiguration(value: unknown) {
   return result.data;
 }
 
+class RawString {
+  constructor(readonly value: string) {}
+}
+
 export function parseConfigurationYaml(contents: string) {
+  const rawFields = new WeakMap<object, Set<string>>();
   let value: unknown;
 
   try {
     const document = parseDocument(contents, {
       prettyErrors: false,
       logLevel: "silent",
+      customTags: [
+        { tag: "!raw", resolve: (value: string) => new RawString(value) },
+      ],
     });
-
     if (document.errors.length || document.warnings.length) {
       throw new Error("Invalid YAML");
     }
-
-    value = document.toJS({ maxAliasCount: 100 });
+    value = document.toJS({
+      maxAliasCount: 100,
+      reviver(this: object, key, entry) {
+        if (entry instanceof RawString) {
+          let fields = rawFields.get(this);
+          if (!fields) {
+            fields = new Set<string>();
+            rawFields.set(this, fields);
+          }
+          fields.add(String(key));
+          return entry.value;
+        }
+        return entry;
+      },
+    });
   } catch {
     throw new Error("Invalid YAML in Blocky UI configuration");
   }
 
-  return parseConfiguration(value);
+  return {
+    config: parseConfiguration(value),
+    isRaw(path: readonly (string | number)[]) {
+      let node: unknown = value;
+      for (const [index, key] of path.entries()) {
+        if (node === null || typeof node !== "object") {
+          return false;
+        }
+        if (index === path.length - 1) {
+          return rawFields.get(node)?.has(String(key)) ?? false;
+        }
+        node = Reflect.get(node, key);
+      }
+      return false;
+    },
+  };
 }

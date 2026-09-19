@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Pool } from "mysql2/promise";
 import { type Sql } from "postgres";
+import { Scalar, stringify } from "yaml";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { type DatabaseTarget } from "~/server/config/schema";
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
@@ -12,6 +13,9 @@ import {
   setupMysql,
   setupPostgres,
 } from "~/server/logs/__tests__/setup";
+
+const applicationName = new Scalar("file:worker");
+applicationName.tag = "!raw";
 
 beforeEach(() => vi.resetModules());
 afterEach(() => vi.unstubAllEnvs());
@@ -42,7 +46,7 @@ it.each([
     setup: setupPostgres,
     options: {
       connection: {
-        application_name: "shared secret",
+        application_name: applicationName,
         timezone: "UTC",
         user: "wrong-user",
         database: "wrong-database",
@@ -57,7 +61,7 @@ it.each([
       return {
         provider,
         async verifyOptions() {
-          expect(connection?.parameters.application_name).toBe("shared secret");
+          expect(connection?.parameters.application_name).toBe("file:worker");
           expect(connection?.options.connect_timeout).toBe(15);
           expect(connection?.options.prepare).toBe(false);
         },
@@ -78,7 +82,7 @@ it.each([
       await writeFile(passwordPath, `${password}\n`);
       await writeFile(
         configPath,
-        JSON.stringify({
+        stringify({
           servers: {
             test: { url: "http://blocky:4000", logs: { source: "test" } },
           },

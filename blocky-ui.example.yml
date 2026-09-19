@@ -50,6 +50,7 @@ logSources:
     # MySQL, PostgreSQL, and Timescale support this object format.
     # All string values in target accept file: or file:// references, including
     # host, username, database, password, and nested options.
+    # Add !raw as an escape hatch when the value itself must start with file:.
     target:
       # Address accessible from BlockyUI. PostgreSQL and Timescale currently
       # require a hostname or IPv4 address due to an upstream driver limitation.
@@ -87,9 +88,10 @@ logSources:
   #   target: postgresql://blocky:change-me@database:5432/blocky
 
   # File paths must be accessible to the BlockyUI process.
+  # Use !raw for SQLite URIs; plain paths such as /logs/blocky.db need no tag.
   # sqlite:
   #   type: sqlite
-  #   target: /logs/blocky.db
+  #   target: !raw "file:/logs/blocky.db?mode=ro"
   # daily:
   #   type: csv
   #   target: /logs/daily

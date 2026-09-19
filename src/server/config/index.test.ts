@@ -106,10 +106,14 @@ servers:
   });
 });
 
-async function useYamlLogSources(logSources: Configuration["logSources"]) {
+async function writeYamlConfiguration(contents: string) {
   const path = join(directory, "blocky-ui.yml");
-  await writeFile(
-    path,
+  await writeFile(path, contents);
+  vi.stubEnv("BLOCKY_UI_CONFIG", path);
+}
+
+async function useYamlLogSources(logSources: Configuration["logSources"]) {
+  await writeYamlConfiguration(
     stringify({
       servers: {
         nas: { url: "http://configured:4000", logs: { source: "home" } },
@@ -117,7 +121,6 @@ async function useYamlLogSources(logSources: Configuration["logSources"]) {
       logSources,
     }),
   );
-  vi.stubEnv("BLOCKY_UI_CONFIG", path);
 }
 
 describe("YAML log target secrets", () => {
@@ -429,3 +432,162 @@ it.each([
     await expect(getConfiguration()).rejects.toThrow(error);
   },
 );
+
+describe("raw YAML strings", () => {
+  it.each(["mysql", "postgresql", "timescale"])(
+    "preserves tagged %s fields while resolving neighboring file references",
+    async (type) => {
+      const secretPath = join(directory, "secret");
+      await writeFile(secretPath, "loaded value\n");
+      await writeYamlConfiguration(`
+servers: {nas: {url: 'http://blocky:4000'}}
+logSources:
+  home:
+    type: ${type}
+    target:
+      host: !raw file:host
+      username: !raw file:username
+      password: !raw " file:password "
+      database: !raw file:database
+      options:
+        connection:
+          application_name: !raw file:worker
+        certs: [!raw file:literal, file:${secretPath}]
+        nested:
+          - ca: !raw file:ca
+        literal: "!raw file:ordinary-string"
+        file: !raw file:value
+        dotted.key: !raw file:dotted
+        dotted: {key: file:${secretPath}}
+        empty: !raw ""
+        numberText: !raw 123
+        numericKeys: {1: !raw file:one, 2: file:${secretPath}}
+`);
+      const { getConfiguration } = await import("~/server/config");
+      expect((await getConfiguration()).logSources.home?.target).toEqual({
+        host: "file:host",
+        username: "file:username",
+        password: " file:password ",
+        database: "file:database",
+        options: {
+          connection: { application_name: "file:worker" },
+          certs: ["file:literal", "loaded value"],
+          nested: [{ ca: "file:ca" }],
+          literal: "!raw file:ordinary-string",
+          file: "file:value",
+          "dotted.key": "file:dotted",
+          dotted: { key: "loaded value" },
+          empty: "",
+          numberText: "123",
+          numericKeys: { "1": "file:one", "2": "loaded value" },
+        },
+      });
+    },
+  );
+
+  it.each(["sqlite", "csv", "csv-client", "mysql", "postgresql", "timescale"])(
+    "preserves a tagged whole %s target",
+    async (type) => {
+      await writeYamlConfiguration(`
+servers: {nas: {url: 'http://blocky:4000'}}
+logSources:
+  home: {type: ${type}, target: !raw 'file:/logs/database.db?mode=ro'}
+`);
+      const { getConfiguration } = await import("~/server/config");
+      expect((await getConfiguration()).logSources.home?.target).toBe(
+        "file:/logs/database.db?mode=ro",
+      );
+    },
+  );
+
+  it("preserves raw tags through scalar and collection aliases without affecting equal untagged values", async () => {
+    const secretPath = join(directory, "secret");
+    await writeFile(secretPath, "loaded value\n");
+    await writeYamlConfiguration(`
+servers: {nas: {url: 'http://blocky:4000'}}
+logSources:
+  home:
+    type: mysql
+    target: &target
+      host: db
+      username: blocky
+      password: &password !raw file:${secretPath}
+      database: blocky
+      options:
+        aliased: *password
+        loaded: file:${secretPath}
+        group: &group {literal: *password, loaded: file:${secretPath}}
+        reused: *group
+        array: &array [*password, file:${secretPath}]
+        reusedArray: *array
+  other:
+    type: mysql
+    target: *target
+`);
+    const { getConfiguration } = await import("~/server/config");
+    const config = await getConfiguration();
+    const raw = `file:${secretPath}`;
+    const expected = {
+      password: raw,
+      options: {
+        aliased: raw,
+        loaded: "loaded value",
+        group: { literal: raw, loaded: "loaded value" },
+        reused: { literal: raw, loaded: "loaded value" },
+        array: [raw, "loaded value"],
+        reusedArray: [raw, "loaded value"],
+      },
+    };
+    expect(config.logSources.home?.target).toMatchObject(expected);
+    expect(config.logSources.other?.target).toMatchObject(expected);
+  });
+});
+
+it("keeps raw metadata aligned with YAML null keys and merge aliases", async () => {
+  const secretPath = join(directory, "secret");
+  await writeFile(secretPath, "loaded value\n");
+  await writeYamlConfiguration(`%YAML 1.1
+---
+servers: {nas: {url: 'http://blocky:4000'}}
+logSources:
+  home:
+    type: mysql
+    target: &target
+      host: db
+      username: blocky
+      password: !raw file:password
+      database: blocky
+      options: &options
+        nullKeys:
+          "null": file:${secretPath}
+          null: !raw file:literal
+  merged:
+    type: mysql
+    target:
+      <<: *target
+      options:
+        <<: *options
+        extra: file:${secretPath}
+  overridden:
+    type: mysql
+    target:
+      <<: *target
+      password: file:${secretPath}
+`);
+  const { getConfiguration } = await import("~/server/config");
+  const config = await getConfiguration();
+  expect(config.logSources.home?.target).toMatchObject({
+    password: "file:password",
+    options: { nullKeys: { null: "loaded value", "": "file:literal" } },
+  });
+  expect(config.logSources.merged?.target).toMatchObject({
+    password: "file:password",
+    options: {
+      nullKeys: { null: "loaded value", "": "file:literal" },
+      extra: "loaded value",
+    },
+  });
+  expect(config.logSources.overridden?.target).toMatchObject({
+    password: "loaded value",
+  });
+});

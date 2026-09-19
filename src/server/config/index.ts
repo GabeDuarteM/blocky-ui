@@ -32,15 +32,16 @@ type ConfigurationValue = NonNullable<DatabaseTarget["options"]>[string];
 
 async function resolveFileValues(
   value: ConfigurationValue,
-  setting: string,
+  path: (string | number)[],
+  isRaw: ReturnType<typeof parseConfigurationYaml>["isRaw"],
 ): Promise<ConfigurationValue> {
   if (typeof value === "string") {
-    return resolveFileValue(value, setting);
+    return isRaw(path) ? value : resolveFileValue(value, path.join("."));
   }
   if (Array.isArray(value)) {
     return Promise.all(
       value.map((entry, index) =>
-        resolveFileValues(entry, `${setting}.${index}`),
+        resolveFileValues(entry, [...path, index], isRaw),
       ),
     );
   }
@@ -49,7 +50,7 @@ async function resolveFileValues(
       await Promise.all(
         Object.entries(value).map(async ([key, entry]) => [
           key,
-          await resolveFileValues(entry, `${setting}.${key}`),
+          await resolveFileValues(entry, [...path, key], isRaw),
         ]),
       ),
     );
@@ -63,7 +64,7 @@ async function loadConfiguration(): Promise<Configuration> {
       env.BLOCKY_UI_CONFIG,
       "BLOCKY_UI_CONFIG",
     );
-    const config = parseConfigurationYaml(contents);
+    const { config, isRaw } = parseConfigurationYaml(contents);
 
     const logSources = Object.fromEntries(
       await Promise.all(
@@ -73,7 +74,8 @@ async function loadConfiguration(): Promise<Configuration> {
             ...source,
             target: await resolveFileValues(
               source.target,
-              `logSources.${id}.target`,
+              ["logSources", id, "target"],
+              isRaw,
             ),
           },
         ]),
