@@ -29,6 +29,7 @@ const sourceSchema = z
     if (
       (source.type === "postgresql" || source.type === "timescale") &&
       typeof source.target !== "string" &&
+      !source.target.host.startsWith("file:") &&
       source.target.host.includes(":")
     ) {
       ctx.addIssue({

@@ -4,6 +4,7 @@ import {
   parseConfiguration,
   parseConfigurationYaml,
   type Configuration,
+  type DatabaseTarget,
 } from "~/server/config/schema";
 
 let configuration: Promise<Configuration> | undefined;
@@ -27,6 +28,35 @@ async function resolveFileValue(value: string, setting: string) {
   ).replace(/\r?\n$/, "");
 }
 
+type ConfigurationValue = NonNullable<DatabaseTarget["options"]>[string];
+
+async function resolveFileValues(
+  value: ConfigurationValue,
+  setting: string,
+): Promise<ConfigurationValue> {
+  if (typeof value === "string") {
+    return resolveFileValue(value, setting);
+  }
+  if (Array.isArray(value)) {
+    return Promise.all(
+      value.map((entry, index) =>
+        resolveFileValues(entry, `${setting}.${index}`),
+      ),
+    );
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(value).map(async ([key, entry]) => [
+          key,
+          await resolveFileValues(entry, `${setting}.${key}`),
+        ]),
+      ),
+    );
+  }
+  return value;
+}
+
 async function loadConfiguration(): Promise<Configuration> {
   if (env.BLOCKY_UI_CONFIG) {
     const contents = await readConfigurationFile(
@@ -35,19 +65,22 @@ async function loadConfiguration(): Promise<Configuration> {
     );
     const config = parseConfigurationYaml(contents);
 
-    for (const [id, source] of Object.entries(config.logSources)) {
-      const setting = `logSources.${id}.target`;
-      if (typeof source.target === "string") {
-        source.target = await resolveFileValue(source.target, setting);
-      } else {
-        source.target.password = await resolveFileValue(
-          source.target.password,
-          `${setting}.password`,
-        );
-      }
-    }
+    const logSources = Object.fromEntries(
+      await Promise.all(
+        Object.entries(config.logSources).map(async ([id, source]) => [
+          id,
+          {
+            ...source,
+            target: await resolveFileValues(
+              source.target,
+              `logSources.${id}.target`,
+            ),
+          },
+        ]),
+      ),
+    );
 
-    return parseConfiguration(config);
+    return parseConfiguration({ ...config, logSources });
   }
 
   const logSource = env.DEMO_MODE

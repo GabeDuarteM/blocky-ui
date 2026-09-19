@@ -332,3 +332,100 @@ describe("separate database connection fields", () => {
     );
   });
 });
+
+describe("provider option files", () => {
+  it.each(["mysql", "postgresql", "timescale"] as const)(
+    "resolves nested option files for %s once and preserves other values",
+    async (type) => {
+      const path = join(directory, "certificate");
+      const contents = "file:/not-another-reference\nPEM contents\n";
+      await writeFile(path, `${contents}\r\n`);
+      const hostPath = join(directory, "host");
+      const usernamePath = join(directory, "username");
+      const databasePath = join(directory, "database");
+      await writeFile(hostPath, "db\n");
+      await writeFile(usernamePath, "blocky\n");
+      await writeFile(databasePath, "blocky\n");
+      const options = {
+        ssl: { ca: [`file:${path}`, `file://${path}`, "inline certificate"] },
+        passphrase: `file:${path}`,
+        enabled: false,
+        timeout: 15,
+        nullable: null,
+        empty: "",
+        emptyArray: [],
+        emptyObject: {},
+        "file:literal-key": "unchanged",
+      };
+      await useYamlLogSources({
+        home: {
+          type,
+          target: {
+            host: `file:${hostPath}`,
+            username: `file://${usernamePath}`,
+            password: "secret",
+            database: `file:${databasePath}`,
+            options,
+          },
+        },
+      });
+      const { getConfiguration } = await import("~/server/config");
+      expect((await getConfiguration()).logSources.home?.target).toMatchObject({
+        host: "db",
+        username: "blocky",
+        database: "blocky",
+        options: {
+          ...options,
+          ssl: { ca: [contents, contents, "inline certificate"] },
+          passphrase: contents,
+        },
+      });
+    },
+  );
+
+  it("identifies an unreadable nested option without exposing its file path", async () => {
+    await useYamlLogSources({
+      home: {
+        type: "postgresql",
+        target: {
+          host: "db",
+          username: "blocky",
+          password: "secret",
+          database: "blocky",
+          options: { ssl: { ca: [`file:${join(directory, "missing")}`] } },
+        },
+      },
+    });
+    const { getConfiguration } = await import("~/server/config");
+    await expect(getConfiguration()).rejects.toThrow(
+      /^Cannot read the file configured by logSources.home.target.options.ssl.ca.0$/,
+    );
+  });
+});
+
+it.each([
+  { field: "host", contents: "", error: "logSources.home.target.host" },
+  { field: "username", contents: "", error: "logSources.home.target.username" },
+  { field: "database", contents: "", error: "logSources.home.target.database" },
+  { field: "host", contents: "::1", error: "IPv6 addresses are not supported" },
+])(
+  "validates loaded $field value '$contents'",
+  async ({ field, contents, error }) => {
+    const path = join(directory, "field");
+    await writeFile(path, contents);
+    await useYamlLogSources({
+      home: {
+        type: "postgresql",
+        target: {
+          host: "db",
+          username: "blocky",
+          password: "secret",
+          database: "blocky",
+          [field]: `file:${path}`,
+        },
+      },
+    });
+    const { getConfiguration } = await import("~/server/config");
+    await expect(getConfiguration()).rejects.toThrow(error);
+  },
+);
