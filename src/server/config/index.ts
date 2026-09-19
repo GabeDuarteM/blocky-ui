@@ -4,6 +4,7 @@ import {
   parseConfiguration,
   parseConfigurationYaml,
   type Configuration,
+  type DatabaseTarget,
 } from "~/server/config/schema";
 
 let configuration: Promise<Configuration> | undefined;
@@ -27,27 +28,61 @@ async function resolveFileValue(value: string, setting: string) {
   ).replace(/\r?\n$/, "");
 }
 
+type ConfigurationValue = NonNullable<DatabaseTarget["options"]>[string];
+
+async function resolveFileValues(
+  value: ConfigurationValue,
+  path: (string | number)[],
+  isRaw: ReturnType<typeof parseConfigurationYaml>["isRaw"],
+): Promise<ConfigurationValue> {
+  if (typeof value === "string") {
+    return isRaw(path) ? value : resolveFileValue(value, path.join("."));
+  }
+  if (Array.isArray(value)) {
+    return Promise.all(
+      value.map((entry, index) =>
+        resolveFileValues(entry, [...path, index], isRaw),
+      ),
+    );
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      await Promise.all(
+        Object.entries(value).map(async ([key, entry]) => [
+          key,
+          await resolveFileValues(entry, [...path, key], isRaw),
+        ]),
+      ),
+    );
+  }
+  return value;
+}
+
 async function loadConfiguration(): Promise<Configuration> {
   if (env.BLOCKY_UI_CONFIG) {
     const contents = await readConfigurationFile(
       env.BLOCKY_UI_CONFIG,
       "BLOCKY_UI_CONFIG",
     );
-    const config = parseConfigurationYaml(contents);
+    const { config, isRaw } = parseConfigurationYaml(contents);
 
-    for (const [id, source] of Object.entries(config.logSources)) {
-      const setting = `logSources.${id}.target`;
-      if (typeof source.target === "string") {
-        source.target = await resolveFileValue(source.target, setting);
-      } else {
-        source.target.password = await resolveFileValue(
-          source.target.password,
-          `${setting}.password`,
-        );
-      }
-    }
+    const logSources = Object.fromEntries(
+      await Promise.all(
+        Object.entries(config.logSources).map(async ([id, source]) => [
+          id,
+          {
+            ...source,
+            target: await resolveFileValues(
+              source.target,
+              ["logSources", id, "target"],
+              isRaw,
+            ),
+          },
+        ]),
+      ),
+    );
 
-    return parseConfiguration(config);
+    return parseConfiguration({ ...config, logSources });
   }
 
   const logSource = env.DEMO_MODE

@@ -48,6 +48,9 @@ logSources:
     type: mysql
     # Connect to the same database as Blocky's queryLog.target.
     # MySQL, PostgreSQL, and Timescale support this object format.
+    # All string values in target accept file: or file:// references, including
+    # host, username, database, password, and nested options.
+    # Add !raw as an escape hatch when the value itself must start with file:.
     target:
       # Address accessible from BlockyUI. PostgreSQL and Timescale currently
       # require a hostname or IPv4 address due to an upstream driver limitation.
@@ -56,8 +59,7 @@ logSources:
       # Optional. Uses the database driver's default when omitted.
       port: 3306
       username: blocky
-      # Use the plain password, without URL encoding. Also accepts
-      # file:/run/secrets/db_password or file:///run/secrets/db_password.
+      # Use the plain password, without URL encoding.
       password: change-me
       database: blocky
       # Optional native driver settings. Names and value types depend on the driver.
@@ -66,6 +68,10 @@ logSources:
       # options:
       #   connectionLimit: 5
       #   connectTimeout: 30000
+      #   ssl:
+      #     ca: file:/run/secrets/db_ca.pem
+      #     cert: file:/run/secrets/db_cert.pem
+      #     key: file:/run/secrets/db_key.pem
 
     # You can also use a connection URL or read it from a secret file.
     # For MySQL, rewrite Blocky's connection string as a URL:
@@ -82,9 +88,10 @@ logSources:
   #   target: postgresql://blocky:change-me@database:5432/blocky
 
   # File paths must be accessible to the BlockyUI process.
+  # Use !raw for SQLite URIs; plain paths such as /logs/blocky.db need no tag.
   # sqlite:
   #   type: sqlite
-  #   target: /logs/blocky.db
+  #   target: !raw "file:/logs/blocky.db?mode=ro"
   # daily:
   #   type: csv
   #   target: /logs/daily

@@ -3,7 +3,7 @@ import { parseConfigurationYaml } from "~/server/config/schema";
 
 describe("server configuration", () => {
   it("keeps connections independent while referencing one shared log source", () => {
-    const config = parseConfigurationYaml(`
+    const { config } = parseConfigurationYaml(`
 servers:
   nas:
     url: http://blocky:4000
@@ -104,7 +104,7 @@ describe("database target validation", () => {
 });
 
 it("preserves arbitrary native options and nested YAML values", () => {
-  const config = parseConfigurationYaml(`
+  const { config } = parseConfigurationYaml(`
 servers:
   nas: {url: 'http://blocky:4000'}
 logSources:
@@ -169,4 +169,28 @@ servers:
     headers: {Authorization: private-token}
 `),
   ).toThrow(new Error("Invalid Blocky UI configuration at: servers.nas.url"));
+});
+
+it.each([
+  "host: !raw ''",
+  "host: !raw '::1'",
+  "port: !raw 5432",
+  "options: !raw {ssl: false}",
+  "options: {ca: !raw [first, second]}",
+  "options: {ca: !unknown secret-value}",
+])("does not let raw tags bypass validation: %s", (field) => {
+  expect(() =>
+    parseConfigurationYaml(`
+servers: {nas: {url: 'http://blocky:4000'}}
+logSources:
+  home:
+    type: postgresql
+    target:
+      username: blocky
+      password: secret
+      database: blocky
+      ${field.startsWith("host:") ? "" : "host: db"}
+      ${field}
+`),
+  ).toThrow(/Invalid (YAML|Blocky UI configuration)/);
 });
