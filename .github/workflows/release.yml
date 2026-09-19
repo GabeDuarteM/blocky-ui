@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CI: true
   GHCR_IMAGE: ghcr.io/gabeduartem/blocky-ui
