@@ -1,5 +1,83 @@
 # blocky-ui
 
+## 2.2.0
+
+### Highlights
+
+#### File references in more database fields
+
+Extend `file:` and `file://` support to host, username, database, and strings inside driver options, including arrays. TLS certificates and keys can now be loaded from mounted files instead of written inline.
+
+For example, inside a database target:
+
+````yaml
+options:
+  ssl:
+    ca: file:/run/secrets/db_ca.pem
+    cert: file:/run/secrets/db_cert.pem
+    key: file:/run/secrets/db_key.pem
+````
+
+Use `!raw` as an escape hatch when a string should reach the database driver unchanged, such as a SQLite file URI:
+
+````yaml
+logSources:
+  home:
+    type: sqlite
+    target: !raw "file:/logs/blocky.db?mode=ro"
+````
+
+#### Separate database settings and password files
+
+MySQL, PostgreSQL, and Timescale log sources now accept connection settings as an object. You can keep credentials separate from the connection URL and read the password from a secret file. Existing connection URLs still work.
+
+##### URL or structured configuration
+
+For example, this MySQL URL includes two driver options in its query string:
+
+````yaml
+logSources:
+  home:
+    type: mysql
+    target: mysql://blocky:change-me@mariadb:3306/blocky?connectionLimit=5&connectTimeout=30000
+````
+
+The same connection can now be written as:
+
+````yaml
+logSources:
+  home:
+    type: mysql
+    target:
+      host: mariadb
+      port: 3306
+      username: blocky
+      password: change-me
+      database: blocky
+      options:
+        connectionLimit: 5
+        connectTimeout: 30000
+````
+
+`options` passes settings directly to the database driver, using its native option names and value types. Explicit connection fields take priority over options. Port and options are optional.
+
+##### Read the password from a secret file
+
+Combined with the settings above, you can now also read the password from a file by configuring it with:
+
+````yaml
+password: file:/run/secrets/db_password
+````
+
+The file should contain only the password. Mount it into the BlockyUI container at that path. This lets you reuse the same password file wherever it's needed, including your database.
+
+Whether you write the password in the structured configuration or read it from a file, characters such as `@` and `#` do not need URL encoding.
+
+### Contributions
+
+- Extend file references to all string fields in database targets · [#479](https://github.com/GabeDuarteM/blocky-ui/pull/479) [`3ce4cf7`](https://github.com/GabeDuarteM/blocky-ui/commit/3ce4cf7709751a90d3df1c989c549ffdb22ed2d1) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Support structured database targets and password files · [#464](https://github.com/GabeDuarteM/blocky-ui/pull/464) [`0c7a677`](https://github.com/GabeDuarteM/blocky-ui/commit/0c7a6778a38ebfd6bdb8c57a6094c71e6258187b) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+
 ## 2.1.1
 
 ### Improvements
