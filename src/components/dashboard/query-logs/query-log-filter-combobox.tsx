@@ -155,7 +155,7 @@ export function QueryLogFilterCombobox({
             </ComboboxGroup>
           ))}
         </ComboboxList>
-        {suggestionGroups.length === 0 && (
+        {(suggestions.isLoading || visibleGroups.length === 0) && (
           <div role="status" className="py-6 text-center text-sm">
             {suggestions.isLoading ? "Searching..." : "No suggestions found."}
           </div>
