@@ -198,7 +198,7 @@ export function QueryLogs({
   );
 
   return (
-    <Card>
+    <Card role="region" aria-label="Query Logs">
       <CardHeader>
         <div className="flex w-full flex-row flex-wrap items-center justify-between gap-y-3">
           <div className="flex min-w-40 flex-1 flex-col gap-1">

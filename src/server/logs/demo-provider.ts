@@ -16,9 +16,9 @@ import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
  */
 export class DemoLogProvider extends BaseMemoryLogProvider {
   async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
-    const { logEntryMock } = await import("~/mocks/logEntryMock");
+    const { getMockLogEntries } = await import("~/mocks/logEntryMock");
 
-    const filteredLogs = logEntryMock
+    const filteredLogs = getMockLogEntries()
       .filter(createFilterFn(options))
       .toSorted((item1, item2) => {
         const date1 = new Date(item1.requestTs ?? 0);
@@ -43,10 +43,10 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
   }
 
   protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
-    const { logEntryMock } = await import("~/mocks/logEntryMock");
+    const { getMockLogEntries } = await import("~/mocks/logEntryMock");
     const { startTime } = getTimeRangeConfig(range);
 
-    return logEntryMock.filter((log) => {
+    return getMockLogEntries().filter((log) => {
       const logDate = new Date(log.requestTs ?? 0);
       return logDate >= startTime;
     });

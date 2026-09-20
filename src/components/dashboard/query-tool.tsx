@@ -156,7 +156,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
   };
 
   return (
-    <Card>
+    <Card role="region" aria-label="Query Tool">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2">
@@ -171,6 +171,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
+                aria-label="Domain to query"
                 controlSize="responsive"
                 placeholder="Enter domain (e.g., example.com)"
                 value={query}
@@ -181,7 +182,11 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                 value={type}
                 onValueChange={(value: DNS_RECORD_TYPE) => setType(value)}
               >
-                <SelectTrigger size="responsive" className="w-full sm:w-26">
+                <SelectTrigger
+                  aria-label="DNS record type"
+                  size="responsive"
+                  className="w-full sm:w-26"
+                >
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>

@@ -72,13 +72,14 @@ export function DataTable<TData extends RowData>({
   return (
     <div id="query-logs-table">
       {renderMobileRow && (
-        <div
+        <ul
+          aria-label="Query log entries"
           className="divide-border/60 bg-card/30 divide-y overflow-hidden rounded-xl border md:hidden"
           aria-busy={isLoading}
         >
           {isLoading ? (
             Array.from({ length: pageSize }, (_, index) => (
-              <div
+              <li
                 key={index}
                 className="flex h-19 items-center gap-3 px-3"
                 aria-hidden="true"
@@ -88,16 +89,16 @@ export function DataTable<TData extends RowData>({
                   <Skeleton className="h-4 w-4/5" />
                   <Skeleton className="h-3 w-3/5" />
                 </div>
-              </div>
+              </li>
             ))
           ) : data.length === 0 ? (
-            <p className="py-8 text-center text-sm">No results found.</p>
+            <li className="py-8 text-center text-sm">No results found.</li>
           ) : (
             data.map((entry) => (
-              <div key={getRowId(entry)}>{renderMobileRow(entry)}</div>
+              <li key={getRowId(entry)}>{renderMobileRow(entry)}</li>
             ))
           )}
-        </div>
+        </ul>
       )}
       <div
         className={cn(
@@ -106,7 +107,7 @@ export function DataTable<TData extends RowData>({
         )}
       >
         <div className="overflow-y-auto">
-          <Table>
+          <Table aria-label="Query logs" aria-busy={isLoading}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -125,7 +126,7 @@ export function DataTable<TData extends RowData>({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
+            <TableBody aria-label="Query log entries" aria-busy={isLoading}>
               {isLoading ? (
                 Array.from({ length: pageSize }, (_, index) => (
                   <TableRow key={index} className="h-12">
