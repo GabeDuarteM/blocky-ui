@@ -8,7 +8,13 @@ import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { Textarea } from "~/components/ui/textarea"
 
-function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
+function InputGroup({
+  className,
+  controlSize = "default",
+  ...props
+}: React.ComponentProps<"div"> & {
+  controlSize?: React.ComponentProps<typeof Input>["controlSize"]
+}) {
   return (
     <div
       data-slot="input-group"
@@ -16,6 +22,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         "group/input-group relative flex w-full items-center rounded-md border border-input shadow-xs transition-[color,box-shadow] outline-none dark:bg-input/30",
         "h-9 min-w-0 has-[>textarea]:h-auto",
+        controlSize === "responsive" && "h-11 md:h-9",
 
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
         "has-[>[data-align=inline-end]]:[&>input]:pr-2",

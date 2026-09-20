@@ -1,15 +1,10 @@
 "use client";
 
 import type { ColumnDef, CoreFeatures } from "@tanstack/react-table";
-import type { LogEntry } from "~/server/logs/types";
+import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "~/components/ui/tooltip";
-import { Badge, type BadgeVariants } from "~/components/ui/badge";
+import { QueryReasonBadge } from "~/components/dashboard/query-logs/query-reason-badge";
+import { formatQueryDuration } from "~/components/dashboard/query-logs/query-log-format";
 import { OverflowTooltip } from "~/components/overflow-tooltip";
 
 interface DomainCellProps {
@@ -27,15 +22,15 @@ function DomainCell({ domain }: DomainCellProps) {
   );
 }
 
-export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
+export const columns: ColumnDef<CoreFeatures, QueryLogRow>[] = [
   {
     accessorKey: "requestTs",
     header: "Time",
     cell: ({ row }) => {
       const timestamp = row.original.requestTs;
-      if (!timestamp) return null;
-      // Postgres stores all timestamps in UTC
-      // Display in browser's local timezone if possible
+      if (!timestamp) {
+        return null;
+      }
       const date = new Date(timestamp);
       return date.toLocaleString(undefined, {
         year: "2-digit",
@@ -56,7 +51,9 @@ export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
     header: "Domain",
     cell: ({ row }) => {
       const domain = row.original.questionName;
-      if (!domain) return null;
+      if (!domain) {
+        return null;
+      }
       return <DomainCell domain={domain} />;
     },
   },
@@ -67,76 +64,11 @@ export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
   {
     accessorKey: "reason",
     header: "Reason",
-    cell: ({ row }) => {
-      const reason = row.original.reason;
-      if (!reason) return null;
-
-      const regex = /\((.*?)\)/;
-      const match = regex.exec(reason);
-      const tooltipText = match ? match[1] : null;
-      const displayText = reason.replace(/\(.*?\)/, "").trim();
-
-      const responseType = row.original.responseType;
-      let tooltipContent = tooltipText;
-
-      if (responseType === "RESOLVED") {
-        tooltipContent = `Resolved by: ${tooltipText}`;
-      } else if (responseType === "BLOCKED") {
-        tooltipContent = `Group: ${tooltipText}`;
-      } else if (responseType === "REBIND") {
-        tooltipContent = "Blocked by DNS rebinding protection";
-      }
-
-      let badgeVariant: BadgeVariants = "outline";
-
-      if (responseType === "BLOCKED" || responseType === "REBIND") {
-        badgeVariant = "destructive";
-      } else if (responseType === "RESOLVED") {
-        badgeVariant = "default";
-      }
-
-      const badge = <Badge variant={badgeVariant}>{displayText}</Badge>;
-
-      if (!tooltipContent) {
-        return badge;
-      }
-
-      return (
-        <TooltipProvider>
-          <Tooltip delayDuration={100}>
-            <TooltipTrigger>{badge}</TooltipTrigger>
-            <TooltipContent>
-              <p>{tooltipContent}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    },
+    cell: ({ row }) => <QueryReasonBadge entry={row.original} showTooltip />,
   },
   {
     accessorKey: "durationMs",
     header: "Duration",
-    cell: ({ row }) => {
-      const duration = row.original.durationMs;
-      const responseType = row.original.responseType;
-      const isLocalResponse =
-        responseType === "CACHED" ||
-        responseType === "HOSTSFILE" ||
-        responseType === "CUSTOMDNS" ||
-        responseType === "BLOCKED" ||
-        responseType === "SPECIAL" ||
-        responseType === "FILTERED" ||
-        responseType === "NOTFQDN";
-
-      if (duration == null) {
-        return null;
-      }
-
-      if (duration === 0 && isLocalResponse) {
-        return <span className="text-muted-foreground">—</span>;
-      }
-
-      return `${duration}ms`;
-    },
+    cell: ({ row }) => formatQueryDuration(row.original),
   },
 ];

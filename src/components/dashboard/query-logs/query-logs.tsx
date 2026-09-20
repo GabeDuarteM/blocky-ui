@@ -1,5 +1,7 @@
 "use client";
 
+import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
+
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { api } from "~/trpc/react";
@@ -20,6 +22,7 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
 import { useEffect, useState } from "react";
+import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
 import {
@@ -115,12 +118,14 @@ export function QueryLogs({
   useLogDiagnostics("rows", rows.data?.diagnostics);
   useLogDiagnostics("count", count.data?.diagnostics);
   const queryLogsData = rows.data && {
-    items: rows.data.items.slice(0, pageSize).map((item) => ({
-      ...item,
-      hostname:
-        dashboard.servers.find((server) => server.id === item.serverId)?.name ??
-        "Unknown",
-    })),
+    items: identifyQueryLogRows(rows.data.items.slice(0, pageSize)).map(
+      (item) => ({
+        ...item,
+        hostname:
+          dashboard.servers.find((server) => server.id === item.serverId)
+            ?.name ?? "Unknown",
+      }),
+    ),
     totalCount:
       rows.data.diagnostics.length || count.data?.diagnostics.length
         ? undefined
@@ -174,11 +179,29 @@ export function QueryLogs({
     },
   });
 
+  const table = (
+    <DataTable
+      columns={showServerColumn ? serverColumns : columns}
+      data={queryLogsData?.items ?? []}
+      pageCount={pageCount}
+      hasNextPage={hasNextPage}
+      pageIndex={pageIndex}
+      onPageChange={setPageIndex}
+      pageSize={pageSize}
+      onPageSizeChange={setPageSize}
+      isLoading={showLogsLoading}
+      getRowId={(entry) => entry.rowId}
+      renderMobileRow={(entry) => (
+        <MobileQueryLog entry={entry} showServer={showServerColumn} />
+      )}
+    />
+  );
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex w-full flex-row items-center justify-between">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex w-full flex-row flex-wrap items-center justify-between gap-y-3">
+          <div className="flex min-w-40 flex-1 flex-col gap-1">
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
               Query Logs
@@ -214,7 +237,7 @@ export function QueryLogs({
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
+                  size="responsive-icon"
                   onClick={() => refetch()}
                   disabled={isFetchingLogs}
                   aria-label="Refresh"
@@ -236,7 +259,11 @@ export function QueryLogs({
               value={responseTypeFilter}
               onValueChange={handleResponseTypeChange}
             >
-              <SelectTrigger className="w-full sm:w-36">
+              <SelectTrigger
+                size="responsive"
+                aria-label="Filter by reason"
+                className="w-full sm:w-36"
+              >
                 <SelectValue placeholder="Response" />
               </SelectTrigger>
               <SelectContent>
@@ -252,7 +279,11 @@ export function QueryLogs({
               value={questionTypeFilter}
               onValueChange={handleQuestionTypeChange}
             >
-              <SelectTrigger className="w-full sm:w-28">
+              <SelectTrigger
+                size="responsive"
+                aria-label="Filter by record type"
+                className="w-full sm:w-28"
+              >
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>
@@ -267,19 +298,7 @@ export function QueryLogs({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <DataTable
-          columns={showServerColumn ? serverColumns : columns}
-          data={queryLogsData?.items ?? []}
-          pageCount={pageCount}
-          hasNextPage={hasNextPage}
-          pageIndex={pageIndex}
-          onPageChange={setPageIndex}
-          pageSize={pageSize}
-          onPageSizeChange={setPageSize}
-          isLoading={showLogsLoading}
-        />
-      </CardContent>
+      <CardContent>{table}</CardContent>
     </Card>
   );
 }

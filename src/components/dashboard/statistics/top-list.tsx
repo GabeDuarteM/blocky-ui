@@ -13,7 +13,7 @@ import {
 } from "~/components/ui/card";
 import { FloatingCard } from "~/components/ui/floating-card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { cn, formatCount } from "~/lib/utils";
+import { formatCount } from "~/lib/utils";
 
 export type TopListFilter = "all" | "blocked";
 
@@ -61,23 +61,17 @@ function TopListFilterToggle({ value, onChange }: TopListFilterControls) {
     <div className="flex gap-1 sm:justify-end">
       <Button
         variant={value === "all" ? "default" : "outline"}
-        size="sm"
+        size="responsive"
+        aria-pressed={value === "all"}
         onClick={() => onChange("all")}
-        className={cn(
-          "h-7 px-2.5 text-xs",
-          value === "all" && "border border-transparent",
-        )}
       >
         All
       </Button>
       <Button
         variant={value === "blocked" ? "default" : "outline"}
-        size="sm"
+        size="responsive"
+        aria-pressed={value === "blocked"}
         onClick={() => onChange("blocked")}
-        className={cn(
-          "h-7 px-2.5 text-xs",
-          value === "blocked" && "border border-transparent",
-        )}
       >
         Blocked
       </Button>

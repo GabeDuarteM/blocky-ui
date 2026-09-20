@@ -1,16 +1,19 @@
 "use client";
 
+import { cn } from "~/lib/utils";
 import { useState, useRef, useEffect } from "react";
-import { Button } from "~/components/ui/button";
+import { Button, buttonVariants } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 
 interface PageNumbersProps {
+  grouped?: boolean;
   currentPage: number;
-  totalPages: number;
+  totalPages?: number;
   onPageChange: (page: number) => void;
 }
 
 export function PageNumbers({
+  grouped = false,
   currentPage,
   totalPages,
   onPageChange,
@@ -25,6 +28,30 @@ export function PageNumbers({
       inputRef.current.select();
     }
   }, [isEditing]);
+
+  const pageClassName = cn(
+    "tabular-nums",
+    grouped ? "min-w-24" : "text-muted-foreground h-7 px-2 text-xs",
+  );
+
+  if (totalPages === undefined) {
+    return (
+      <span
+        aria-label={`Page ${currentPage + 1}, total pages unavailable`}
+        className={cn(
+          buttonVariants({
+            variant: grouped ? "outline" : "ghost",
+            size: grouped ? "responsive" : "default",
+            groupPosition: grouped ? "middle" : undefined,
+          }),
+          pageClassName,
+          "pointer-events-none",
+        )}
+      >
+        {(currentPage + 1).toLocaleString()} / …
+      </span>
+    );
+  }
 
   const handleClick = () => {
     setInputValue(String(currentPage + 1));
@@ -67,16 +94,25 @@ export function PageNumbers({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         aria-label={`Go to page (1-${totalPages})`}
-        className="h-7 w-16 px-1 text-center text-xs tabular-nums"
+        controlSize={grouped ? "responsive" : "default"}
+        className={cn(
+          "px-1 text-center tabular-nums",
+          grouped
+            ? "relative -ml-px w-24 rounded-none focus-visible:z-10"
+            : "h-7 w-16 text-xs",
+        )}
       />
     );
   }
 
   return (
     <Button
-      variant="ghost"
+      aria-current="page"
+      variant={grouped ? "outline" : "ghost"}
+      size={grouped ? "responsive" : "default"}
+      groupPosition={grouped ? "middle" : undefined}
       onClick={handleClick}
-      className="text-muted-foreground h-7 px-2 text-xs tabular-nums"
+      className={pageClassName}
     >
       {(currentPage + 1).toLocaleString()} / {totalPages.toLocaleString()}
     </Button>
