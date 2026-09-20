@@ -17,6 +17,7 @@ const scopeSchema = z.object({ serverIds: z.array(z.string()).min(1) });
 const rangeSchema = scopeSchema.extend({ range: z.enum(TIME_RANGES) });
 const filtersSchema = scopeSchema.extend({
   search: z.string().optional(),
+  domain: z.string().optional(),
   client: z.string().optional(),
   questionType: z.string().optional(),
   responseType: z.string().optional(),

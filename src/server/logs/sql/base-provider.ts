@@ -261,6 +261,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       );
     }
 
+    if (options.domain) {
+      filters.push(
+        sql`LOWER(${this.columns.questionName}) = LOWER(${options.domain})`,
+      );
+    }
+
     if (options.responseType) {
       filters.push(eq(this.columns.responseType, options.responseType));
     }
