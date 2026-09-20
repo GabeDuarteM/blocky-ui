@@ -12,8 +12,10 @@ export interface TimeRangeConfig {
   interval: number;
 }
 
-export function getTimeRangeConfig(range: TimeRange): TimeRangeConfig {
-  const now = Date.now();
+export function getTimeRangeConfig(
+  range: TimeRange,
+  now = Date.now(),
+): TimeRangeConfig {
   switch (range) {
     case "1h":
       return {
@@ -41,10 +43,10 @@ export function getTimeRangeConfig(range: TimeRange): TimeRangeConfig {
 export function aggregateQueriesOverTime(
   entries: LogEntry[],
   range: TimeRange,
+  now = Date.now(),
 ): QueriesOverTimeEntry[] {
-  const { startTime, interval } = getTimeRangeConfig(range);
+  const { startTime, interval } = getTimeRangeConfig(range, now);
   const buckets = new Map<number, QueriesOverTimeEntry>();
-  const now = Date.now();
   const firstBucket = Math.floor(startTime.getTime() / interval) * interval;
   for (let time = firstBucket; time <= now; time += interval) {
     buckets.set(time, {

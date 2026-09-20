@@ -64,7 +64,7 @@ describe("csv provider: file selection", () => {
 });
 
 describe("csv-client provider: date-based file selection", () => {
-  it("reads only files from the latest date prefix", async () => {
+  it("reads retained dates together", async () => {
     const directory = fs.mkdtempSync(
       path.join(os.tmpdir(), "csv-client-date-"),
     );
@@ -96,8 +96,11 @@ describe("csv-client provider: date-based file selection", () => {
       const provider = new CsvClientLogProvider({ directory });
       const result = await provider.getQueryLogs({ limit: 100, offset: 0 });
 
-      expect(result.totalCount).toBe(1);
-      expect(result.items[0]?.questionName).toBe("today-domain.com");
+      expect(result.totalCount).toBe(2);
+      expect(result.items.map((entry) => entry.questionName)).toEqual([
+        "today-domain.com",
+        "yesterday-domain.com",
+      ]);
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }

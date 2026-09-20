@@ -334,22 +334,17 @@ function setupCsvClient(entries: LogEntry[]): {
   directory: string;
 } {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "csv-client-test-"));
-  // All entries use today's date prefix because CsvClientLogProvider only reads
-  // the latest-date files. Using actual dates from requestTs would exclude older
-  // entries from the conformance suite. Dedicated file-selection tests in the
-  // test file verify multi-date behavior separately.
-  const datePrefix = formatDate(new Date());
-
   const grouped = new Map<string, LogEntry[]>();
   for (const entry of entries) {
-    const clientKey = entry.clientName ?? "unknown";
+    const date = formatDate(new Date(entry.requestTs ?? Date.now()));
+    const clientKey = `${date}_${entry.clientName ?? "unknown"}`;
     const existing = grouped.get(clientKey) ?? [];
     existing.push(entry);
     grouped.set(clientKey, existing);
   }
 
   for (const [clientName, clientEntries] of grouped) {
-    const fileName = `${datePrefix}_${clientName}.log`;
+    const fileName = `${clientName}.log`;
     const chronological = [...clientEntries].reverse();
     const lines = chronological.map(entryToCsvLine);
     fs.writeFileSync(path.join(directory, fileName), lines.join("\n"));
