@@ -52,7 +52,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
   const showDisable = enabled > 0 || unavailable > 0;
 
   return (
-    <Card className="min-h-52">
+    <Card role="region" aria-label="Blocking Status" className="min-h-52">
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center justify-between gap-2">
           <span className="flex items-center gap-2">

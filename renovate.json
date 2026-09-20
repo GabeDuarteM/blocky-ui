@@ -30,6 +30,7 @@
       "groupName": "tailwind",
       "matchPackageNames": [
         "tailwindcss{/,}**",
+        "@tailwindcss/**",
         "tailwind-merge{/,}**",
         "prettier-plugin-tailwindcss{/,}**"
       ]
@@ -40,16 +41,29 @@
       "matchPackageNames": ["@t3-oss/env-{/,}**"]
     },
     {
+      "matchPackageNames": ["lucide-react"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
       "matchPackageNames": ["zod"],
       "schedule": ["every 1 week on friday"]
     },
     {
-      "matchPackageNames": ["trpc{/,}**"],
+      "matchPackageNames": ["@trpc/**"],
       "schedule": ["every 1 week on friday"]
     },
     {
       "matchPackageNames": ["@tanstack/react-query"],
       "schedule": ["every 1 week on friday"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "groupName": "playwright",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"]
     }
   ],
   "customManagers": [

@@ -11,6 +11,8 @@ out
 # Testing
 coverage
 .nyc_output
+test-results
+playwright-report
 
 # Debug
 npm-debug.log*
@@ -43,4 +45,4 @@ Dockerfile
 # Misc
 README.md
 LICENSE
-*.log 
+*.log

@@ -173,7 +173,7 @@ export function QueryLogs({
   });
 
   return (
-    <Card>
+    <Card role="region" aria-label="Query Logs">
       <CardHeader>
         <div className="flex w-full flex-row items-center justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -234,7 +234,10 @@ export function QueryLogs({
               value={responseTypeFilter}
               onValueChange={handleResponseTypeChange}
             >
-              <SelectTrigger className="w-full sm:w-36">
+              <SelectTrigger
+                aria-label="Response reason"
+                className="w-full sm:w-36"
+              >
                 <SelectValue placeholder="Response" />
               </SelectTrigger>
               <SelectContent>
@@ -250,7 +253,7 @@ export function QueryLogs({
               value={questionTypeFilter}
               onValueChange={handleQuestionTypeChange}
             >
-              <SelectTrigger className="w-full sm:w-28">
+              <SelectTrigger aria-label="Query type" className="w-full sm:w-28">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
               <SelectContent>

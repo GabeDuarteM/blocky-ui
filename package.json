@@ -26,6 +26,8 @@
     "knip": "SKIP_ENV_VALIDATION=true knip",
     "checkdupe": "jscpd",
     "test": "vitest run",
+    "test:e2e": "bash scripts/e2e.sh",
+    "test:e2e:update": "bun run test:e2e --update-snapshots",
     "test:watch": "vitest",
     "log-data": "bunx tsx scripts/log-data/cli.ts"
   },
@@ -68,6 +70,7 @@
     "@changesets/cli": "3.0.3",
     "@eslint/compat": "2.1.1",
     "@faker-js/faker": "10.6.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@tanstack/react-query-devtools": "5.102.8",
     "@testcontainers/mysql": "12.1.0",

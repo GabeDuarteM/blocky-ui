@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import {
   flexRender,
   coreFeatures,
@@ -52,6 +54,7 @@ export function DataTable<TData extends RowData>({
   onPageSizeChange,
   isLoading,
 }: DataTableProps<TData>) {
+  const tableId = useId();
   const showPageCount =
     pageCount !== undefined &&
     pageIndex < Math.max(1, pageCount) &&
@@ -72,13 +75,16 @@ export function DataTable<TData extends RowData>({
     <div>
       <div className="rounded-md border">
         <div className="overflow-y-auto">
-          <Table>
+          <Table aria-label="Query logs" aria-busy={isLoading}>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
                     return (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        id={`${tableId}-${header.column.id}`}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(
@@ -91,7 +97,7 @@ export function DataTable<TData extends RowData>({
                 </TableRow>
               ))}
             </TableHeader>
-            <TableBody>
+            <TableBody aria-label="Query log entries">
               {isLoading ? (
                 Array.from({ length: pageSize }, (_, index) => (
                   <TableRow key={index} className="h-12">
@@ -115,7 +121,11 @@ export function DataTable<TData extends RowData>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow key={row.id} className="h-12">
                     {row.getAllCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        id={`${tableId}-${cell.id}`}
+                        aria-labelledby={`${tableId}-${cell.column.id} ${tableId}-${cell.id}`}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
@@ -136,7 +146,11 @@ export function DataTable<TData extends RowData>({
             value={pageSize.toString()}
             onValueChange={handlePageSizeChange}
           >
-            <SelectTrigger size="sm" className="h-7 w-18 text-xs">
+            <SelectTrigger
+              aria-label="Rows per page"
+              size="sm"
+              className="h-7 w-18 text-xs"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

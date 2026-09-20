@@ -1,9 +1,11 @@
 import type { LogEntry } from "~/server/logs/types";
-import { faker } from "@faker-js/faker";
+import { en, Faker } from "@faker-js/faker";
 import {
   BLOCKY_DNS_RECORD_TYPES,
   BLOCKY_RESPONSE_TYPES,
 } from "~/lib/constants";
+
+const faker = new Faker({ locale: en });
 
 // Use weighted pools to create realistic distribution
 const DOMAIN_POOL = [
@@ -44,12 +46,14 @@ function weightedPick<T extends { weight: number }>(pool: readonly T[]): T {
   let random = faker.number.int({ min: 0, max: totalWeight - 1 });
   for (const item of pool) {
     random -= item.weight;
-    if (random < 0) return item;
+    if (random < 0) {
+      return item;
+    }
   }
   return first;
 }
 
-const generateMockLogEntry = (id: number): LogEntry => {
+const generateMockLogEntry = (id: number, now: number): LogEntry => {
   const domainEntry = weightedPick(DOMAIN_POOL);
   const clientEntry = weightedPick(CLIENT_POOL);
 
@@ -73,8 +77,8 @@ const generateMockLogEntry = (id: number): LogEntry => {
     id,
     requestTs: faker.date
       .between({
-        from: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-        to: new Date(),
+        from: new Date(now - 7 * 24 * 60 * 60 * 1000),
+        to: new Date(now),
       })
       .toISOString(),
     clientIp: clientEntry.ip,
@@ -91,6 +95,9 @@ const generateMockLogEntry = (id: number): LogEntry => {
   };
 };
 
-export const logEntryMock: LogEntry[] = Array.from({ length: 200 }, (_, i) =>
-  generateMockLogEntry(i + 1),
-);
+export function getMockLogEntries(now = Date.now()): LogEntry[] {
+  faker.seed(42);
+  return Array.from({ length: 200 }, (_, i) =>
+    generateMockLogEntry(i + 1, now),
+  );
+}

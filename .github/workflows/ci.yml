@@ -12,45 +12,49 @@ env:
   CI: true
 
 jobs:
-  ci:
-    name: CI
+  checks:
+    name: Repository checks
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-project
+      - run: bun run verify
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run end-to-end tests
+        run: bash scripts/e2e.sh
+      - name: Upload browser failure details
+        if: failure()
+        uses: actions/upload-artifact@v7
         with:
-          node-version: 24
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run the CI script
-        run: bun run verify
+          name: e2e-test-results
+          path: test-results/
+          retention-days: 7
 
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-project
+      - run: bun run test
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-
-      - name: Install Dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Run Integration Tests
-        run: bun run test
+  ci:
+    name: CI
+    if: always()
+    needs: [checks, e2e, integration-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require all checks to pass
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          for result in $RESULTS; do
+            test "$result" = success || exit 1
+          done

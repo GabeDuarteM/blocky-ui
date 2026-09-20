@@ -67,6 +67,15 @@ bun run test
 
 Integration tests use testcontainers and require Docker or Podman to be running.
 
+### End-to-end tests
+
+```bash
+bun run test:e2e
+bun run test:e2e:update
+```
+
+Both commands use the same container as CI to avoid visual inconsistencies between different environments.
+
 ## Adding a Changeset
 
 This project uses [Changesets](https://github.com/changesets/changesets) for versioning. When your PR introduces user-facing changes (bug fixes, new features, etc.), you can include a changeset with
@@ -97,11 +106,7 @@ git push origin my-change
 
 2. Open a pull request against `main` on [GabeDuarteM/blocky-ui](https://github.com/GabeDuarteM/blocky-ui).
 
-3. CI will automatically run:
-   - **CI job** — linting, formatting, and type checking (`bun run verify`)
-   - **Integration tests** — Vitest with testcontainers (`bun run test`)
-
-   Both checks must pass before your PR can be merged.
+3. CI checks must pass before your PR can be merged.
 
 ## Reporting Bugs and Requesting Features
 
