@@ -23,4 +23,4 @@ The dashboard is easier to read and use on smaller screens, with a compact query
 
 - Align the sizing and appearance of fields, filters, buttons, and status badges across the dashboard.
 
-![Mobile query logs with two demo results, inline details, and single-page pagination](https://github.com/user-attachments/assets/e31d131c-3ead-4ced-b7de-5eca1452989a)
+![Mobile query logs with two demo results, inline details, and single-page pagination](https://github.com/user-attachments/assets/44d76e0b-4ee7-4306-abb8-67b2c19919ac)
