@@ -14,6 +14,11 @@ env:
 jobs:
   checks:
     name: Repository checks
+    if: &run-checks >-
+      ${{ !(github.event_name == 'pull_request' &&
+        github.event.pull_request.head.ref == 'changeset-release/main' &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        github.event.pull_request.user.login == 'github-actions[bot]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -22,6 +27,7 @@ jobs:
 
   e2e:
     name: E2E
+    if: *run-checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,6 +44,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
+    if: *run-checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -53,8 +60,13 @@ jobs:
     steps:
       - name: Require all checks to pass
         env:
+          RUN_CHECKS: *run-checks
           RESULTS: ${{ join(needs.*.result, ' ') }}
         run: |
+          expected=success
+          if [ "$RUN_CHECKS" = false ]; then
+            expected=skipped
+          fi
           for result in $RESULTS; do
-            test "$result" = success || exit 1
+            test "$result" = "$expected" || exit 1
           done

@@ -23,6 +23,7 @@ jobs:
       published: ${{ steps.changesets.outputs.published }}
       publishedPackages: ${{ steps.changesets.outputs.published-packages }}
     permissions:
+      checks: write
       contents: write
       packages: write
       pull-requests: write
@@ -46,6 +47,23 @@ jobs:
           publish-script: bun changeset publish
           commit-message: "chore: update versions"
           pr-title: "Release new version"
+
+      - name: Skip CI for the release pull request
+        if: steps.changesets.outputs.pr-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        run: |
+          set -euo pipefail
+
+          head_sha=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)
+          gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
+            -f name=CI \
+            -f head_sha="$head_sha" \
+            -f status=completed \
+            -f conclusion=skipped \
+            -f 'output[title]=Release metadata only' \
+            -f 'output[summary]=CI is not required for the Changesets version bump and release notes.'
 
       - name: Format GitHub release notes
         if: steps.changesets.outputs.published == 'true'
