@@ -2,11 +2,11 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
-import { logEntryMock } from "~/mocks/logEntryMock";
+import { getMockLogEntries } from "~/mocks/logEntryMock";
 import { type LogEntry } from "~/server/logs/types";
 
 function renderLog(overrides: Partial<LogEntry>, showServer = false) {
-  const sample = logEntryMock[0];
+  const sample = getMockLogEntries()[0];
   if (!sample) {
     throw new Error("The query log fixture is empty");
   }

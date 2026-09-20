@@ -11,7 +11,9 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Total", exact: true }),
   ).toBeVisible();
-  await expect(getQueryLogs(page).rows).toHaveCount(10);
+  const logs = getQueryLogs(page);
+  await expect(logs.entries).toHaveAttribute("aria-busy", "false");
+  await expect(logs.rows).toHaveCount(10);
   await expect(
     page.getByText("12 ms avg. response", { exact: true }),
   ).toBeVisible();
