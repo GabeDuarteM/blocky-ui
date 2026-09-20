@@ -51,6 +51,7 @@ export interface LogScope {
 export interface QueryLogFilters extends LogScope {
   maxId?: number;
   search?: string;
+  domain?: string;
   responseType?: string;
   client?: string;
   questionType?: string;

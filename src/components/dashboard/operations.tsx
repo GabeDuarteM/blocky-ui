@@ -34,6 +34,7 @@ export function Operations({ controls }: { controls?: ReactNode }) {
         <ActionLayout controls={controls}>
           <div className="space-y-2">
             <Button
+              size="responsive"
               variant="outline"
               className="flex w-full items-center gap-2"
               onClick={() => void command.execute({ action: "clearCache" })}
@@ -43,6 +44,7 @@ export function Operations({ controls }: { controls?: ReactNode }) {
               Clear DNS Cache
             </Button>
             <Button
+              size="responsive"
               variant="outline"
               className="flex w-full items-center gap-2"
               onClick={() => void command.execute({ action: "refreshLists" })}

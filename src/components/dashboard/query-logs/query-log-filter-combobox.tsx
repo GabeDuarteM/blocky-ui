@@ -1,23 +1,33 @@
 "use client";
 
-import { useState, useRef, type KeyboardEvent } from "react";
+import { useState, useRef } from "react";
+import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { Search, X } from "lucide-react";
 import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
-import { Input } from "~/components/ui/input";
-import { Command } from "~/components/ui/command";
 import {
-  Popover,
-  PopoverContent,
-  PopoverAnchor,
-} from "~/components/ui/popover";
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "~/components/ui/input-group";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxGroup,
+  ComboboxLabel,
+  ComboboxItem,
+  ComboboxList,
+} from "~/components/ui/combobox";
 import {
   useFilterSuggestions,
+  formatCount,
   type FilterValue,
 } from "~/hooks/use-filter-suggestions";
-import { FilterSelect } from "../filter-select";
 
-export type QueryLogFilter = FilterValue;
+export type QueryLogFilter =
+  FilterValue | { type: "domain-search"; value: string };
+
+type FilterOption = NonNullable<QueryLogFilter> & { count: number | null };
 
 interface QueryLogFilterComboboxProps {
   value: QueryLogFilter;
@@ -28,104 +38,136 @@ export function QueryLogFilterCombobox({
   value,
   onChange,
 }: QueryLogFilterComboboxProps) {
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const commandRef = useRef<HTMLDivElement>(null);
-
-  const suggestions = useFilterSuggestions(search);
-
-  const handleSelect = (type: "domain" | "client", selectedValue: string) => {
-    onChange({ type, value: selectedValue });
-    setOpen(false);
-    setSearch("");
-  };
-
-  const handleClear = () => {
-    onChange(null);
-    setSearch("");
-    setOpen(true);
-    inputRef.current?.focus();
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (value && e.key !== "Tab") {
-      e.preventDefault();
-      if (e.key === "Backspace" || e.key === "Delete") {
-        handleClear();
-      } else if (e.key.length === 1) {
-        onChange(null);
-        setSearch(e.key);
-        setOpen(true);
-      }
-      return;
-    }
-
-    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
-      // Forward navigation keys to Command since Input is outside its scope
-      commandRef.current?.dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key: e.key,
-          bubbles: true,
-          cancelable: true,
-        }),
-      );
-    }
-
-    if (e.key === "Escape") {
-      setOpen(false);
-    }
-  };
-
-  const displayValue = value
-    ? `${value.type === "domain" ? "Domain" : "Client"}: ${value.value}`
-    : "";
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const query = search.trim();
+  const suggestions = useFilterSuggestions(query);
+  const groups = [
+    {
+      label: "Domains",
+      items: suggestions.domains.map(({ domain, count }): FilterOption => ({
+        type: "domain",
+        value: domain,
+        count,
+      })),
+    },
+    {
+      label: "Clients",
+      items: suggestions.clients.map(({ client, count }): FilterOption => ({
+        type: "client",
+        value: client,
+        count,
+      })),
+    },
+  ];
+  const suggestionGroups = suggestions.isLoading
+    ? []
+    : groups.filter((group) => group.items.length > 0);
+  const searchOptions: FilterOption[] = query
+    ? [{ type: "domain-search", value: query, count: null }]
+    : [];
+  const visibleGroups = [
+    ...(searchOptions.length
+      ? [{ label: "Search", items: searchOptions }]
+      : []),
+    ...suggestionGroups,
+  ];
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverAnchor asChild>
-        <div className="relative flex-1">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
-          <Input
-            ref={inputRef}
-            aria-label="Filter by domain or client"
-            placeholder="Filter by domain or client..."
-            value={value ? displayValue : search}
-            onChange={(e) => {
-              if (!value) {
-                setSearch(e.target.value);
-              }
-            }}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setOpen(true)}
-            className={cn("pr-8 pl-8", value && "text-primary")}
-          />
-          {value && (
+    <Combobox<NonNullable<QueryLogFilter>>
+      items={visibleGroups}
+      value={value}
+      onValueChange={onChange}
+      onInputValueChange={(inputValue, details) => {
+        setSearch(details.reason === "input-change" ? inputValue : "");
+      }}
+      itemToStringLabel={(item) => item.value}
+      isItemEqualToValue={(item, selected) =>
+        item.type === selected.type && item.value === selected.value
+      }
+      filter={null}
+      autoHighlight={query.length > 0}
+    >
+      <InputGroup
+        ref={anchorRef}
+        controlSize="responsive"
+        className="items-baseline sm:flex-1"
+      >
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
+        {value && (
+          <InputGroupAddon className="items-baseline py-1 pl-8 text-base font-normal md:text-sm">
+            <span className="text-primary">
+              {value.type === "domain-search"
+                ? "Contains"
+                : value.type === "domain"
+                  ? "Domain"
+                  : "Client"}
+              :
+            </span>
+          </InputGroupAddon>
+        )}
+        <ComboboxPrimitive.Input
+          aria-label="Filter query logs"
+          placeholder="Filter by domain or client..."
+          render={
+            <InputGroupInput
+              className={cn(
+                "h-full pr-8",
+                value ? "text-primary !pl-1" : "pl-8",
+              )}
+            />
+          }
+        />
+        <ComboboxPrimitive.Clear
+          aria-label="Clear filter"
+          render={
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleClear}
               className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 h-auto w-auto -translate-y-1/2 p-0.5"
-              aria-label="Clear filter"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </PopoverAnchor>
-      <PopoverContent
-        className="w-[var(--radix-popover-trigger-width)] p-0"
-        align="start"
-        onOpenAutoFocus={(e) => e.preventDefault()}
-      >
-        <Command ref={commandRef} shouldFilter={false}>
-          <FilterSelect
-            value={value}
-            suggestions={suggestions}
-            onSelect={handleSelect}
-          />
-        </Command>
-      </PopoverContent>
-    </Popover>
+            />
+          }
+        >
+          <X className="h-4 w-4" />
+        </ComboboxPrimitive.Clear>
+      </InputGroup>
+      <ComboboxContent anchor={anchorRef} sideOffset={4} className="border p-0">
+        <ComboboxList
+          className="max-h-[300px] p-0"
+          aria-busy={suggestions.isLoading}
+        >
+          {visibleGroups.map((group) => (
+            <ComboboxGroup key={group.label} className="p-1">
+              <ComboboxLabel className="font-medium">
+                {group.label}
+              </ComboboxLabel>
+              {group.items.map((item) => (
+                <ComboboxItem
+                  key={`${item.type}:${item.value}`}
+                  value={item}
+                  className="pr-2 pl-10 [&_[data-slot=combobox-item-indicator]]:right-auto [&_[data-slot=combobox-item-indicator]]:left-2"
+                >
+                  <span className="flex-1 truncate">
+                    {item.count === null
+                      ? `Domains containing "${item.value}"`
+                      : item.value}
+                  </span>
+                  {item.count !== null && (
+                    <span className="text-muted-foreground ml-2 text-xs">
+                      {formatCount(item.count)}
+                    </span>
+                  )}
+                </ComboboxItem>
+              ))}
+            </ComboboxGroup>
+          ))}
+        </ComboboxList>
+        {(suggestions.isLoading || visibleGroups.length === 0) && (
+          <div role="status" className="py-6 text-center text-sm">
+            {suggestions.isLoading ? "Searching..." : "No suggestions found."}
+          </div>
+        )}
+      </ComboboxContent>
+    </Combobox>
   );
 }

@@ -15,9 +15,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Badge } from "~/components/ui/badge";
+import { StatusBadge } from "~/components/dashboard/status-badge";
 import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
 
 const DURATION_PRESETS = [
   { label: "5 minutes", value: "5m", icon: Pause },
@@ -62,15 +61,14 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
           {dashboard.loading ? (
             <Skeleton className="h-5 w-16" />
           ) : (
-            <Badge
-              variant="outline"
-              className={cn(
+            <StatusBadge
+              tone={
                 mixed || unavailable > 0
-                  ? "border-amber-400 bg-amber-400/10 text-amber-400"
+                  ? "warning"
                   : enabled > 0
-                    ? "border-green-400 bg-green-400/10 text-green-600"
-                    : "border-red-400 bg-red-400/10 text-red-400",
-              )}
+                    ? "success"
+                    : "danger"
+              }
             >
               {mixed
                 ? "Mixed"
@@ -79,7 +77,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
                   : enabled > 0
                     ? "Enabled"
                     : "Disabled"}
-            </Badge>
+            </StatusBadge>
           )}
         </CardTitle>
         <CardDescription>
@@ -107,6 +105,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
               )}
               {(disabled > 0 || unavailable > 0) && (
                 <Button
+                  size="responsive"
                   className="flex w-full items-center gap-2"
                   disabled={command.isPending}
                   onClick={() => void command.execute({ action: "enable" })}
@@ -121,6 +120,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
                     const Icon = preset.icon;
                     return (
                       <Button
+                        size="responsive"
                         key={preset.value}
                         variant={
                           preset.value === "0" ? "destructive" : "outline"

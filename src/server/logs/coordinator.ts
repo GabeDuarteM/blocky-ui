@@ -239,6 +239,7 @@ export function createLogCoordinator(
         const options = {
           ...source.scope,
           search: filters.search,
+          domain: filters.domain,
           client: filters.client,
           questionType: filters.questionType,
           responseType: filters.responseType,

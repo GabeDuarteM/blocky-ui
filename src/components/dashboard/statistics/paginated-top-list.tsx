@@ -1,10 +1,9 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
-import { Button } from "~/components/ui/button";
 import { CardFooter } from "~/components/ui/card";
-import { PageNumbers } from "~/components/ui/page-numbers";
+import { PaginationControls } from "~/components/dashboard/pagination-controls";
 import { cn } from "~/lib/utils";
 import { TopListCard, TopListEntry, type TopListFilter } from "./top-list";
 
@@ -121,13 +120,14 @@ function TopListBar({
 }
 
 function TopListPagination({
+  title,
   page,
   limit,
   totalCount,
   onPageChange,
 }: Pick<
   PaginatedTopListProps,
-  "page" | "limit" | "totalCount" | "onPageChange"
+  "title" | "page" | "limit" | "totalCount" | "onPageChange"
 >) {
   const totalPages = Math.ceil(totalCount / limit);
   if (totalPages <= 1) {
@@ -135,37 +135,19 @@ function TopListPagination({
   }
 
   return (
-    <CardFooter className="justify-between border-t pt-4">
-      <span className="text-muted-foreground text-xs tabular-nums">
+    <CardFooter className="flex-wrap justify-between gap-3 border-t pt-4">
+      <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
         {(page * limit + 1).toLocaleString()}-
         {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
         {totalCount.toLocaleString()}
       </span>
-      <div className="flex gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page === 0}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <PageNumbers
-          currentPage={page}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages - 1}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <PaginationControls
+        label={`${title} pagination`}
+        pageIndex={page}
+        pageCount={totalPages}
+        hasNextPage={page < totalPages - 1}
+        onPageChange={onPageChange}
+      />
     </CardFooter>
   );
 }
@@ -196,6 +178,7 @@ export function PaginatedTopList({
       skeletonRows={limit}
       footer={
         <TopListPagination
+          title={title}
           page={page}
           limit={limit}
           totalCount={totalCount}

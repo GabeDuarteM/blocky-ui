@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
-import { Badge } from "~/components/ui/badge";
+import { Badge, type BadgeVariants } from "~/components/ui/badge";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
   Tooltip,
@@ -18,7 +18,7 @@ interface StatCardProps {
   icon: LucideIcon;
   badge?: {
     value: string;
-    variant?: "default" | "secondary" | "destructive" | "outline";
+    variant?: BadgeVariants;
   };
   detail?: string;
   isLoading?: boolean;

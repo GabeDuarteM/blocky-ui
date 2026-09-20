@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { getQueryLogs } from "./query-logs";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
@@ -10,9 +11,7 @@ test.beforeEach(async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "Total", exact: true }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("rowgroup", { name: "Query log entries" }).getByRole("row"),
-  ).toHaveCount(10);
+  await expect(getQueryLogs(page).rows).toHaveCount(10);
   await expect(
     page.getByText("12 ms avg. response", { exact: true }),
   ).toBeVisible();

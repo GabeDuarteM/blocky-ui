@@ -67,10 +67,16 @@ export async function streamAndParseEntries(
 export function createFilterFn(
   options: Pick<
     QueryLogsOptions,
-    "search" | "responseType" | "client" | "questionType" | "excludedHostnames"
+    | "search"
+    | "domain"
+    | "responseType"
+    | "client"
+    | "questionType"
+    | "excludedHostnames"
   >,
 ): (entry: LogEntry) => boolean {
   const searchLower = options.search?.toLowerCase();
+  const domainLower = options.domain?.toLowerCase();
   const clientLower = options.client?.toLowerCase();
 
   return (entry: LogEntry): boolean => {
@@ -80,6 +86,8 @@ export function createFilterFn(
     const passesSearch =
       !searchLower ||
       entry.questionName?.toLowerCase().includes(searchLower) === true;
+    const passesDomain =
+      !domainLower || entry.questionName?.toLowerCase() === domainLower;
     const passesResponseType =
       !options.responseType || entry.responseType === options.responseType;
     const passesClient =
@@ -88,7 +96,11 @@ export function createFilterFn(
     const passesQuestionType =
       !options.questionType || entry.questionType === options.questionType;
     return (
-      passesSearch && passesResponseType && passesClient && passesQuestionType
+      passesSearch &&
+      passesDomain &&
+      passesResponseType &&
+      passesClient &&
+      passesQuestionType
     );
   };
 }

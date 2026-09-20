@@ -2,7 +2,6 @@
 
 import { Button } from "~/components/ui/button";
 import { TIME_RANGES, type TimeRange } from "~/lib/constants";
-import { cn } from "~/lib/utils";
 
 interface TimeRangeSelectorProps {
   value: TimeRange;
@@ -16,12 +15,9 @@ export function TimeRangeSelector({ value, onChange }: TimeRangeSelectorProps) {
         <Button
           key={range}
           variant={value === range ? "default" : "outline"}
-          size="sm"
+          size="responsive"
+          aria-pressed={value === range}
           onClick={() => onChange(range)}
-          className={cn(
-            "h-8 px-2.5 text-xs",
-            value === range && "border border-transparent",
-          )}
         >
           {range}
         </Button>

@@ -3,6 +3,7 @@
 import { useCountdown } from "~/hooks/use-countdown";
 import { useState } from "react";
 import { ChevronDown, Search, Server as ServerIcon } from "lucide-react";
+import { StatusBadge } from "~/components/dashboard/status-badge";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Switch } from "~/components/ui/switch";
@@ -62,13 +63,9 @@ function BlockingLabel({ server }: { server: PickerServer }) {
     server.statusUpdatedAt ?? 0,
   );
   return (
-    <span
-      className={cn(
-        "max-w-32 rounded border px-1.5 py-0.5 text-[11px] break-words",
-        server.blocking
-          ? "border-emerald-400/30 text-emerald-400"
-          : "border-red-400/30 text-red-400",
-      )}
+    <StatusBadge
+      tone={server.blocking ? "success" : "danger"}
+      className="max-w-32 break-words whitespace-normal"
       title={
         [
           server.disabledGroups?.length
@@ -88,7 +85,7 @@ function BlockingLabel({ server }: { server: PickerServer }) {
       {!server.blocking &&
         Boolean(server.disabledGroups?.length) &&
         ` · ${server.disabledGroups?.join(", ")}`}
-    </span>
+    </StatusBadge>
   );
 }
 
@@ -165,8 +162,10 @@ export function ServerSelector({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
+          size="responsive"
+          backdropBlur
           aria-label={`${props.label}: ${selection}`}
-          className="bg-card dark:bg-card dark:hover:bg-accent gap-2"
+          className="gap-2"
         >
           <ServerIcon className="text-muted-foreground size-4" />
           <span className="text-muted-foreground">{props.label}:</span>
@@ -227,7 +226,7 @@ export function ActionTargets({
         <Button
           variant="outline"
           aria-label={`Choose ${props.label}`}
-          className="bg-card dark:bg-card dark:hover:bg-accent h-auto w-full justify-start gap-3 rounded-lg p-3"
+          className="h-auto w-full justify-start gap-3 p-3"
         >
           <ServerIcon className="text-muted-foreground size-5 shrink-0" />
           <span className="min-w-0 flex-1 text-left">

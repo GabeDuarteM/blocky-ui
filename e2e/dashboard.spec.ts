@@ -1,9 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
+import { getQueryLogs } from "./query-logs";
 
 async function queryLogs(page: Page) {
-  const logs = page.getByRole("region", { name: "Query Logs", exact: true });
-  await logs.getByRole("switch", { name: "Auto", exact: true }).uncheck();
-  await expect(logs.getByRole("table")).toHaveAttribute("aria-busy", "false");
+  const logs = getQueryLogs(page);
+  await logs.region
+    .getByRole("switch", { name: "Auto", exact: true })
+    .uncheck();
+  await expect(logs.entries).toHaveAttribute("aria-busy", "false");
   return logs;
 }
 
@@ -60,10 +63,7 @@ test("DNS queries run only on selected servers", async ({ page }) => {
 });
 
 test("query log pagination changes rows and page size", async ({ page }) => {
-  const logs = await queryLogs(page);
-  const rows = logs
-    .getByRole("rowgroup", { name: "Query log entries" })
-    .getByRole("row");
+  const { region: logs, entries, rows } = await queryLogs(page);
   const firstPage = await rows.allTextContents();
   const firstRow = await rows.first().innerText();
   await expect(rows).toHaveCount(10);
@@ -72,7 +72,7 @@ test("query log pagination changes rows and page size", async ({ page }) => {
   ).toBeDisabled();
 
   await logs.getByRole("button", { name: "Next page" }).click();
-  await expect(logs.getByRole("table")).toHaveAttribute("aria-busy", "false");
+  await expect(entries).toHaveAttribute("aria-busy", "false");
   await expect(rows).not.toHaveText(firstPage);
   await logs.getByRole("button", { name: "Previous page" }).click();
   await expect(rows).toHaveText(firstPage);
@@ -86,30 +86,22 @@ test("query log pagination changes rows and page size", async ({ page }) => {
 test("domain suggestions filter the query log and can be cleared", async ({
   page,
 }) => {
-  const logs = await queryLogs(page);
-  const domains = logs.getByRole("cell", { name: /^Domain / });
-  const originalDomains = await domains.allTextContents();
-  const domain = await domains.first().innerText();
-  await logs
-    .getByRole("textbox", { name: "Filter by domain or client" })
-    .fill(domain);
+  const { region: logs, rows } = await queryLogs(page);
+  const originalRows = await rows.allTextContents();
+  const domain = "google.com";
+  await logs.getByRole("combobox", { name: "Filter query logs" }).fill(domain);
   await page
     .getByRole("option")
     .filter({ has: page.getByText(domain, { exact: true }) })
     .click();
-  await expect
-    .poll(async () => {
-      const values = await domains.allTextContents();
-      return (
-        values.length > 0 && values.every((value) => value.includes(domain))
-      );
-    })
-    .toBe(true);
+  await expect(
+    rows.filter({ has: page.getByText(domain, { exact: true }) }),
+  ).toHaveCount(10);
 
   await logs.getByRole("button", { name: "Clear filter" }).click();
   await page.keyboard.press("Escape");
   await expect(
-    logs.getByRole("textbox", { name: "Filter by domain or client" }),
+    logs.getByRole("combobox", { name: "Filter query logs" }),
   ).toHaveValue("");
-  await expect(domains).toHaveText(originalDomains);
+  await expect(rows).toHaveText(originalRows);
 });

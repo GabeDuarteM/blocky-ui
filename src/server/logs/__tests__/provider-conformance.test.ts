@@ -300,6 +300,31 @@ function defineProviderTests(providerName: string) {
         }
       });
 
+      it("distinguishes exact domains from partial searches", async () => {
+        const expected = seedData.filter(
+          (entry) => entry.questionName?.toLowerCase() === "google.com",
+        );
+        expect(expected.length).toBeGreaterThan(0);
+        const options = {
+          domain: "GOOGLE.COM",
+          limit: seedData.length,
+          offset: 0,
+        };
+        const rows = await provider.getQueryLogRows(options);
+        expect(rows).toHaveLength(expected.length);
+        expect(
+          rows.every((row) => row.questionName?.toLowerCase() === "google.com"),
+        ).toBe(true);
+        expect(await provider.getQueryLogCount(options)).toBe(expected.length);
+        expect(
+          await provider.getQueryLogRows({ ...options, domain: "google" }),
+        ).toEqual([]);
+        expect(await provider.getQueryLogCount({ domain: "google" })).toBe(0);
+        expect(
+          await provider.getQueryLogCount({ search: "google" }),
+        ).toBeGreaterThan(0);
+      });
+
       it("combined filters", async () => {
         const result = await provider.getQueryLogs({
           limit: 100,

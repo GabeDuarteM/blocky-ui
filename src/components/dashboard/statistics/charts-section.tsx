@@ -62,14 +62,17 @@ export function ChartsSection() {
         icon={ListOrdered}
         controls={
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">Rows</span>
+            <div className="shrink-0">
               <Select
                 value={String(rowsPerTable)}
                 onValueChange={handleRowsChange}
               >
-                <SelectTrigger size="sm" className="w-18 text-xs">
-                  <SelectValue />
+                <SelectTrigger
+                  size="responsive"
+                  aria-label="Top list rows per page"
+                  className="w-auto min-w-24"
+                >
+                  <SelectValue>{rowsPerTable} rows</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {ROWS_OPTIONS.map((option) => (

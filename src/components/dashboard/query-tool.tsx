@@ -172,10 +172,11 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
             <div className="flex flex-col gap-2 sm:flex-row">
               <Input
                 aria-label="Domain to query"
+                controlSize="responsive"
                 placeholder="Enter domain (e.g., example.com)"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1"
+                className="sm:flex-1"
               />
               <Select
                 value={type}
@@ -183,6 +184,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
               >
                 <SelectTrigger
                   aria-label="DNS record type"
+                  size="responsive"
                   className="w-full sm:w-26"
                 >
                   <SelectValue placeholder="Type" />
@@ -196,6 +198,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                 </SelectContent>
               </Select>
               <Button
+                size="responsive"
                 type="submit"
                 variant="outline"
                 disabled={serverQuery.isPending}
