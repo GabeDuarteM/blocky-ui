@@ -31,6 +31,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -48,7 +50,7 @@ jobs:
           commit-message: "chore: update versions"
           pr-title: "Release new version"
 
-      - name: Skip CI for the release pull request
+      - name: Skip CI for release-only changes
         if: steps.changesets.outputs.pr-number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -56,14 +58,28 @@ jobs:
         run: |
           set -euo pipefail
 
-          head_sha=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json headRefOid --jq .headRefOid)
-          gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
-            -f name=CI \
-            -f head_sha="$head_sha" \
-            -f status=completed \
-            -f conclusion=skipped \
-            -f 'output[title]=Release metadata only' \
-            -f 'output[summary]=CI is not required for the Changesets version bump and release notes.'
+          pr=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json baseRefOid,headRefOid)
+          BASE_SHA=$(jq -r .baseRefOid <<< "$pr")
+          HEAD_SHA=$(jq -r .headRefOid <<< "$pr")
+          git fetch --no-tags origin "$BASE_SHA" "$HEAD_SHA"
+          base=$(git merge-base "$BASE_SHA" "$HEAD_SHA")
+          before=$(git show "$base:package.json" | jq -eS 'select(.version | type == "string") | del(.version)')
+          after=$(git show "$HEAD_SHA:package.json" | jq -eS 'select(.version | type == "string") | del(.version)')
+
+          if [[ "$before" = "$after" ]] &&
+            git diff --quiet "$base" "$HEAD_SHA" -- . \
+              ':(exclude)CHANGELOG.md' ':(exclude)package.json' \
+              ':(exclude,glob).changeset/*.md' &&
+            git diff --quiet --no-renames --diff-filter=d "$base" "$HEAD_SHA" -- .changeset &&
+            git diff --quiet "$base" "$HEAD_SHA" -- .changeset/README.md; then
+            gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
+              -f name=CI \
+              -f head_sha="$HEAD_SHA" \
+              -f status=completed \
+              -f conclusion=skipped \
+              -f 'output[title]=Release metadata only' \
+              -f 'output[summary]=CI is not required for the Changesets version bump and release notes.'
+          fi
 
       - name: Format GitHub release notes
         if: steps.changesets.outputs.published == 'true'
