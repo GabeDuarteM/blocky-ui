@@ -30,6 +30,7 @@
     "log-data": "bunx tsx scripts/log-data/cli.ts"
   },
   "dependencies": {
+    "@base-ui/react": "1.8.0",
     "@radix-ui/react-dialog": "1.1.23",
     "@radix-ui/react-label": "2.1.15",
     "@radix-ui/react-popover": "1.1.23",

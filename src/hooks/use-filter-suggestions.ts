@@ -21,6 +21,7 @@ interface ClientSuggestion {
 export interface FilterSuggestions {
   domains: DomainSuggestion[];
   clients: ClientSuggestion[];
+  isLoading: boolean;
 }
 
 export function useFilterSuggestions(
@@ -32,12 +33,12 @@ export function useFilterSuggestions(
   const debouncedSearch = useDebounce(search, 300);
   const hasSearch = debouncedSearch.length > 0;
 
-  const { data: topDomains } = useLogTopList(
+  const { data: topDomains, isLoading: loadingTopDomains } = useLogTopList(
     { type: "domains", range, limit: 5, offset: 0, filter: "all" },
     !hasSearch,
   );
 
-  const { data: topClients } = useLogTopList(
+  const { data: topClients, isLoading: loadingTopClients } = useLogTopList(
     { type: "clients", range, limit: 5, offset: 0, filter: "all" },
     !hasSearch,
   );
@@ -79,7 +80,13 @@ export function useFilterSuggestions(
         count: item.count,
       })) ?? []);
 
-  return { domains, clients };
+  const isLoading =
+    search !== debouncedSearch ||
+    (hasSearch
+      ? searched.isLoading || searchedClient.isLoading
+      : loadingTopDomains || loadingTopClients);
+
+  return { domains, clients, isLoading };
 }
 
 export function formatCount(count: number): string {

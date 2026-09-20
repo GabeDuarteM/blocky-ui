@@ -79,7 +79,8 @@ export function QueryLogs({
     setPageIndex(0);
   };
 
-  const search = filter?.type === "domain" ? filter.value : undefined;
+  const search = filter?.type === "domain-search" ? filter.value : undefined;
+  const domain = filter?.type === "domain" ? filter.value : undefined;
   const client = filter?.type === "client" ? filter.value : undefined;
   const responseType = isResponseType(responseTypeFilter)
     ? responseTypeFilter
@@ -89,6 +90,7 @@ export function QueryLogs({
     : undefined;
   const searchParams = {
     search,
+    domain,
     client,
     limit: pageSize,
     offset: pageIndex * pageSize,
@@ -104,7 +106,7 @@ export function QueryLogs({
     },
   );
   const count = api.logs.count.useQuery(
-    { search, client, responseType, questionType, serverIds },
+    { search, domain, client, responseType, questionType, serverIds },
     {
       refetchOnWindowFocus: autoRefresh,
       refetchInterval: autoRefresh ? 30_000 : false,

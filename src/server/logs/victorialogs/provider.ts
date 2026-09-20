@@ -40,9 +40,10 @@ function rangeToVlBucket(range: TimeRange): string {
 function regexFilter(
   field: "question_name" | "client_names",
   value: string,
+  match: "contains" | "exact" = "contains",
 ): string {
   const pattern = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return `${field}:~${JSON.stringify(`(?i)${pattern}`)}`;
+  return `${field}:~${JSON.stringify(`(?i)${match === "exact" ? `^${pattern}$` : pattern}`)}`;
 }
 
 // Normalise a VL timestamp to a consistent key format for bucket lookups.
@@ -152,7 +153,7 @@ export class VictoriaLogsProvider implements LogProvider {
   }
 
   private logQuery(options: QueryLogFilters): string {
-    const { search, responseType, client, questionType } = options;
+    const { search, domain, responseType, client, questionType } = options;
     const filters = [this.scopeQuery(options)];
     if (responseType) {
       filters.push(`response_type:exact(${JSON.stringify(responseType)})`);
@@ -165,6 +166,9 @@ export class VictoriaLogsProvider implements LogProvider {
     }
     if (search) {
       filters.push(regexFilter("question_name", search));
+    }
+    if (domain) {
+      filters.push(regexFilter("question_name", domain, "exact"));
     }
     return filters.join(" AND ");
   }

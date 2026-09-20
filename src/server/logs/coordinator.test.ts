@@ -365,6 +365,11 @@ describe("multi-source query logs", () => {
     expect(counts).toHaveBeenCalledTimes(1);
     await logs.count(["a", "b"], { search: "shared" });
     expect(counts).toHaveBeenCalledTimes(2);
+    await logs.count(["a", "b"], { domain: "shared" });
+    expect(counts).toHaveBeenCalledTimes(3);
+    expect(counts).toHaveBeenLastCalledWith(
+      expect.objectContaining({ domain: "shared" }),
+    );
 
     const options = {
       type: "domains",

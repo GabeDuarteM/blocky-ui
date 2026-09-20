@@ -1,3 +1,4 @@
+import { createFilterFn } from "~/server/logs/csv/utils";
 import { isEntryInScope } from "~/server/logs/scope";
 import { type TimeRange } from "~/lib/constants";
 import {
@@ -17,8 +18,8 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
   async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
     const { logEntryMock } = await import("~/mocks/logEntryMock");
 
-    let filteredLogs = logEntryMock
-      .filter((entry) => isEntryInScope(entry, options))
+    const filteredLogs = logEntryMock
+      .filter(createFilterFn(options))
       .toSorted((item1, item2) => {
         const date1 = new Date(item1.requestTs ?? 0);
         const date2 = new Date(item2.requestTs ?? 0);
@@ -28,30 +29,6 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
 
         return 0;
       });
-
-    if (options.search) {
-      filteredLogs = filteredLogs.filter((log) =>
-        log.questionName?.toLowerCase().includes(options.search!.toLowerCase()),
-      );
-    }
-
-    if (options.responseType) {
-      filteredLogs = filteredLogs.filter(
-        (log) => log.responseType === options.responseType,
-      );
-    }
-
-    if (options.client) {
-      filteredLogs = filteredLogs.filter((log) =>
-        log.clientName?.toLowerCase().includes(options.client!.toLowerCase()),
-      );
-    }
-
-    if (options.questionType) {
-      filteredLogs = filteredLogs.filter(
-        (log) => log.questionType === options.questionType,
-      );
-    }
 
     const totalCount = filteredLogs.length;
     const paginatedLogs = filteredLogs.slice(
