@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef, CoreFeatures } from "@tanstack/react-table";
-import type { LogEntry } from "~/server/logs/types";
+import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
 
 import { QueryReasonBadge } from "~/components/dashboard/query-logs/query-reason-badge";
 import { formatQueryDuration } from "~/components/dashboard/query-logs/query-log-format";
@@ -22,7 +22,7 @@ function DomainCell({ domain }: DomainCellProps) {
   );
 }
 
-export const columns: ColumnDef<CoreFeatures, LogEntry>[] = [
+export const columns: ColumnDef<CoreFeatures, QueryLogRow>[] = [
   {
     accessorKey: "requestTs",
     header: "Time",

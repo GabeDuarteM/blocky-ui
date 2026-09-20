@@ -33,6 +33,7 @@ import { PaginationControls } from "~/components/dashboard/pagination-controls";
 interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<CoreFeatures, TData>[];
   data: TData[];
+  getRowId: (entry: TData) => string;
   pageCount?: number;
   hasNextPage?: boolean;
   pageIndex: number;
@@ -46,6 +47,7 @@ interface DataTableProps<TData extends RowData> {
 export function DataTable<TData extends RowData>({
   columns,
   data,
+  getRowId,
   pageCount,
   hasNextPage = false,
   pageIndex,
@@ -64,6 +66,7 @@ export function DataTable<TData extends RowData>({
     features: coreFeatures,
     data,
     columns,
+    getRowId,
   });
 
   return (
@@ -90,8 +93,8 @@ export function DataTable<TData extends RowData>({
           ) : data.length === 0 ? (
             <p className="py-8 text-center text-sm">No results found.</p>
           ) : (
-            data.map((entry, index) => (
-              <div key={index}>{renderMobileRow(entry)}</div>
+            data.map((entry) => (
+              <div key={getRowId(entry)}>{renderMobileRow(entry)}</div>
             ))
           )}
         </div>

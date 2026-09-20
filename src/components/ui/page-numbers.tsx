@@ -107,6 +107,7 @@ export function PageNumbers({
 
   return (
     <Button
+      aria-current="page"
       variant={grouped ? "outline" : "ghost"}
       size={grouped ? "responsive" : "default"}
       groupPosition={grouped ? "middle" : undefined}

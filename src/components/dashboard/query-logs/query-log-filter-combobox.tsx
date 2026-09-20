@@ -88,7 +88,11 @@ export function QueryLogFilterCombobox({
       filter={null}
       autoHighlight={query.length > 0}
     >
-      <InputGroup ref={anchorRef} className="min-h-9 flex-1 items-baseline">
+      <InputGroup
+        ref={anchorRef}
+        controlSize="responsive"
+        className="items-baseline sm:flex-1"
+      >
         <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
         {value && (
           <InputGroupAddon className="items-baseline py-1 pl-8 text-base font-normal md:text-sm">
@@ -107,7 +111,10 @@ export function QueryLogFilterCombobox({
           placeholder="Filter by domain or client..."
           render={
             <InputGroupInput
-              className={cn("h-8 pr-8", value ? "text-primary !pl-1" : "pl-8")}
+              className={cn(
+                "h-full pr-8",
+                value ? "text-primary !pl-1" : "pl-8",
+              )}
             />
           }
         />

@@ -9,9 +9,10 @@ function renderTable(
   pageIndex = 0,
 ) {
   return renderToStaticMarkup(
-    createElement(DataTable, {
+    createElement(DataTable<{ id: number }>, {
       columns: [{ accessorKey: "id", header: "ID" }],
       data: Array.from({ length: 10 }, (_, id) => ({ id })),
+      getRowId: (entry) => String(entry.id),
       pageCount,
       hasNextPage,
       pageIndex,
@@ -35,6 +36,14 @@ function renderNextButton(pageCount: number, hasNextPage: boolean) {
 }
 
 describe("query log pagination with a cached total", () => {
+  it("exposes the current page to assistive technology", () => {
+    const html = renderTable(2, true);
+    expect(html).toMatch(
+      /<button[^>]*aria-current="page"[^>]*>1 \/ 2<\/button>/,
+    );
+    expect(renderTable(undefined, true)).not.toContain('aria-current="page"');
+  });
+
   it("keeps a placeholder for the total before it is available", () => {
     const html = renderTable(undefined, true);
     expect(html).toContain("1 / …");
@@ -78,6 +87,7 @@ function renderMobileTable(data: { id: string }[], isLoading = false) {
     createElement(DataTable<{ id: string }>, {
       columns: [{ accessorKey: "id", header: "ID" }],
       data,
+      getRowId: (entry) => entry.id,
       pageIndex: 0,
       onPageChange: () => undefined,
       pageSize: 10,

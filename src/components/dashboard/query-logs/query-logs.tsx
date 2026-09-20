@@ -1,5 +1,7 @@
 "use client";
 
+import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
+
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { api } from "~/trpc/react";
@@ -116,12 +118,14 @@ export function QueryLogs({
   useLogDiagnostics("rows", rows.data?.diagnostics);
   useLogDiagnostics("count", count.data?.diagnostics);
   const queryLogsData = rows.data && {
-    items: rows.data.items.slice(0, pageSize).map((item) => ({
-      ...item,
-      hostname:
-        dashboard.servers.find((server) => server.id === item.serverId)?.name ??
-        "Unknown",
-    })),
+    items: identifyQueryLogRows(rows.data.items.slice(0, pageSize)).map(
+      (item) => ({
+        ...item,
+        hostname:
+          dashboard.servers.find((server) => server.id === item.serverId)
+            ?.name ?? "Unknown",
+      }),
+    ),
     totalCount:
       rows.data.diagnostics.length || count.data?.diagnostics.length
         ? undefined
@@ -186,12 +190,9 @@ export function QueryLogs({
       pageSize={pageSize}
       onPageSizeChange={setPageSize}
       isLoading={showLogsLoading}
+      getRowId={(entry) => entry.rowId}
       renderMobileRow={(entry) => (
-        <MobileQueryLog
-          key={JSON.stringify(entry)}
-          entry={entry}
-          showServer={showServerColumn}
-        />
+        <MobileQueryLog entry={entry} showServer={showServerColumn} />
       )}
     />
   );
