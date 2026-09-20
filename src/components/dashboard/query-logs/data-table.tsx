@@ -1,5 +1,8 @@
 "use client";
 
+import { type ReactNode } from "react";
+import { cn } from "~/lib/utils";
+
 import {
   flexRender,
   coreFeatures,
@@ -25,9 +28,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { Skeleton } from "~/components/ui/skeleton";
-import { Button } from "~/components/ui/button";
-import { PageNumbers } from "~/components/ui/page-numbers";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PaginationControls } from "~/components/dashboard/pagination-controls";
 
 interface DataTableProps<TData extends RowData> {
   columns: ColumnDef<CoreFeatures, TData>[];
@@ -39,6 +40,7 @@ interface DataTableProps<TData extends RowData> {
   pageSize: number;
   onPageSizeChange: (pageSize: number) => void;
   isLoading: boolean;
+  renderMobileRow?: (entry: TData) => ReactNode;
 }
 
 export function DataTable<TData extends RowData>({
@@ -51,12 +53,8 @@ export function DataTable<TData extends RowData>({
   pageSize,
   onPageSizeChange,
   isLoading,
+  renderMobileRow,
 }: DataTableProps<TData>) {
-  const showPageCount =
-    pageCount !== undefined &&
-    pageIndex < Math.max(1, pageCount) &&
-    hasNextPage === pageIndex < pageCount - 1;
-
   const handlePageSizeChange = (value: string) => {
     onPageSizeChange(Number(value));
     onPageChange(0);
@@ -69,8 +67,41 @@ export function DataTable<TData extends RowData>({
   });
 
   return (
-    <div>
-      <div className="rounded-md border">
+    <div id="query-logs-table">
+      {renderMobileRow && (
+        <div
+          className="divide-border/60 bg-card/30 divide-y overflow-hidden rounded-xl border md:hidden"
+          aria-busy={isLoading}
+        >
+          {isLoading ? (
+            Array.from({ length: pageSize }, (_, index) => (
+              <div
+                key={index}
+                className="flex h-19 items-center gap-3 px-3"
+                aria-hidden="true"
+              >
+                <Skeleton className="h-11 w-21 shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-4/5" />
+                  <Skeleton className="h-3 w-3/5" />
+                </div>
+              </div>
+            ))
+          ) : data.length === 0 ? (
+            <p className="py-8 text-center text-sm">No results found.</p>
+          ) : (
+            data.map((entry, index) => (
+              <div key={index}>{renderMobileRow(entry)}</div>
+            ))
+          )}
+        </div>
+      )}
+      <div
+        className={cn(
+          "rounded-md border",
+          renderMobileRow && "hidden md:block",
+        )}
+      >
         <div className="overflow-y-auto">
           <Table>
             <TableHeader>
@@ -129,15 +160,18 @@ export function DataTable<TData extends RowData>({
           </Table>
         </div>
       </div>
-      <div className="-mx-6 mt-4 flex flex-col-reverse items-center justify-between gap-4 border-t px-6 pt-4 md:flex-row">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-xs">Rows</span>
+      <div className="-mx-6 mt-4 flex flex-wrap items-center justify-between gap-3 px-4 pt-4 sm:px-6">
+        <div className="shrink-0">
           <Select
             value={pageSize.toString()}
             onValueChange={handlePageSizeChange}
           >
-            <SelectTrigger size="sm" className="h-7 w-18 text-xs">
-              <SelectValue />
+            <SelectTrigger
+              aria-label="Rows per page"
+              size="responsive"
+              className="w-auto min-w-24"
+            >
+              <SelectValue>{pageSize} rows</SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="10">10</SelectItem>
@@ -147,37 +181,14 @@ export function DataTable<TData extends RowData>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Previous page"
-            onClick={() => onPageChange(pageIndex - 1)}
-            disabled={pageIndex === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          {!showPageCount ? (
-            <span className="px-3 text-xs tabular-nums">{pageIndex + 1}</span>
-          ) : (
-            <PageNumbers
-              currentPage={pageIndex}
-              totalPages={pageCount || 1}
-              onPageChange={onPageChange}
-            />
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-7 w-7"
-            aria-label="Next page"
-            onClick={() => onPageChange(pageIndex + 1)}
-            disabled={!hasNextPage}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+
+        <PaginationControls
+          label="Query log pagination"
+          pageIndex={pageIndex}
+          pageCount={pageCount}
+          hasNextPage={hasNextPage}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

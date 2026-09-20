@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Filter, X } from "lucide-react";
-import { cn } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
 import { Command, CommandInput } from "~/components/ui/command";
 import {
@@ -58,20 +57,11 @@ export function ChartFilterCombobox({
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <Button
-              variant="outline"
-              size="icon"
-              className={cn(
-                "relative h-8 w-8",
-                hasFilter && "border-primary/50 bg-primary/5",
-              )}
+              variant={hasFilter ? "default" : "outline"}
+              size="responsive-icon"
               aria-label="Filter chart"
             >
-              <Filter
-                className={cn("h-3.5 w-3.5", hasFilter && "text-primary")}
-              />
-              {hasFilter && (
-                <span className="bg-primary absolute -top-1 -right-1 h-2 w-2 rounded-full" />
-              )}
+              <Filter className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>
