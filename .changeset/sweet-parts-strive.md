@@ -22,6 +22,5 @@ The dashboard is easier to read and use on smaller screens, with a compact query
 ### Dashboard controls
 
 - Align the sizing and appearance of fields, filters, buttons, and status badges across the dashboard.
-- Improve the standalone server selector's readability over the dotted background.
 
 ![Mobile query logs with two demo results, inline details, and single-page pagination](https://github.com/user-attachments/assets/e31d131c-3ead-4ced-b7de-5eca1452989a)
