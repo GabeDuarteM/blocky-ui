@@ -23,7 +23,7 @@ export default defineConfig({
     baseURL,
     channel: "chromium",
     launchOptions: {
-      args: ["--use-angle=swiftshader"],
+      args: ["--use-angle=swiftshader", "--disable-gpu-rasterization"],
     },
     locale: "en-US",
     timezoneId: "UTC",

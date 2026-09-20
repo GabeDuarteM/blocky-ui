@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
 
+test.use({ reducedMotion: "reduce" });
+
 test.beforeEach(async ({ page }) => {
   await page.goto("/");
   await expect(
