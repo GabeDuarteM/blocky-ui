@@ -1,21 +1,60 @@
 import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import { isEntryInScope } from "~/server/logs/scope";
 import * as fs from "fs";
-import { pipeline } from "node:stream/promises";
+import Papa from "papaparse";
 import { parse } from "csv-parse";
+import { parse as parseSync } from "csv-parse/sync";
+import { pipeline } from "node:stream/promises";
 import { z } from "zod";
 import { type LogEntry, type QueryLogsOptions } from "~/server/logs/types";
 
-const fieldsSchema = z.array(z.string()).min(11);
+const CSV_OPTIONS = {
+  delimiter: "\t",
+  relax_column_count: true,
+  relax_quotes: true,
+  skip_empty_lines: true,
+  skip_records_with_error: true,
+};
+const recordPositionsSchema = z.array(
+  z.object({ info: z.object({ bytes: z.number() }) }),
+);
+
+async function detectNewline(filePath: string, size: number) {
+  const handle = await fs.promises.open(filePath, "r");
+  try {
+    const buffer = Buffer.alloc(Math.min(size, 64 * 1024));
+    const { bytesRead } = await handle.read(buffer);
+    const records: unknown = parseSync(buffer.subarray(0, bytesRead), {
+      ...CSV_OPTIONS,
+      info: true,
+      to: 1,
+    });
+    const end = recordPositionsSchema.parse(records)[0]?.info.bytes;
+    if (!end || end >= bytesRead) {
+      return undefined;
+    }
+    if (buffer[end - 1] === 10) {
+      return buffer[end - 2] === 13 ? "\r\n" : "\n";
+    }
+    if (buffer[end - 1] === 13) {
+      return "\r";
+    }
+    return undefined;
+  } finally {
+    await handle.close();
+  }
+}
 
 function parseLogFields(value: unknown): LogEntry | null {
-  const parsed = fieldsSchema.safeParse(value);
-
-  if (!parsed.success) {
+  if (
+    !Array.isArray(value) ||
+    value.length < 11 ||
+    !value.every((field: unknown) => typeof field === "string")
+  ) {
     return null;
   }
 
-  const fields = parsed.data;
+  const fields = value;
   const parsedDuration = fields[3] ? parseInt(fields[3], 10) : NaN;
 
   return {
@@ -35,32 +74,75 @@ function parseLogFields(value: unknown): LogEntry | null {
   };
 }
 
+export async function scanEntries(
+  filePath: string,
+  visit: (entry: LogEntry) => void,
+  size: number,
+): Promise<void> {
+  if (size === 0) {
+    return;
+  }
+
+  function visitFields(fields: unknown) {
+    const entry = parseLogFields(fields);
+    if (entry) {
+      visit(entry);
+    }
+  }
+  const newline = await detectNewline(filePath, size);
+  const stream = fs.createReadStream(filePath, {
+    encoding: "utf8",
+    highWaterMark: 64 * 1024,
+    end: size - 1,
+  });
+  if (!newline) {
+    await pipeline(
+      stream,
+      parse(CSV_OPTIONS),
+      async (records: AsyncIterable<unknown>) => {
+        for await (const fields of records) {
+          visitFields(fields);
+        }
+      },
+    );
+    return;
+  }
+  try {
+    await new Promise<void>((resolve, reject) => {
+      Papa.parse<unknown>(stream, {
+        delimiter: "\t",
+        newline,
+        skipEmptyLines: true,
+        step({ data, errors }) {
+          if (errors.length > 0) {
+            return;
+          }
+          visitFields(data);
+        },
+        complete: () => resolve(),
+        error: reject,
+      });
+    });
+  } finally {
+    stream.destroy();
+  }
+}
+
 export async function streamAndParseEntries(
   filePath: string,
   filterFn?: (entry: LogEntry) => boolean,
 ): Promise<LogEntry[]> {
   const entries: LogEntry[] = [];
-
-  await pipeline(
-    fs.createReadStream(filePath, { highWaterMark: 64 * 1024 }),
-    parse({
-      delimiter: "\t",
-      relax_column_count: true,
-      relax_quotes: true,
-      skip_empty_lines: true,
-      skip_records_with_error: true,
-    }),
-    async (records: AsyncIterable<unknown>) => {
-      for await (const fields of records) {
-        const entry = parseLogFields(fields);
-
-        if (entry && (!filterFn || filterFn(entry))) {
-          entries.push(entry);
-        }
+  const { size } = await fs.promises.stat(filePath);
+  await scanEntries(
+    filePath,
+    (entry) => {
+      if (!filterFn || filterFn(entry)) {
+        entries.push(entry);
       }
     },
+    size,
   );
-
   return entries;
 }
 
@@ -102,14 +184,5 @@ export function createFilterFn(
       passesClient &&
       passesQuestionType
     );
-  };
-}
-
-export function createTimeFilter(since: Date): (entry: LogEntry) => boolean {
-  return (entry: LogEntry): boolean => {
-    if (!entry.requestTs) {
-      return false;
-    }
-    return new Date(entry.requestTs) >= since;
   };
 }

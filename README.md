@@ -11,7 +11,6 @@ BlockyUI is a modern companion dashboard for your [Blocky DNS](https://github.co
 - One-click cache clearing and list refresh
 - Search through query logs and filter them (requires [query logging](https://0xerr0r.github.io/blocky/latest/configuration/#query-logging) configured on Blocky)
   - Supports MySQL, PostgreSQL (including Timescale), CSV, SQLite, CSV-Client, and console through VictoriaLogs logging types from Blocky
-  - CSV Query Logging is restricted to the most recent day's logs due to performance considerations
 - Statistics sections
   - Overview cards: total queries, blocked requests, cache hit rate, listed domains, average response time (requires [statistics](https://0xerr0r.github.io/blocky/latest/configuration/#statistics) enabled on Blocky)
   - Top domains, blocked domains, and clients use Blocky's rolling 24-hour statistics when query logging is not configured

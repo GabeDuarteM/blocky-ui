@@ -1,113 +1,194 @@
-import * as fs from "fs";
-import * as path from "path";
 import { type TimeRange } from "~/lib/constants";
 import {
-  type LogEntry,
+  type LogProvider,
   type QueryLogsOptions,
-  type QueryLogsResult,
+  type QueryLogFilters,
+  type LogScope,
 } from "~/server/logs/types";
-import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 import {
-  streamAndParseEntries,
-  createFilterFn,
-  createTimeFilter,
-} from "~/server/logs/csv/utils";
+  getTimeRangeConfig,
+  aggregateQueriesOverTime,
+} from "~/server/logs/aggregation-utils";
+import { listCsvFiles } from "~/server/logs/csv/files";
+import {
+  createCsvReader,
+  addCounts,
+  type Counts,
+  type Group,
+} from "~/server/logs/csv/reader";
+import { createLogPage } from "~/server/logs/csv/page";
+import { readQueryLogPage } from "~/server/logs/query-page";
 
-/**
- * CSV file-based log provider
- * Reads directly from the latest log file on each request using buffered streaming
- */
-export class CsvLogProvider extends BaseMemoryLogProvider {
-  private readonly directory: string;
+type RankingOptions = Parameters<LogProvider["getTopDomains"]>[0];
 
-  constructor(options: { directory: string }) {
-    super();
-    this.directory = options.directory;
+export class CsvLogProvider implements LogProvider {
+  private readonly reader = createCsvReader();
+
+  constructor(
+    private readonly options: { directory: string; perClient?: boolean },
+  ) {}
+
+  private files(since?: number, until?: number) {
+    return listCsvFiles(
+      this.options.directory,
+      this.options.perClient ?? false,
+      since,
+      until,
+    );
   }
 
-  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
-    const logFile = await this.findLatestLogFile({ throwOnError: true });
+  getQueryLogs(options: QueryLogsOptions) {
+    return readQueryLogPage(this, options);
+  }
 
-    if (!logFile) {
-      return { items: [], totalCount: 0 };
+  async getQueryLogRows(options: QueryLogsOptions) {
+    if (options.limit === 0) {
+      return [];
     }
-
-    return await this.readLogFile(logFile, options);
-  }
-
-  private async findLatestLogFile(options?: {
-    throwOnError?: boolean;
-  }): Promise<string | null> {
-    try {
-      if (!fs.existsSync(this.directory)) {
-        const message = `CSV log directory not found: ${this.directory}`;
-        console.error(message);
-        if (options?.throwOnError) {
-          throw new Error(message);
-        }
-        return null;
-      }
-
-      const files = await fs.promises.readdir(this.directory);
-      const logFiles = files.filter((file) => file.endsWith(".log"));
-
-      if (logFiles.length === 0) {
-        return null;
-      }
-
-      let latestFile: string | null = null;
-      let latestMtime = 0;
-
-      for (const file of logFiles) {
-        const filePath = path.join(this.directory, file);
-        const stats = await fs.promises.stat(filePath);
-
-        if (stats.mtimeMs > latestMtime) {
-          latestMtime = stats.mtimeMs;
-          latestFile = filePath;
-        }
-      }
-
-      return latestFile;
-    } catch (error) {
-      console.error("Error finding latest log file:", error);
-      if (options?.throwOnError) {
-        throw error;
-      }
-      return null;
-    }
-  }
-
-  private async readLogFile(
-    filePath: string,
-    options: QueryLogsOptions,
-  ): Promise<QueryLogsResult> {
-    const filterFn = createFilterFn(options);
-    const filteredEntries = await streamAndParseEntries(filePath, filterFn);
-    filteredEntries.sort(
+    const limit = options.offset + options.limit;
+    const page = createLogPage(limit);
+    const files = (await this.files()).sort(
       (a, b) =>
-        new Date(b.requestTs ?? 0).getTime() -
-        new Date(a.requestTs ?? 0).getTime(),
+        (b.day?.end ?? Infinity) - (a.day?.end ?? Infinity) ||
+        a.path.localeCompare(b.path),
     );
+    for (const file of files) {
+      if (file.day && page.canSkipBefore(file.day.end)) {
+        break;
+      }
+      const result = await this.reader.page(
+        file,
+        options,
+        Math.max(256, limit),
+      );
+      for (const entry of result.items) {
+        page.add(entry);
+      }
+    }
+    return page.result().items.slice(options.offset, limit);
+  }
 
-    const totalCount = filteredEntries.length;
-    const paginatedEntries = filteredEntries.slice(
-      options.offset,
-      options.offset + options.limit,
+  async getQueryLogCount(filters: QueryLogFilters) {
+    let count = 0;
+    for (const file of await this.files()) {
+      count += await this.reader.count(file, filters);
+    }
+    return count;
+  }
+
+  private async groups(
+    group: Group,
+    range: TimeRange,
+    filters: QueryLogFilters = {},
+    until = Date.now(),
+  ) {
+    const { startTime, interval } = getTimeRangeConfig(range, until);
+    const since = startTime.getTime();
+    const merged = new Map<string, Counts>();
+    for (const file of await this.files(since, until)) {
+      const groups = await this.reader.groups(file, {
+        group,
+        since,
+        until,
+        interval,
+        filters,
+      });
+      for (const [name, value] of groups) {
+        const count = merged.get(name) ?? { total: 0, blocked: 0, cached: 0 };
+        addCounts(count, value);
+        merged.set(name, count);
+      }
+    }
+    return merged;
+  }
+
+  async getQueriesOverTime(
+    options: Parameters<LogProvider["getQueriesOverTime"]>[0],
+  ) {
+    const { range, domain, ...filters } = options;
+    const now = Date.now();
+    const groups = await this.groups(
+      "time",
+      range,
+      {
+        ...filters,
+        search: domain,
+      },
+      now,
     );
+    return aggregateQueriesOverTime([], range, now).map((bucket) => ({
+      ...bucket,
+      ...groups.get(String(Date.parse(bucket.time))),
+    }));
+  }
 
+  private async ranking(
+    group: Exclude<Group, "time">,
+    options: RankingOptions,
+  ) {
+    const groups = await this.groups(group, options.range, {
+      ...options,
+      responseType: options.filter === "blocked" ? "BLOCKED" : undefined,
+    });
+    const total = [...groups.values()].reduce(
+      (sum, value) => sum + value.total,
+      0,
+    );
+    const items = [...groups].sort(
+      ([a, x], [b, y]) => y.total - x.total || a.localeCompare(b),
+    );
     return {
-      items: paginatedEntries,
-      totalCount,
+      totalCount: items.length,
+      items: items
+        .slice(
+          options.offset,
+          options.limit === undefined
+            ? undefined
+            : options.offset + options.limit,
+        )
+        .map(([name, counts]) => ({
+          name,
+          count: counts.total,
+          blocked: counts.blocked,
+          percentage: total ? (counts.total / total) * 100 : 0,
+        })),
     };
   }
 
-  protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
-    const logFile = await this.findLatestLogFile({ throwOnError: true });
-    if (!logFile) return [];
+  async getTopDomains(options: RankingOptions) {
+    const result = await this.ranking("questionName", options);
+    return {
+      ...result,
+      items: result.items.map(({ name, ...item }) => ({
+        domain: name,
+        ...item,
+      })),
+    };
+  }
 
-    const { startTime } = getTimeRangeConfig(range);
-    return streamAndParseEntries(logFile, createTimeFilter(startTime));
+  async getTopClients(options: RankingOptions) {
+    const result = await this.ranking("clientName", options);
+    return {
+      ...result,
+      items: result.items.map(({ name, count, ...item }) => ({
+        client: name,
+        total: count,
+        ...item,
+      })),
+    };
+  }
+
+  async getQueryTypesBreakdown(range: TimeRange, scope: LogScope = {}) {
+    const result = await this.ranking("questionType", {
+      ...scope,
+      range,
+      offset: 0,
+      filter: "all",
+    });
+    return result.items.map(({ name, count, percentage }) => ({
+      type: name,
+      count,
+      percentage,
+    }));
   }
 }
