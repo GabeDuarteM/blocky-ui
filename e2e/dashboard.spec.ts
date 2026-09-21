@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
+import { closePopup, configureDemo } from "./visual-support";
 
 async function queryLogs(page: Page) {
   const logs = getQueryLogs(page);
@@ -30,18 +31,11 @@ test("blocking changes survive a page reload", async ({ page }) => {
 });
 
 test("DNS queries run only on selected servers", async ({ page }) => {
-  await page.getByRole("button", { name: "Expand demo configuration" }).click();
-  await page.getByRole("button", { name: "Demo services" }).click();
-  await page.getByRole("combobox", { name: "Servers", exact: true }).click();
-  await page.getByRole("option", { name: "3 servers", exact: true }).click();
-  await page.keyboard.press("Escape");
-  await page
-    .getByRole("button", { name: "Minimize demo configuration" })
-    .click();
+  await configureDemo(page);
 
   await page.getByRole("button", { name: "Choose Query targets" }).click();
   await page.getByRole("switch", { name: "Query targets: Office" }).uncheck();
-  await page.keyboard.press("Escape");
+  await closePopup(page.getByRole("button", { name: "Choose Query targets" }));
   await page
     .getByRole("textbox", { name: "Domain to query" })
     .fill("example.com");
