@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
+import { ready } from "./visual-support";
 
 test.use({ reducedMotion: "reduce" });
 
@@ -10,16 +11,8 @@ test.beforeEach(async ({ page }) => {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Total", exact: true }),
-  ).toBeVisible();
-  const logs = getQueryLogs(page);
-  await expect(logs.entries).toHaveAttribute("aria-busy", "false");
-  await expect(logs.rows).toHaveCount(10);
-  await expect(
-    page.getByText("12 ms avg. response", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByText(/^1-5 of \d+$/)).toHaveCount(2);
+  await ready(page);
+  await expect(getQueryLogs(page).rows).toHaveCount(10);
 });
 
 test("dashboard matches the full-page baseline", async ({ page }) => {
