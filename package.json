@@ -85,7 +85,7 @@
     "@typescript/native": "npm:typescript@7.0.2",
     "babel-plugin-react-compiler": "1.0.0",
     "better-sqlite3": "13.0.3",
-    "drizzle-kit": "0.31.10",
+    "drizzle-kit": "0.31.11",
     "eslint": "10.11.0",
     "eslint-config-next": "16.3.5",
     "eslint-plugin-drizzle": "0.2.3",
