@@ -37,18 +37,21 @@ describe("query log row identity", () => {
     );
   });
 
-  it("uses stable content for entries without database IDs", () => {
-    const entry = { ...example, id: null };
-    const { sourceId, ...fields } = entry;
-    const reordered = { sourceId, ...fields };
-    const original = identifyQueryLogRows([entry]);
-    const refreshed = identifyQueryLogRows([
-      { ...entry, questionName: "another.example" },
-      reordered,
-    ]);
-    expect(refreshed[1]?.rowId).toBe(original[0]?.rowId);
-    expect(refreshed[0]?.rowId).not.toBe(original[0]?.rowId);
-  });
+  it.each([null, undefined])(
+    "uses stable content when the database ID is %s",
+    (id) => {
+      const entry = { ...example, id };
+      const { sourceId, ...fields } = entry;
+      const reordered = { sourceId, ...fields };
+      const original = identifyQueryLogRows([entry]);
+      const refreshed = identifyQueryLogRows([
+        { ...entry, questionName: "another.example" },
+        reordered,
+      ]);
+      expect(refreshed[1]?.rowId).toBe(original[0]?.rowId);
+      expect(refreshed[0]?.rowId).not.toBe(original[0]?.rowId);
+    },
+  );
 
   it("keeps identical entries distinct without depending on other rows", () => {
     const entry = { ...example, id: null };

@@ -4,7 +4,6 @@ Blocky UI is a dashboard for the Blocky DNS proxy. Use Bun for package managemen
 
 ## Checks
 
-- Lint and format with Ultracite's Biome presets in `biome.jsonc`. Run `bun run lint:fix` before `bun run verify`.
 - After code changes, run `bun run verify` and resolve failures introduced by the change.
 - Run the tests relevant to changed behavior with `bun run test <path>`. This runs Vitest.
 

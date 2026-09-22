@@ -7,7 +7,7 @@ export function identifyQueryLogRows<T extends LogEntry & { sourceId: string }>(
 
   return entries.map((entry) => {
     const identity =
-      entry.id === null
+      entry.id === null || entry.id === undefined
         ? JSON.stringify(
             Object.entries(entry).sort(([left], [right]) =>
               left.localeCompare(right),
