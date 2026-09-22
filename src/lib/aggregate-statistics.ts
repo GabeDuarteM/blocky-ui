@@ -1,4 +1,4 @@
-import { type RouterOutputs } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
 
 type StatisticsResult = RouterOutputs["servers"]["statistics"][number];
 
@@ -28,15 +28,15 @@ export function aggregateStatisticsTraffic(results: StatisticsResult[]) {
   const points = [...buckets.values()].sort((a, b) =>
     a.time.localeCompare(b.time),
   );
-  const first = points[0];
+  const [first] = points;
   const last = points.at(-1);
-  if (!first || !last) {
+  if (!(first && last)) {
     return [];
   }
 
-  const traffic = [];
+  const traffic: typeof points = [];
   const end = Date.parse(last.time);
-  for (let hour = Date.parse(first.time); hour <= end; hour += 3600000) {
+  for (let hour = Date.parse(first.time); hour <= end; hour += 3_600_000) {
     const time = new Date(hour).toISOString();
     traffic.push(buckets.get(time) ?? { time, total: 0, blocked: 0 });
   }
@@ -52,26 +52,26 @@ export function aggregateStatistics(results: StatisticsResult[]) {
   }
   const totals = available.reduce(
     (total, { summary, overview, answered }) => ({
-      queries: total.queries + summary.queries,
+      answered: total.answered + answered,
       blocked: total.blocked + summary.blocked,
-      dropped: total.dropped + summary.dropped,
-      errors: total.errors + summary.errors,
       cached: total.cached + summary.cached,
-      forwarded: total.forwarded + summary.forwarded,
+      dropped: total.dropped + summary.dropped,
       duration: total.duration + summary.avgResponseMs * answered,
       entries: total.entries + overview.cacheEntries,
-      answered: total.answered + answered,
+      errors: total.errors + summary.errors,
+      forwarded: total.forwarded + summary.forwarded,
+      queries: total.queries + summary.queries,
     }),
     {
       answered: 0,
-      queries: 0,
       blocked: 0,
-      dropped: 0,
-      errors: 0,
       cached: 0,
-      forwarded: 0,
+      dropped: 0,
       duration: 0,
       entries: 0,
+      errors: 0,
+      forwarded: 0,
+      queries: 0,
     },
   );
   const lookups = totals.cached + totals.forwarded;

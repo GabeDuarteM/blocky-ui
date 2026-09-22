@@ -1,13 +1,13 @@
-import {
-  mysqlTable,
-  index,
-  datetime,
-  longtext,
-  varchar,
-  int,
-  bigint,
-} from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
+import {
+  bigint,
+  datetime,
+  index,
+  int,
+  longtext,
+  mysqlTable,
+  varchar,
+} from "drizzle-orm/mysql-core";
 
 export const logEntries = mysqlTable(
   "log_entries",

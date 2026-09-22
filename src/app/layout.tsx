@@ -1,12 +1,12 @@
 import { Geist, Jersey_15 } from "next/font/google";
-import { TRPCReactProvider } from "~/trpc/react";
 import { Toaster } from "sonner";
 import { Pattern } from "~/components/dashboard/pattern";
 import { getConfiguration } from "~/server/config";
+import { TRPCReactProvider } from "~/trpc/react";
 
 import "../styles/globals.css";
-import { cn } from "~/lib/utils";
 import { DemoModeProvider } from "~/components/dashboard/demo-mode";
+import { cn } from "~/lib/utils";
 
 export async function generateMetadata() {
   const { instanceName } = await getConfiguration();

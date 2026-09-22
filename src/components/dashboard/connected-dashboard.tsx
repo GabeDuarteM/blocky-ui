@@ -1,15 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Dashboard } from "~/components/dashboard/dashboard";
 import { ServerContext } from "~/components/dashboard/server-context";
 import {
   ActionTargets,
   ServerSelector,
 } from "~/components/dashboard/server-selector";
-import { useServerSelection } from "~/hooks/use-server-selection";
 import { demoServers } from "~/demo/config";
 import { useDemoConfiguration } from "~/demo/context";
+import { useServerSelection } from "~/hooks/use-server-selection";
 import { api, type RouterOutputs } from "~/trpc/react";
 
 export function ConnectedDashboard({
@@ -41,6 +41,17 @@ export function ConnectedDashboard({
   );
   const ids = servers.map((server) => server.id);
   const selection = useServerSelection(ids);
+  const toggles = useMemo(() => {
+    const toggle =
+      (scope: Parameters<typeof selection.toggle>[0]) => (id: string) =>
+        selection.toggle(scope, id);
+    return {
+      blocking: toggle("blocking"),
+      maintenance: toggle("maintenance"),
+      query: toggle("query"),
+      view: toggle("view"),
+    };
+  }, [selection]);
   const status = api.servers.blockingStatus.useQuery(
     { serverIds: ids },
     { refetchInterval: 30_000 },
@@ -51,11 +62,11 @@ export function ConnectedDashboard({
   );
   const statuses = status.isError ? undefined : status.data;
   const pickerServers = servers.map((server) => {
-    const result = statuses?.find((result) => result.serverId === server.id);
+    const result = statuses?.find((entry) => entry.serverId === server.id);
     return {
       id: server.id,
       name: server.name,
-      online: result ? result.success : status.error ? false : undefined,
+      online: result?.success ?? (status.error ? false : undefined),
       blocking: result?.success ? result.data.enabled : undefined,
       disabledGroups: result?.success ? result.data.disabledGroups : undefined,
       autoEnableInSec: result?.success
@@ -69,7 +80,7 @@ export function ConnectedDashboard({
     label: string,
   ) {
     if (servers.length < 2) {
-      return undefined;
+      return;
     }
     return (
       <ActionTargets
@@ -78,7 +89,7 @@ export function ConnectedDashboard({
         label={label}
         selected={selection.selected(scope)}
         servers={pickerServers}
-        onToggle={(id) => selection.toggle(scope, id)}
+        onToggle={toggles[scope]}
       />
     );
   }
@@ -87,8 +98,10 @@ export function ConnectedDashboard({
     statistics.data
       ?.filter(
         (result) =>
-          !result.success &&
-          !unreachable.some((server) => server.id === result.serverId),
+          !(
+            result.success ||
+            unreachable.some((server) => server.id === result.serverId)
+          ),
       )
       .map(
         (result) =>
@@ -120,21 +133,21 @@ export function ConnectedDashboard({
         reportDiagnostics,
       }}
     >
-      {(servers.length > 1 || hasDiagnostics) && (
+      {servers.length > 1 || hasDiagnostics ? (
         <div className="mb-6 space-y-3">
-          {servers.length > 1 && (
+          {servers.length > 1 ? (
             <ServerSelector
               label="Showing"
               description="View statistics and logs by server"
               selected={selection.selected("view")}
               servers={pickerServers}
-              onToggle={(id) => selection.toggle("view", id)}
+              onToggle={toggles.view}
             />
-          )}
-          {hasDiagnostics && (
+          ) : null}
+          {hasDiagnostics ? (
             <div
               role="status"
-              className="bg-card space-y-1 rounded-lg border px-4 py-3 text-sm"
+              className="space-y-1 rounded-lg border bg-card px-4 py-3 text-sm"
             >
               {unreachable.length > 0 && (
                 <p className="text-amber-400">
@@ -147,7 +160,7 @@ export function ConnectedDashboard({
                   Statistics unavailable: {unavailableStatistics.join(", ")}
                 </p>
               )}
-              {statistics.error && (
+              {Boolean(statistics.error) && (
                 <p className="text-amber-400">
                   Unable to load server statistics.
                 </p>
@@ -162,9 +175,9 @@ export function ConnectedDashboard({
                 connection.
               </p>
             </div>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
       <Dashboard
         showLogs={servers.some((server) => server.hasLogs)}
         showServerColumn={

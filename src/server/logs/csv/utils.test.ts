@@ -25,7 +25,7 @@ it.each(
   async ({ newline, shortFirst }) => {
     const file = join(directory, "queries.log");
     const answer =
-      "x".repeat(65535 - Buffer.byteLength(prefix) - 1) +
+      "x".repeat(65_535 - Buffer.byteLength(prefix) - 1) +
       'é\t"quoted"' +
       newline +
       "second line";
@@ -41,7 +41,7 @@ it.each(
       suffix;
     await writeFile(
       file,
-      shortFirst ? prefix + "first" + suffix + newline + content : content,
+      shortFirst ? `${prefix}first${suffix}${newline}${content}` : content,
     );
     const parsed = await streamAndParseEntries(file);
     const rows = shortFirst ? parsed.slice(1) : parsed;
@@ -58,8 +58,8 @@ it.each(
 
 it.each([1, 2])("caps reads at a snapshot of %i rows", async (count) => {
   const file = join(directory, "queries.log");
-  const first = prefix + "first" + suffix + "\n";
-  await writeFile(file, first.repeat(count) + prefix + "later" + suffix + "\n");
+  const first = `${prefix}first${suffix}\n`;
+  await writeFile(file, `${first.repeat(count) + prefix}later${suffix}\n`);
   const answers: Array<string | null> = [];
   await scanEntries(
     file,
@@ -78,7 +78,7 @@ it.each([1, 2])(
     await expect(streamAndParseEntries(file)).rejects.toMatchObject({
       code: "ENOENT",
     });
-    const content = prefix + "answer" + suffix + "\n";
+    const content = `${prefix}answer${suffix}\n`;
     await writeFile(file, content.repeat(count));
     await expect(
       scanEntries(

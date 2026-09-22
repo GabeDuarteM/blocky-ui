@@ -1,7 +1,7 @@
 export function createResultCache<T>({
   ttlMs,
   maxEntries,
-  maxWeight = Infinity,
+  maxWeight = Number.POSITIVE_INFINITY,
   weightOf = () => 1,
   shouldCache = () => true,
   now = Date.now,
@@ -43,13 +43,13 @@ export function createResultCache<T>({
 
       const entry = {
         value: Promise.resolve().then(load),
-        expiresAt: Infinity,
+        expiresAt: Number.POSITIVE_INFINITY,
         weight: 0,
       };
       entries.delete(key);
       entries.set(key, entry);
       prune();
-      void entry.value.then(
+      entry.value.then(
         (value) => {
           if (!shouldCache(value)) {
             if (entries.get(key) === entry) {

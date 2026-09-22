@@ -1,16 +1,16 @@
+const topListCountPattern = /^1-5 of \d+$/;
+
 import { expect, type Locator, type Page } from "@playwright/test";
 import { jsonlStreamProducer } from "@trpc/server/unstable-core-do-not-import";
 import SuperJSON from "superjson";
 import { z } from "zod";
-import { type RouterOutputs } from "~/trpc/react";
-import { type DemoServerCount } from "~/demo/config";
+import type { DemoServerCount } from "~/demo/config";
+import type { RouterOutputs } from "~/trpc/react";
 import { getQueryLogs } from "./query-logs";
 
 type Outputs = {
   [Group in keyof RouterOutputs]: {
-    [
-      Procedure in keyof RouterOutputs[Group] as `${Group}.${Procedure & string}`
-    ]: RouterOutputs[Group][Procedure];
+    [Procedure in keyof RouterOutputs[Group] as `${Group}.${Procedure & string}`]: RouterOutputs[Group][Procedure];
   };
 };
 type Procedures = Outputs["servers"] & Outputs["logs"];
@@ -50,13 +50,14 @@ export async function overrideRpc(page: Page, overrides: Overrides) {
       NonNullable<Overrides[keyof Overrides]>
     >(Object.entries(overrides));
     const stream = jsonlStreamProducer({
+      // biome-ignore lint/suspicious/useAwait: tRPC JSONL encodes each procedure result as a promise.
       data: paths.map(async (path, index) => {
         const replacement = replacements.get(path);
         if (replacement && "error" in replacement) {
           return {
             error: {
               message: replacement.error,
-              code: -32603,
+              code: -32_603,
               data: { code: "INTERNAL_SERVER_ERROR", httpStatus: 500, path },
             },
           };
@@ -115,7 +116,7 @@ export async function ready(page: Page) {
   await expect(
     page.getByRole("button", { name: "Total", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/^1-5 of \d+$/)).toHaveCount(2);
+  await expect(page.getByText(topListCountPattern)).toHaveCount(2);
 }
 
 export async function configureDemo(

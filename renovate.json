@@ -12,17 +12,6 @@
       "matchUpdateTypes": ["major"]
     },
     {
-      "groupName": "eslint",
-      "automerge": true,
-      "matchPackageNames": [
-        "eslint{/,}**",
-        "eslint-plugin-{/,}**",
-        "eslint-config-{/,}**",
-        "@typescript-eslint/{/,}**",
-        "@eslint/{/,}**"
-      ]
-    },
-    {
       "matchDepTypes": ["devDependencies"],
       "automerge": true
     },
@@ -31,8 +20,7 @@
       "matchPackageNames": [
         "tailwindcss{/,}**",
         "@tailwindcss/**",
-        "tailwind-merge{/,}**",
-        "prettier-plugin-tailwindcss{/,}**"
+        "tailwind-merge{/,}**"
       ]
     },
     {

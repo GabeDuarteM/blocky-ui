@@ -1,10 +1,14 @@
 import changelog from "@changesets/changelog-github";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { http, HttpResponse } from "msw";
+import { HttpResponse, http } from "msw";
 import { setupServer } from "msw/node";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import config from "../../../.changeset/config.json";
 import { formatChangelog } from "../format";
 import { formatGithubRelease } from "../github-release";
-import config from "../../../.changeset/config.json";
+
+const emptySectionPattern = /^### (Highlights|Other improvements)$/m;
+const improvementsHeadingPattern = /^# Improvements\n/;
+const optionalSectionPattern = /^### (Upgrade notes|Deprecations)$/m;
 
 vi.mock("../contribution-title", () => ({
   getContributionTitle: vi.fn(() => "feat: support multiple servers"),
@@ -105,8 +109,10 @@ describe("release notes", () => {
     async (summary) => {
       const result = formatChangelog(document(await release(summary)), "2.0.0");
       expect(result).toContain("### Improvements\n\n- Fix query filtering.");
-      expect(result).not.toMatch(/^### (Highlights|Other improvements)$/m);
-      expect(formatGithubRelease(result, "2.0.0")).toMatch(/^# Improvements\n/);
+      expect(result).not.toMatch(emptySectionPattern);
+      expect(formatGithubRelease(result, "2.0.0")).toMatch(
+        improvementsHeadingPattern,
+      );
       expect(formatChangelog(result, "2.0.0")).toBe(result);
       expect(result.endsWith(history)).toBe(true);
     },
@@ -156,7 +162,7 @@ describe("release notes", () => {
     );
     expect(result.match(/^#### Multiple servers$/gm)).toHaveLength(1);
     const simple = formatChangelog(document(improvement), "2.0.0");
-    expect(simple).not.toMatch(/^### (Upgrade notes|Deprecations)$/m);
+    expect(simple).not.toMatch(optionalSectionPattern);
   });
 
   it("preserves fenced examples, tables, nested lists and subsection headings", async () => {
@@ -227,13 +233,15 @@ describe("release notes", () => {
   });
 
   it("rejects misspelled sections and unfinished examples", async () => {
-    for (const body of [
-      "## Highligths\n\nDetails",
-      "## Highlights\n\n```sh\ncommand",
-    ]) {
-      const input = document(await release(`Title\n\n${body}`));
-      expect(() => formatChangelog(input, "2.0.0")).toThrow();
-    }
+    await Promise.all(
+      Array.from(
+        ["## Highligths\n\nDetails", "## Highlights\n\n```sh\ncommand"],
+        async (body) => {
+          const input = document(await release(`Title\n\n${body}`));
+          expect(() => formatChangelog(input, "2.0.0")).toThrow();
+        },
+      ),
+    );
   });
 
   it("places first-time contributors before contributions and omits empty sections", async () => {

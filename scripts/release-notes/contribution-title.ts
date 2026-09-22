@@ -1,16 +1,16 @@
 import { execFileSync } from "node:child_process";
 
+const pullRequestPattern =
+  /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)\)/;
+const commitPattern =
+  /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/commit\/([a-f0-9]+)\)/;
+
 export function getContributionTitle(credit: string) {
-  const pull = /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)\)/.exec(
-    credit,
-  );
-  const commit =
-    /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/commit\/([a-f0-9]+)\)/.exec(
-      credit,
-    );
+  const pull = credit.match(pullRequestPattern);
+  const commit = credit.match(commitPattern);
   const source = pull ?? commit;
   if (!source) {
-    return undefined;
+    return;
   }
   const title = execFileSync(
     "gh",

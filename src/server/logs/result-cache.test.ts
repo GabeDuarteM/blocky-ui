@@ -9,11 +9,11 @@ describe("result cache", () => {
       maxWeight: 3,
       weightOf: (items) => items.length,
     });
-    const oversized = vi.fn(async () => [1, 2, 3, 4]);
+    const oversized = vi.fn(() => Promise.resolve([1, 2, 3, 4]));
     expect(await cache.get("large", oversized)).toEqual([1, 2, 3, 4]);
     await cache.get("large", oversized);
     expect(oversized).toHaveBeenCalledTimes(2);
-    const small = vi.fn(async () => [1]);
+    const small = vi.fn(() => Promise.resolve([1]));
     await cache.get("small", small);
     await cache.get("small", small);
     expect(small).toHaveBeenCalledTimes(1);
@@ -25,7 +25,7 @@ describe("result cache", () => {
       maxEntries: 2,
       now: () => time,
     });
-    let resolve: (value: number) => void = () => {};
+    let resolve: (value: number) => void = () => undefined;
     const load = vi.fn(
       () =>
         new Promise<number>((done) => {
@@ -42,20 +42,18 @@ describe("result cache", () => {
     expect(await cache.get("filter", load)).toBe(5);
     expect(load).toHaveBeenCalledTimes(1);
     time = 130;
-    expect(await cache.get("filter", async () => 6)).toBe(6);
+    expect(await cache.get("filter", () => Promise.resolve(6))).toBe(6);
   });
 
   it("evicts failed queries and the least recently used completed entry", async () => {
     const cache = createResultCache<number>({ ttlMs: 1000, maxEntries: 2 });
     await expect(
-      cache.get("failed", async () => {
-        throw new Error("offline");
-      }),
+      cache.get("failed", () => Promise.reject(new Error("offline"))),
     ).rejects.toThrow("offline");
-    expect(await cache.get("failed", async () => 1)).toBe(1);
-    await cache.get("second", async () => 2);
-    await cache.get("failed", async () => 9);
-    await cache.get("third", async () => 3);
-    expect(await cache.get("second", async () => 4)).toBe(4);
+    expect(await cache.get("failed", () => Promise.resolve(1))).toBe(1);
+    await cache.get("second", () => Promise.resolve(2));
+    await cache.get("failed", () => Promise.resolve(9));
+    await cache.get("third", () => Promise.resolve(3));
+    expect(await cache.get("second", () => Promise.resolve(4))).toBe(4);
   });
 });

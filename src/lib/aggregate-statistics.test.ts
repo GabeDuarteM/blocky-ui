@@ -3,7 +3,7 @@ import {
   aggregateStatistics,
   aggregateStatisticsTraffic,
 } from "~/lib/aggregate-statistics";
-import { type RouterOutputs } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
 
 type Result = RouterOutputs["servers"]["statistics"][number];
 

@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 interface Args {
   output?: string;
@@ -88,7 +88,6 @@ const sampleData = {
   responseTypes: ["RESOLVED", "CACHED", "BLOCKED", "CONDITIONAL"],
 
   upstreams: ["cloudflare", "google", "quad9"],
-
   blockingGroups: ["ads", "tracking", "malware"],
 
   ipAnswers: [
@@ -104,14 +103,14 @@ const sampleData = {
 
 function parseArgs(argv: string[]): Args {
   const result: Args = {};
-  for (let i = 0; i < argv.length; i++) {
+  for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg?.startsWith("--")) {
       const key = arg.slice(2);
       const next = argv[i + 1];
       if (next && !next.startsWith("--")) {
         result[key] = next;
-        i++;
+        i += 1;
       } else {
         result[key] = "";
       }
@@ -141,10 +140,10 @@ function formatTimestamp(date: Date): string {
 
 function generateClientPool(count: number): Client[] {
   const clients: Client[] = [];
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     const numNames = Math.floor(Math.random() * 2) + 1;
     const names: string[] = [];
-    for (let j = 0; j < numNames; j++) {
+    for (let j = 0; j < numNames; j += 1) {
       names.push(randomElement(sampleData.clientNames));
     }
     clients.push({
@@ -165,7 +164,7 @@ function generateEntriesForClient(
   const startOfDay = new Date(date);
   startOfDay.setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < count; i += 1) {
     const timestamp = new Date(startOfDay);
     timestamp.setHours(Math.floor(Math.random() * 24));
     timestamp.setMinutes(Math.floor(Math.random() * 60));
@@ -232,7 +231,7 @@ function writeCSVFile(filePath: string, entries: Entry[]): void {
     (a, b) => a.timestamp.getTime() - b.timestamp.getTime(),
   );
   const rows = sorted.map(entryToRow);
-  const content = rows.join("\n") + "\n";
+  const content = `${rows.join("\n")}\n`;
   fs.writeFileSync(filePath, content);
   console.log(`  Created: ${filePath} (${entries.length} entries)`);
 }
@@ -254,7 +253,7 @@ function writePerClientFiles(
     if (!byClient.has(key)) {
       byClient.set(key, []);
     }
-    byClient.get(key)!.push(entry);
+    byClient.get(key)?.push(entry);
   }
 
   for (const [clientKey, clientEntries] of byClient) {
@@ -264,7 +263,7 @@ function writePerClientFiles(
 }
 
 function showHelp(): void {
-  console.log(`Usage: npx tsx scripts/generate_querylog_csv.ts [options]
+  console.log(`Usage: npx tsx scripts/generate-querylog-csv.ts [options]
 
 Options:
   --output <dir>       Output directory for CSV files (default: ".")
@@ -289,13 +288,13 @@ function main(): void {
 
   const config = {
     outputDir: args.output || ".",
-    numRows: parseInt(args.rows || "100", 10),
-    numDays: parseInt(args.days || "1", 10),
+    numRows: Number.parseInt(args.rows || "100", 10),
+    numDays: Number.parseInt(args.days || "1", 10),
     perClient:
       args.type === "csv-client" ||
       args["per-client"] === "true" ||
       args["per-client"] === "",
-    numClients: parseInt(args.clients || "3", 10),
+    numClients: Number.parseInt(args.clients || "3", 10),
     blockyHost: args.hostname || "blocky-instance",
     startFrom: args["start-from"],
   };
@@ -308,8 +307,8 @@ function main(): void {
 
   let startDate: Date;
   if (config.startFrom) {
-    startDate = new Date(config.startFrom + "T00:00:00");
-    if (isNaN(startDate.getTime())) {
+    startDate = new Date(`${config.startFrom}T00:00:00`);
+    if (Number.isNaN(startDate.getTime())) {
       console.error(
         `Invalid date format: ${config.startFrom}. Use YYYY-MM-DD.`,
       );
@@ -320,7 +319,7 @@ function main(): void {
   }
   startDate.setHours(0, 0, 0, 0);
 
-  for (let day = 0; day < config.numDays; day++) {
+  for (let day = 0; day < config.numDays; day += 1) {
     const date = new Date(startDate);
     date.setDate(date.getDate() - day);
 

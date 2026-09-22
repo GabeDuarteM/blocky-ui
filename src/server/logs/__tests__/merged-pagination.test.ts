@@ -1,13 +1,14 @@
-import { afterEach, expect, it } from "vitest";
 import { rm } from "node:fs/promises";
-import { createLogCoordinator } from "~/server/logs/coordinator";
+import { afterEach, expect, it } from "vitest";
 import { parseConfiguration } from "~/server/config/schema";
+import { createLogCoordinator } from "~/server/logs/coordinator";
 import { makeEntry, setupCsv, setupPostgres } from "./setup";
 
 const cleanup: (() => Promise<unknown>)[] = [];
 
 afterEach(async () => {
   for (const close of cleanup.splice(0).reverse()) {
+    // biome-ignore lint/performance/noAwaitInLoops: Release database connections before removing their temporary files.
     await close();
   }
 });
@@ -56,12 +57,13 @@ it.each(["csv", "postgres"] as const)(
         b: { type: "csv", target: "b" },
       },
     });
-    const coordinator = createLogCoordinator(configuration, async (source) =>
-      source.target === "a" ? first.provider : second.provider,
+    const coordinator = createLogCoordinator(configuration, (source) =>
+      Promise.resolve(source.target === "a" ? first.provider : second.provider),
     );
     const names: (string | null)[] = [];
 
-    for (let offset = 0; offset < 3; offset++) {
+    for (let offset = 0; offset < 3; offset += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: Read consecutive pages against the same cached snapshot.
       const page = await coordinator.rows(["a", "b"], { offset, limit: 1 });
       expect(page.diagnostics).toEqual([]);
       expect(page.items).toHaveLength(1);
@@ -102,12 +104,12 @@ it("keeps SQL timestamp ties stable across deep merged pages", async () => {
       b: { type: "csv", target: "b" },
     },
   });
-  const coordinator = createLogCoordinator(configuration, async (source) => {
+  const coordinator = createLogCoordinator(configuration, (source) => {
     const fixture = fixtures[source.target === "a" ? 0 : 1];
     if (!fixture) {
-      throw new Error("Missing SQL fixture");
+      return Promise.reject(new Error("Missing SQL fixture"));
     }
-    return fixture.provider;
+    return Promise.resolve(fixture.provider);
   });
   const complete = await coordinator.rows(["a", "b"], {
     offset: 0,
@@ -116,6 +118,7 @@ it("keeps SQL timestamp ties stable across deep merged pages", async () => {
   expect(complete.items).toHaveLength(800);
 
   for (const offset of [256, 257, 350, 395, 400, 401, 600, 790]) {
+    // biome-ignore lint/performance/noAwaitInLoops: Read consecutive pages against the same cached snapshot.
     const page = await coordinator.rows(["a", "b"], { offset, limit: 20 });
     expect(page.diagnostics).toEqual([]);
     expect(page.items).toEqual(complete.items.slice(offset, offset + 20));

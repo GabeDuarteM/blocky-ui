@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import ky from "ky";
+import { describe, expect, it } from "vitest";
 
 import {
+  type BlockyStatistics,
   createStatisticsSnapshot,
   readBlockyStatistics,
-  type BlockyStatistics,
 } from "~/server/blocky/statistics";
 
 function createStatistics(
@@ -63,18 +63,20 @@ describe("createStatisticsSnapshot", () => {
   it("reads hourly traffic from the API without inventing cached counts", async () => {
     const client = ky.create({
       prefix: "http://blocky.test/",
-      fetch: async (request) => {
+      fetch: (request) => {
         expect(new Request(request).url).toBe("http://blocky.test/api/stats");
-        return Response.json(
-          createStatistics({
-            perHour: [
-              {
-                hour: "2026-09-13T10:00:00+02:00",
-                queries: 200,
-                blocked: 50,
-              },
-            ],
-          }),
+        return Promise.resolve(
+          Response.json(
+            createStatistics({
+              perHour: [
+                {
+                  hour: "2026-09-13T10:00:00+02:00",
+                  queries: 200,
+                  blocked: 50,
+                },
+              ],
+            }),
+          ),
         );
       },
     });

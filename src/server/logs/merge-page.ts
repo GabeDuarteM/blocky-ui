@@ -4,9 +4,9 @@ export const MAX_PREFIX_ROWS = 256;
 
 export async function mergePage<T>(
   sources: {
-    count(): Promise<number>;
-    read(offset: number, limit: number): Promise<T[]>;
-    countBefore?(pivot: T): Promise<number>;
+    count: () => Promise<number>;
+    read: (offset: number, limit: number) => Promise<T[]>;
+    countBefore?: (pivot: T) => Promise<number>;
   }[],
   options: { offset: number; limit: number },
   compare: (a: T, b: T) => number,
@@ -20,7 +20,10 @@ export async function mergePage<T>(
   const states = await mapConcurrent(sources, 4, async (source) => ({
     source,
     offset: 0,
-    count: skip > MAX_PREFIX_ROWS && !indexed ? await source.count() : Infinity,
+    count:
+      skip > MAX_PREFIX_ROWS && !indexed
+        ? await source.count()
+        : Number.POSITIVE_INFINITY,
   }));
 
   function trimPrefix() {
@@ -59,7 +62,7 @@ export async function mergePage<T>(
     }
 
     if (active.length === 1) {
-      const state = active[0];
+      const [state] = active;
 
       if (state) {
         state.offset += skip;
@@ -70,6 +73,7 @@ export async function mergePage<T>(
     }
 
     const step = Math.floor(skip / active.length);
+    // biome-ignore lint/performance/noAwaitInLoops: Each seek round updates the offsets used by the next round.
     const candidates = await mapConcurrent(active, 4, async (state) => {
       const advance = Math.min(Math.max(1, step), state.count - state.offset);
       const [item] = await state.source.read(state.offset + advance - 1, 1);
@@ -89,11 +93,11 @@ export async function mergePage<T>(
       continue;
     }
 
-    const first = candidates
+    const [first] = candidates
       .flatMap(({ item, ...candidate }) =>
         item === undefined ? [] : [{ ...candidate, item }],
       )
-      .sort((a, b) => compare(a.item, b.item))[0];
+      .sort((a, b) => compare(a.item, b.item));
 
     if (first) {
       first.state.offset += first.advance;

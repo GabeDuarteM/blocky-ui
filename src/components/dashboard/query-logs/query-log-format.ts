@@ -1,12 +1,17 @@
-import { type LogEntry } from "~/server/logs/types";
+const reasonSuffixPattern = /\s*\(.*\)\s*$/;
+const reasonContextPattern = /\((.*)\)\s*$/;
+
+import type { LogEntry } from "~/server/logs/types";
 
 export function getQueryReason({
   reason,
   responseType,
 }: Pick<LogEntry, "reason" | "responseType">) {
   const label =
-    reason?.replace(/\s*\(.*\)\s*$/, "").trim() || responseType || "Unknown";
-  const context = /\((.*)\)\s*$/.exec(reason ?? "")?.[1]?.trim();
+    reason?.replace(reasonSuffixPattern, "").trim() ||
+    responseType ||
+    "Unknown";
+  const context = (reason ?? "").match(reasonContextPattern)?.[1]?.trim();
   let detail = context ?? null;
 
   if (responseType === "REBIND") {

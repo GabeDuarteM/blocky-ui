@@ -1,14 +1,17 @@
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { type RecordEntry } from "./record";
+import type { RecordEntry } from "./record";
+
+const quotedFieldPattern = /[\t\n\r"]/;
+const leadingWhitespacePattern = /^\p{White_Space}/u;
 
 export type FileDestination = "csv" | "csv-client" | "console";
 
 function quoteField(value: string) {
   if (
     value === "\\." ||
-    /[\t\n\r"]/.test(value) ||
-    /^\p{White_Space}/u.test(value)
+    quotedFieldPattern.test(value) ||
+    leadingWhitespacePattern.test(value)
   ) {
     return `"${value.replaceAll('"', '""')}"`;
   }
@@ -22,23 +25,21 @@ function questionName(record: RecordEntry) {
 }
 
 export function csvLine(record: RecordEntry) {
-  return (
-    [
-      record.requestTs.slice(0, 19).replace("T", " "),
-      record.clientIp ?? "",
-      record.clientName ?? "",
-      String(record.durationMs ?? 0),
-      record.reason ?? "",
-      questionName(record),
-      record.answer ?? "",
-      record.responseCode ?? "",
-      record.responseType ?? "",
-      record.questionType ?? "",
-      record.hostname ?? "",
-    ]
-      .map(quoteField)
-      .join("\t") + "\n"
-  );
+  return `${[
+    record.requestTs.slice(0, 19).replace("T", " "),
+    record.clientIp ?? "",
+    record.clientName ?? "",
+    String(record.durationMs ?? 0),
+    record.reason ?? "",
+    questionName(record),
+    record.answer ?? "",
+    record.responseCode ?? "",
+    record.responseType ?? "",
+    record.questionType ?? "",
+    record.hostname ?? "",
+  ]
+    .map(quoteField)
+    .join("\t")}\n`;
 }
 
 export function consoleRecord(record: RecordEntry) {
@@ -79,9 +80,12 @@ export async function importFiles(
   const buffers = new Map<string, string[]>();
 
   async function flush() {
-    for (const [filename, lines] of buffers) {
-      await appendFile(join(output, filename), lines.join(""), { mode: 0o600 });
-    }
+    await Promise.all(
+      Array.from(buffers, ([filename, lines]) =>
+        appendFile(join(output, filename), lines.join(""), { mode: 0o600 }),
+      ),
+    );
+
     buffers.clear();
   }
 
@@ -101,7 +105,7 @@ export async function importFiles(
         : csvLine(record),
     );
     buffers.set(filename, lines);
-    count++;
+    count += 1;
 
     if (count % 500 === 0) {
       await flush();

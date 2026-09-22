@@ -1,32 +1,32 @@
-import { mysqlPages } from "./mysql-pages";
-import { asc, gt } from "drizzle-orm";
-import { TransferError } from "./errors";
-import { requireTransactionalTable } from "./mysql-storage";
-import { createConnection } from "mysql2/promise";
-import postgres from "postgres";
 import Database from "better-sqlite3";
-import { z } from "zod";
+import { asc, gt } from "drizzle-orm";
+import { drizzle as sqliteDrizzle } from "drizzle-orm/better-sqlite3";
 import { drizzle as mysqlDrizzle } from "drizzle-orm/mysql2";
 import { drizzle as pgDrizzle } from "drizzle-orm/postgres-js";
-import { drizzle as sqliteDrizzle } from "drizzle-orm/better-sqlite3";
+import { createConnection } from "mysql2/promise";
+import postgres from "postgres";
+import { z } from "zod";
 import { logEntries as mysqlTable } from "~/server/logs/mysql/schema";
 import { logEntries as pgTable } from "~/server/logs/postgres/schema";
 import { logEntries as sqliteTable } from "~/server/logs/sqlite/schema";
+import { TransferError } from "./errors";
+import { mysqlPages } from "./mysql-pages";
+import { requireTransactionalTable } from "./mysql-storage";
 import {
-  fingerprint,
   databaseRecord,
+  fingerprint,
+  type RecordEntry,
   recordSchema,
   timestamp,
-  type RecordEntry,
 } from "./record";
 
 export type SqlDestination = "mysql" | "postgresql" | "timescale" | "sqlite";
 
-type Store = {
+interface Store {
   hasRows: () => Promise<boolean>;
   insert: (records: RecordEntry[]) => Promise<unknown>;
   rows: () => AsyncIterable<unknown> | Iterable<unknown>;
-};
+}
 
 async function transfer(store: Store, records: AsyncIterable<RecordEntry>) {
   if (await store.hasRows()) {
@@ -145,7 +145,7 @@ export async function importSql(
                 })),
               )
               .run(),
-          rows: function* () {
+          *rows() {
             for (const row of connection
               .prepare(db.select().from(sqliteTable).toSQL().sql)
               .iterate()) {
@@ -185,7 +185,7 @@ export async function importSql(
               .parse(query.params);
             await sql.unsafe(query.sql, parameters);
           },
-          rows: async function* () {
+          async *rows() {
             const query = db.select().from(pgTable).toSQL();
 
             for await (const rows of sql.unsafe(query.sql).cursor(500)) {

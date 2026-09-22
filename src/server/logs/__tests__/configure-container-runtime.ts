@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
+import fs from "node:fs";
 
 const DOCKER_SOCKET = "/var/run/docker.sock";
 const TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = "/var/run/docker.sock";
@@ -7,7 +7,8 @@ const UNIX_SOCKET_PREFIX = "unix://";
 
 function isSocketAccessible(socketPath: string) {
   try {
-    fs.accessSync(socketPath, fs.constants.R_OK | fs.constants.W_OK);
+    fs.accessSync(socketPath, fs.constants.R_OK);
+    fs.accessSync(socketPath, fs.constants.W_OK);
     return true;
   } catch {
     return false;
@@ -52,7 +53,7 @@ function getSocketPath(dockerHost: string) {
 }
 
 function detectContainerRuntime() {
-  const dockerHost = process.env["DOCKER_HOST"];
+  const dockerHost = process.env.DOCKER_HOST;
 
   if (dockerHost) {
     const socketPath = getSocketPath(dockerHost);
@@ -72,7 +73,7 @@ function detectContainerRuntime() {
     return { type: "docker" };
   }
 
-  const home = process.env["HOME"] ?? "";
+  const home = process.env.HOME ?? "";
   const colimaSocket = `${home}/.colima/default/docker.sock`;
   if (isSocketAccessible(colimaSocket)) {
     return { type: "colima", socketPath: colimaSocket };
@@ -102,10 +103,10 @@ function configureContainerRuntime() {
     return;
   }
 
-  process.env["DOCKER_HOST"] = `${UNIX_SOCKET_PREFIX}${runtime.socketPath}`;
+  process.env.DOCKER_HOST = `${UNIX_SOCKET_PREFIX}${runtime.socketPath}`;
 
   if (runtime.type === "colima") {
-    process.env["TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE"] ??=
+    process.env.TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE ??=
       TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE;
   }
 }

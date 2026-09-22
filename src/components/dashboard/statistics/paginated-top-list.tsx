@@ -1,9 +1,8 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
-
-import { CardFooter } from "~/components/ui/card";
+import type { LucideIcon } from "lucide-react";
 import { PaginationControls } from "~/components/dashboard/pagination-controls";
+import { CardFooter } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
 import { TopListCard, TopListEntry, type TopListFilter } from "./top-list";
 
@@ -41,7 +40,7 @@ function TopListDetails({
 
   return (
     <div className="space-y-3">
-      <p className="truncate font-mono text-sm font-medium" title={item.name}>
+      <p className="truncate font-medium font-mono text-sm" title={item.name}>
         {item.name}
       </p>
       <div className="space-y-1.5">
@@ -63,7 +62,7 @@ function TopListDetails({
             {item.count.toLocaleString()} ({item.percentage.toFixed(1)}%)
           </span>
         </div>
-        {!isBlockedFilter && item.blocked > 0 && (
+        {!isBlockedFilter && item.blocked > 0 ? (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-[var(--chart-5-muted)]" />
@@ -73,7 +72,7 @@ function TopListDetails({
               {item.blocked.toLocaleString()} ({blockedPercentage.toFixed(1)}%)
             </span>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -94,7 +93,7 @@ function TopListBar({
 
   if (filter === "blocked") {
     return (
-      <div className="bg-muted flex h-2 w-full overflow-hidden rounded-full">
+      <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
         <div
           className="h-full rounded-full bg-[var(--chart-5-muted)] transition-all duration-300"
           style={{ width: `${width}%` }}
@@ -104,17 +103,17 @@ function TopListBar({
   }
 
   return (
-    <div className="bg-muted flex h-2 w-full overflow-hidden rounded-full">
+    <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
       <div
         className="h-full rounded-l-full bg-[var(--chart-1)]/75 transition-all duration-300"
         style={{ width: `${width * (1 - blockedPercentage / 100)}%` }}
       />
-      {item.blocked > 0 && (
+      {item.blocked > 0 ? (
         <div
           className="h-full rounded-r-full bg-[var(--chart-5-muted)] transition-all duration-300"
           style={{ width: `${width * (blockedPercentage / 100)}%` }}
         />
-      )}
+      ) : null}
     </div>
   );
 }
@@ -136,7 +135,7 @@ function TopListPagination({
 
   return (
     <CardFooter className="flex-wrap justify-between gap-3 border-t pt-4">
-      <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
+      <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
         {(page * limit + 1).toLocaleString()}-
         {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
         {totalCount.toLocaleString()}

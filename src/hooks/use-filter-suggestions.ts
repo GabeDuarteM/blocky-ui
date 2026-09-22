@@ -1,12 +1,14 @@
-import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import { useDashboardServers } from "~/components/dashboard/server-context";
-import { useLogTopList } from "~/hooks/use-log-top-list";
-import { api } from "~/trpc/react";
-import { type TimeRange } from "~/lib/constants";
 import { useDebounce } from "~/hooks/use-debounce";
+import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
+import { useLogTopList } from "~/hooks/use-log-top-list";
+import type { TimeRange } from "~/lib/constants";
+import { api } from "~/trpc/react";
 
 export type FilterValue =
-  { type: "domain"; value: string } | { type: "client"; value: string } | null;
+  | { type: "domain"; value: string }
+  | { type: "client"; value: string }
+  | null;
 
 interface DomainSuggestion {
   domain: string;

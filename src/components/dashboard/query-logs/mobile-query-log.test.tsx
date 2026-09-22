@@ -1,12 +1,15 @@
+const summaryPattern = /<summary[\s\S]*?<\/summary>/;
+const clientAddressPattern = /192\.168\.1\.25/g;
+
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
-import { getMockLogEntries } from "~/mocks/logEntryMock";
-import { type LogEntry } from "~/server/logs/types";
+import { getMockLogEntries } from "~/mocks/log-entry-mock";
+import type { LogEntry } from "~/server/logs/types";
 
 function renderLog(overrides: Partial<LogEntry>, showServer = false) {
-  const sample = getMockLogEntries()[0];
+  const [sample] = getMockLogEntries();
   if (!sample) {
     throw new Error("The query log fixture is empty");
   }
@@ -40,9 +43,7 @@ describe("mobile query log details", () => {
     expect(html).toContain("Home resolver");
     expect(html).toContain("Group: advertising");
     expect(html).toContain("<details");
-    expect(html.match(/<summary[\s\S]*?<\/summary>/)?.[0]).not.toContain(
-      "<button",
-    );
+    expect(html.match(summaryPattern)?.[0]).not.toContain("<button");
   });
 
   it("does not repeat the client IP or include a hidden source column", () => {
@@ -51,7 +52,7 @@ describe("mobile query log details", () => {
       clientIp: "192.168.1.25",
       hostname: "Hidden resolver",
     });
-    expect(html.match(/192\.168\.1\.25/g)).toHaveLength(1);
+    expect(html.match(clientAddressPattern)).toHaveLength(1);
     expect(html).not.toContain("Hidden resolver");
   });
 

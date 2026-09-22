@@ -1,33 +1,36 @@
-import { streamAndParseEntries } from "~/server/logs/csv/utils";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  GenericContainer,
-  Network,
-  Wait,
-  type StartedNetwork,
-  type StartedTestContainer,
-} from "testcontainers";
-import {
-  mkdtemp,
   chmod,
   cp,
-  readFile,
+  mkdtemp,
   readdir,
+  readFile,
   rm,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createConnection } from "mysql2/promise";
-import { stringify } from "yaml";
-import { exportMysql } from "../export-mysql";
-import { importSql } from "../import-sql";
-import { importFiles, csvLine, consoleRecord } from "../import-files";
-import { importVictoriaLogs } from "../import-victorialogs";
-import { readSnapshot, verifySnapshot, writeSnapshot } from "../snapshot";
-import { type RecordEntry } from "../record";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createConnection } from "mysql2/promise";
+import {
+  GenericContainer,
+  Network,
+  type StartedNetwork,
+  type StartedTestContainer,
+  Wait,
+} from "testcontainers";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { stringify } from "yaml";
+import { streamAndParseEntries } from "~/server/logs/csv/utils";
 import { logEntries } from "~/server/logs/mysql/schema";
+import { exportMysql } from "../export-mysql";
+import { consoleRecord, csvLine, importFiles } from "../import-files";
+import { importSql } from "../import-sql";
+import { importVictoriaLogs } from "../import-victorialogs";
+import type { RecordEntry } from "../record";
+import { readSnapshot, verifySnapshot, writeSnapshot } from "../snapshot";
+
+const mysqlReadyPattern = /ready for connections/;
+const postgresReadyPattern = /database system is ready to accept connections/;
 
 const cleanup: Array<() => Promise<unknown>> = [];
 let directory: string;
@@ -48,11 +51,13 @@ async function query(writer: StartedTestContainer) {
       body: JSON.stringify({ query: "transfer.test", type: "A" }),
     },
   );
-  expect(response.ok).toBe(true);
+  if (!response.ok) {
+    throw new Error(`Blocky query failed with status ${response.status}`);
+  }
 }
 
 function importSnapshot() {
-  return process.env["BLOCKY_TRANSFER_SNAPSHOT"] ?? join(directory, "paged");
+  return process.env.BLOCKY_TRANSFER_SNAPSHOT ?? join(directory, "paged");
 }
 
 async function blocky(type: string, target: string, output?: string) {
@@ -98,7 +103,7 @@ beforeAll(async () => {
       MARIADB_DATABASE: "blocky",
     })
     .withExposedPorts(3306)
-    .withWaitStrategy(Wait.forLogMessage(/ready for connections/, 2))
+    .withWaitStrategy(Wait.forLogMessage(mysqlReadyPattern, 2))
     .start();
   cleanup.push(() => mysql.stop());
   sourceUrl = `mysql://root:transfer-test@${mysql.getHost()}:${mysql.getMappedPort(3306)}/blocky`;
@@ -107,9 +112,7 @@ beforeAll(async () => {
     "root:transfer-test@tcp(source:3306)/blocky?charset=utf8mb4&parseTime=True&loc=UTC",
   );
 
-  for (let index = 0; index < 3; index++) {
-    await query(writer);
-  }
+  await Promise.all(Array.from({ length: 3 }, () => query(writer)));
 
   await vi.waitFor(
     async () => {
@@ -118,7 +121,9 @@ beforeAll(async () => {
         const [rows] = await connection.query(
           "SELECT COUNT(*) AS total FROM log_entries",
         );
-        expect(JSON.stringify(rows)).toBe('[{"total":3}]');
+        if (JSON.stringify(rows) !== '[{"total":3}]') {
+          throw new Error("Waiting for Blocky to flush three queries");
+        }
       } finally {
         await connection.end();
       }
@@ -131,7 +136,9 @@ beforeAll(async () => {
     url: sourceUrl,
     output: join(directory, "snapshot"),
   });
-  expect(manifest.count).toBe(3);
+  if (manifest.count !== 3) {
+    throw new Error("Expected three records in the exported fixture");
+  }
   sample = [];
   for await (const row of readSnapshot(join(directory, "snapshot"))) {
     sample.push(row);
@@ -140,6 +147,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   for (const stop of cleanup.reverse()) {
+    // biome-ignore lint/performance/noAwaitInLoops: Containers must stop before their network and bind-mounted directory are removed.
     await stop();
   }
 }, 120_000);
@@ -167,14 +175,15 @@ describe("portable Blocky logs", () => {
   });
 
   it("crosses MySQL page boundaries without dropping duplicates or changing the source", async () => {
-    const first = sample[0];
+    const [first] = sample;
     if (!first) {
       throw new Error("Missing native record");
     }
     const connection = await createConnection(sourceUrl);
     try {
       const db = drizzle(connection);
-      for (let page = 0; page < 3; page++) {
+      for (let page = 0; page < 3; page += 1) {
+        // biome-ignore lint/performance/noAwaitInLoops: Insert one batch at a time to keep the fixture bounded like the importer.
         await db.insert(logEntries).values(
           Array.from({ length: 500 }, (_, index) => ({
             ...first,
@@ -241,12 +250,7 @@ describe("portable Blocky logs", () => {
           POSTGRES_DB: "blocky",
         })
         .withExposedPorts(5432)
-        .withWaitStrategy(
-          Wait.forLogMessage(
-            /database system is ready to accept connections/,
-            2,
-          ),
-        )
+        .withWaitStrategy(Wait.forLogMessage(postgresReadyPattern, 2))
         .start();
       cleanup.push(() => pg.stop());
       const writer = await blocky(
@@ -273,7 +277,7 @@ describe("portable Blocky logs", () => {
     const target = join(importedFolder, "blocky.db");
 
     async function* broken() {
-      for (let index = 0; index < 501; index++) {
+      for (let index = 0; index < 501; index += 1) {
         yield* sample;
       }
       throw new Error("interrupted");
@@ -291,14 +295,16 @@ describe("portable Blocky logs", () => {
   }, 120_000);
 
   it("writes native file formats and imports console events into VictoriaLogs", async () => {
-    for (const type of ["csv", "csv-client", "console"] as const) {
-      expect(
-        (await importFiles(type, join(directory, type), records())).count,
-      ).toBe(3);
-      await expect(
-        importFiles(type, join(directory, type), records()),
-      ).rejects.toThrow();
-    }
+    await Promise.all(
+      Array.from(["csv", "csv-client", "console"] as const, async (type) => {
+        expect(
+          (await importFiles(type, join(directory, type), records())).count,
+        ).toBe(3);
+        await expect(
+          importFiles(type, join(directory, type), records()),
+        ).rejects.toThrow();
+      }),
+    );
 
     const lines = await readFile(
       join(directory, "console", "querylog.jsonl"),
@@ -341,8 +347,8 @@ describe("portable Blocky logs", () => {
       const filename = (await readdir(folder)).find((file) =>
         file.endsWith(".log"),
       );
-      const first = sample[0];
-      if (!filename || !first) {
+      const [first] = sample;
+      if (!(filename && first)) {
         throw new Error("Missing native output");
       }
       const native = await readFile(join(folder, filename), "utf8");
@@ -361,7 +367,7 @@ describe("portable Blocky logs", () => {
   );
 
   it("reads quoted and multiline converted answers through the dashboard provider", async () => {
-    const first = sample[0];
+    const [first] = sample;
     if (!first) {
       throw new Error("Missing native record");
     }
@@ -371,7 +377,7 @@ describe("portable Blocky logs", () => {
     ];
     const folder = join(directory, "quoted-csv");
     await importFiles("csv", folder, records(values));
-    const filename = (await readdir(folder))[0];
+    const [filename] = await readdir(folder);
     if (!filename) {
       throw new Error("Missing CSV output");
     }
@@ -382,7 +388,7 @@ describe("portable Blocky logs", () => {
   });
 
   it("quotes tabs, newlines and quotes like Go's tab-separated CSV writer", () => {
-    const first = sample[0];
+    const [first] = sample;
     expect(first).toBeDefined();
     if (!first) {
       throw new Error("Missing native record");

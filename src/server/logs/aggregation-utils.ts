@@ -1,10 +1,10 @@
-import { type TimeRange } from "~/lib/constants";
-import {
-  type LogEntry,
-  type QueriesOverTimeEntry,
-  type TopDomainEntry,
-  type TopClientEntry,
-  type QueryTypeEntry,
+import type { TimeRange } from "~/lib/constants";
+import type {
+  LogEntry,
+  QueriesOverTimeEntry,
+  QueryTypeEntry,
+  TopClientEntry,
+  TopDomainEntry,
 } from "~/server/logs/types";
 
 export interface TimeRangeConfig {
@@ -37,6 +37,9 @@ export function getTimeRangeConfig(
         startTime: new Date(now - 30 * 24 * 60 * 60 * 1000),
         interval: 24 * 60 * 60 * 1000,
       };
+
+    default:
+      throw new Error(`Unexpected value: ${range satisfies never}`);
   }
 }
 
@@ -63,12 +66,12 @@ export function aggregateQueriesOverTime(
     }
     const bucket = buckets.get(Math.floor(time / interval) * interval);
     if (bucket) {
-      bucket.total++;
+      bucket.total += 1;
       if (entry.responseType === "BLOCKED") {
-        bucket.blocked++;
+        bucket.blocked += 1;
       }
       if (entry.responseType === "CACHED") {
-        bucket.cached++;
+        bucket.cached += 1;
       }
     }
   }
@@ -84,8 +87,10 @@ export function aggregateTopDomains(
   for (const entry of entries) {
     const domain = entry.questionName ?? "unknown";
     const stats = domainStats.get(domain) ?? { count: 0, blocked: 0 };
-    stats.count++;
-    if (entry.responseType === "BLOCKED") stats.blocked++;
+    stats.count += 1;
+    if (entry.responseType === "BLOCKED") {
+      stats.blocked += 1;
+    }
     domainStats.set(domain, stats);
   }
 
@@ -117,8 +122,10 @@ export function aggregateTopClients(
   for (const entry of entries) {
     const client = entry.clientName ?? "unknown";
     const stats = clientStats.get(client) ?? { total: 0, blocked: 0 };
-    stats.total++;
-    if (entry.responseType === "BLOCKED") stats.blocked++;
+    stats.total += 1;
+    if (entry.responseType === "BLOCKED") {
+      stats.blocked += 1;
+    }
     clientStats.set(client, stats);
   }
 

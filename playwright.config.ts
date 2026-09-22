@@ -1,5 +1,5 @@
-import { defineConfig, devices } from "@playwright/test";
 import { fileURLToPath } from "node:url";
+import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = "http://127.0.0.1:3101";
 const serverPath = fileURLToPath(new URL("./e2e/server.js", import.meta.url));

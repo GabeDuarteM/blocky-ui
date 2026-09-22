@@ -46,7 +46,7 @@ it("fingerprints event multiplicity independently of database order or IDs", () 
 it("shifts timestamps and hostnames only when requested", () => {
   expect(transformRecord(record, { shiftMs: 0 })).toEqual(record);
   expect(
-    transformRecord(record, { shiftMs: 3600000, hostname: "second" }),
+    transformRecord(record, { shiftMs: 3_600_000, hostname: "second" }),
   ).toEqual({
     ...record,
     requestTs: "2026-08-10T17:53:58.492Z",

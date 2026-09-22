@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { type RouterOutputs } from "~/trpc/react";
-import { type useServerSelection } from "~/hooks/use-server-selection";
+import type { useServerSelection } from "~/hooks/use-server-selection";
+import type { RouterOutputs } from "~/trpc/react";
 
-export type DashboardServers = {
+export interface DashboardServers {
   servers: RouterOutputs["servers"]["list"];
   selection: ReturnType<typeof useServerSelection>;
   statuses: RouterOutputs["servers"]["blockingStatus"] | undefined;
@@ -16,7 +16,7 @@ export type DashboardServers = {
     key: string,
     diagnostics: { sourceId: string; message: string }[],
   ) => void;
-};
+}
 
 export const ServerContext = createContext<DashboardServers | null>(null);
 

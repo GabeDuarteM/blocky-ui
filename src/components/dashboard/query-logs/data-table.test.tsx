@@ -1,3 +1,7 @@
+const nextPageButtonPattern = /<button[^>]*aria-label="Next page"[^>]*>/;
+const currentPagePattern =
+  /<button[^>]*aria-current="page"[^>]*>1 \/ 2<\/button>/;
+
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -26,7 +30,7 @@ function renderTable(
 
 function renderNextButton(pageCount: number, hasNextPage: boolean) {
   const html = renderTable(pageCount, hasNextPage);
-  const button = html.match(/<button[^>]*aria-label="Next page"[^>]*>/)?.[0];
+  const button = html.match(nextPageButtonPattern)?.[0];
 
   if (!button) {
     throw new Error("Next page button was not rendered");
@@ -38,9 +42,7 @@ function renderNextButton(pageCount: number, hasNextPage: boolean) {
 describe("query log pagination with a cached total", () => {
   it("exposes the current page to assistive technology", () => {
     const html = renderTable(2, true);
-    expect(html).toMatch(
-      /<button[^>]*aria-current="page"[^>]*>1 \/ 2<\/button>/,
-    );
+    expect(html).toMatch(currentPagePattern);
     expect(renderTable(undefined, true)).not.toContain('aria-current="page"');
   });
 

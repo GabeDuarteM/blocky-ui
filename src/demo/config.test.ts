@@ -4,10 +4,10 @@ import {
   DEMO_CONFIGURATION_HEADER,
   DEMO_SERVER_COUNT_HEADER,
   DEMO_SERVER_COUNTS,
+  type DemoConfiguration,
   getDemoConfiguration,
   getDemoConfigurationFromHeaders,
   serializeDemoConfiguration,
-  type DemoConfiguration,
 } from "~/demo/config";
 
 const NO_SERVICES: DemoConfiguration = {

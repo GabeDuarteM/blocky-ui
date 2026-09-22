@@ -11,7 +11,7 @@ export function Pattern() {
           "dark:bg-[radial-gradient(#404040_1px,transparent_1px)]",
         )}
       />
-      <div className="bg-background pointer-events-none absolute inset-0 flex items-center justify-center mask-[radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
+      <div className="mask-[radial-gradient(ellipse_at_center,transparent_20%,black)] pointer-events-none absolute inset-0 flex items-center justify-center bg-background" />
     </div>
   );
 }

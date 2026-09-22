@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   Tooltip,
@@ -18,13 +18,13 @@ export function OverflowTooltip({ text, className }: OverflowTooltipProps) {
   const textRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleOpenChange = (nextOpen: boolean) => {
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
     const element = textRef.current;
     const isOverflowing =
       element !== null && element.scrollWidth > element.clientWidth;
 
     setIsOpen(nextOpen && isOverflowing);
-  };
+  }, []);
 
   return (
     <Tooltip open={isOpen} onOpenChange={handleOpenChange}>

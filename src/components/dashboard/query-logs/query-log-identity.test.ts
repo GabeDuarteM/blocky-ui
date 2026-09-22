@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getMockLogEntries } from "~/mocks/logEntryMock";
 import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
+import { getMockLogEntries } from "~/mocks/log-entry-mock";
 
-const mockEntry = getMockLogEntries()[0];
+const [mockEntry] = getMockLogEntries();
 if (!mockEntry) {
   throw new Error("Expected a mock query log entry");
 }

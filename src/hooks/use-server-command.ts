@@ -1,8 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { api, type RouterInputs } from "~/trpc/react";
 import { useDashboardServers } from "~/components/dashboard/server-context";
+import { api, type RouterInputs } from "~/trpc/react";
 
 type Command = RouterInputs["servers"]["command"]["command"];
 
@@ -22,39 +22,7 @@ export function useServerCommand(scope: "blocking" | "maintenance") {
           .filter((server) => ids.includes(server.id))
           .map((server) => server.name)
           .join(", ");
-      if (succeeded) {
-        toast.success(
-          `Completed on ${succeeded} ${succeeded === 1 ? "server" : "servers"}`,
-        );
-      }
-      if (failed.length) {
-        const uncertain = failed.some(
-          (result) => !result.success && result.error.kind === "timeout",
-        );
-        toast.error(
-          uncertain
-            ? "Some servers did not confirm the action"
-            : "Some actions failed",
-          {
-            description: [
-              names(failed.map((result) => result.serverId)),
-              command.action === "disable" && command.duration !== "0"
-                ? "Retrying restarts the blocking timer on these servers."
-                : undefined,
-            ]
-              .filter(Boolean)
-              .join(". "),
-            action: {
-              label: "Retry",
-              onClick: () =>
-                void retry(
-                  command,
-                  failed.map((result) => result.serverId),
-                ),
-            },
-          },
-        );
-      }
+      notifyResults(command, failed, succeeded, names);
     } catch (error) {
       toast.error("Unable to complete the action", {
         description: error instanceof Error ? error.message : undefined,
@@ -64,6 +32,48 @@ export function useServerCommand(scope: "blocking" | "maintenance") {
         utils.servers.blockingStatus.invalidate(),
         utils.servers.statistics.invalidate(),
       ]);
+    }
+  }
+
+  function notifyResults(
+    command: Command,
+    failed: Awaited<ReturnType<typeof mutation.mutateAsync>>,
+    succeeded: number,
+    names: (ids: string[]) => string,
+  ) {
+    if (succeeded) {
+      toast.success(
+        `Completed on ${succeeded} ${succeeded === 1 ? "server" : "servers"}`,
+      );
+    }
+    if (failed.length) {
+      const uncertain = failed.some(
+        (result) => !result.success && result.error.kind === "timeout",
+      );
+      toast.error(
+        uncertain
+          ? "Some servers did not confirm the action"
+          : "Some actions failed",
+        {
+          description: [
+            names(failed.map((result) => result.serverId)),
+            command.action === "disable" && command.duration !== "0"
+              ? "Retrying restarts the blocking timer on these servers."
+              : undefined,
+          ]
+            .filter(Boolean)
+            .join(". "),
+          action: {
+            label: "Retry",
+            onClick: () => {
+              retry(
+                command,
+                failed.map((result) => result.serverId),
+              );
+            },
+          },
+        },
+      );
     }
   }
 

@@ -1,7 +1,7 @@
-import { TransferError } from "./errors";
 import { z } from "zod";
+import { TransferError } from "./errors";
 import { consoleRecord } from "./import-files";
-import { type RecordEntry } from "./record";
+import type { RecordEntry } from "./record";
 
 export async function importVictoriaLogs(
   target: string,
@@ -47,7 +47,7 @@ export async function importVictoriaLogs(
     const response = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/stream+json" },
-      body: batch.join("\n") + "\n",
+      body: `${batch.join("\n")}\n`,
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -73,6 +73,7 @@ export async function importVictoriaLogs(
   const deadline = Date.now() + 15_000;
 
   while (Date.now() < deadline) {
+    // biome-ignore lint/performance/noAwaitInLoops: Poll the imported count until VictoriaLogs makes the previous write visible.
     if ((await count()) === inserted) {
       return { count: inserted };
     }

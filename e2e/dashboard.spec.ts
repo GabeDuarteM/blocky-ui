@@ -1,4 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+const autoEnablePattern = /Auto-enables in/;
+
+import { expect, type Page, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
 import { closePopup, configureDemo } from "./visual-support";
 
@@ -21,13 +23,13 @@ test("blocking changes survive a page reload", async ({ page }) => {
   await expect(status.getByText("Enabled", { exact: true })).toBeVisible();
   await status.getByRole("button", { name: "5 minutes", exact: true }).click();
   await expect(status.getByText("Disabled", { exact: true })).toBeVisible();
-  await expect(status.getByText(/Auto-enables in/)).toBeVisible();
+  await expect(status.getByText(autoEnablePattern)).toBeVisible();
 
   await page.reload();
   await expect(status.getByText("Disabled", { exact: true })).toBeVisible();
   await status.getByRole("button", { name: "Enable", exact: true }).click();
   await expect(status.getByText("Enabled", { exact: true })).toBeVisible();
-  await expect(status.getByText(/Auto-enables in/)).toHaveCount(0);
+  await expect(status.getByText(autoEnablePattern)).toHaveCount(0);
 });
 
 test("DNS queries run only on selected servers", async ({ page }) => {
@@ -42,15 +44,17 @@ test("DNS queries run only on selected servers", async ({ page }) => {
   await page.getByRole("button", { name: "Query", exact: true }).click();
 
   const results = page.getByRole("region", { name: "DNS query results" });
-  for (const name of ["Home", "Backup"]) {
-    const result = results.getByRole("region", {
-      name: `Query result for ${name}`,
-    });
-    await expect(result.getByText("RESOLVED", { exact: true })).toBeVisible();
-    await expect(
-      result.getByText("93.184.216.34", { exact: true }),
-    ).toBeVisible();
-  }
+  await Promise.all(
+    ["Home", "Backup"].map(async (name) => {
+      const result = results.getByRole("region", {
+        name: `Query result for ${name}`,
+      });
+      await expect(result.getByText("RESOLVED", { exact: true })).toBeVisible();
+      await expect(
+        result.getByText("93.184.216.34", { exact: true }),
+      ).toBeVisible();
+    }),
+  );
   await expect(
     results.getByRole("region", { name: "Query result for Office" }),
   ).toHaveCount(0);

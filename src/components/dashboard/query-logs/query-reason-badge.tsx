@@ -1,5 +1,6 @@
 "use client";
 
+import { getQueryReason } from "~/components/dashboard/query-logs/query-log-format";
 import { Badge } from "~/components/ui/badge";
 import {
   Tooltip,
@@ -7,8 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { type LogEntry } from "~/server/logs/types";
-import { getQueryReason } from "~/components/dashboard/query-logs/query-log-format";
+import type { LogEntry } from "~/server/logs/types";
 
 export function QueryReasonBadge({
   entry,
@@ -18,16 +18,16 @@ export function QueryReasonBadge({
   showTooltip?: boolean;
 }) {
   const { label, detail } = getQueryReason(entry);
+  const resolvedVariant =
+    entry.responseType === "RESOLVED" ? "default" : "outline";
+  const variant =
+    entry.responseType === "BLOCKED" || entry.responseType === "REBIND"
+      ? "destructive"
+      : resolvedVariant;
   const badge = (
     <Badge
-      variant={
-        entry.responseType === "BLOCKED" || entry.responseType === "REBIND"
-          ? "destructive"
-          : entry.responseType === "RESOLVED"
-            ? "default"
-            : "outline"
-      }
-      className="max-w-full py-1 text-center whitespace-normal"
+      variant={variant}
+      className="max-w-full whitespace-normal py-1 text-center"
     >
       <span className="min-w-0 break-words capitalize">
         {label.toLowerCase()}
@@ -35,7 +35,7 @@ export function QueryReasonBadge({
     </Badge>
   );
 
-  if (!showTooltip || !detail) {
+  if (!(showTooltip && detail)) {
     return badge;
   }
 

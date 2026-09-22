@@ -1,4 +1,3 @@
-import { TransferError } from "./errors";
 import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -7,7 +6,8 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { createGunzip, createGzip } from "node:zlib";
 import { z } from "zod";
-import { fingerprint, recordSchema, type RecordEntry } from "./record";
+import { TransferError } from "./errors";
+import { fingerprint, type RecordEntry, recordSchema } from "./record";
 
 const manifestSchema = z.object({
   version: z.literal(1),
@@ -88,8 +88,11 @@ export async function* readSnapshot(directory: string) {
   const input = createReadStream(join(directory, "records.jsonl.gz"));
   const decompressed = createGunzip();
   const completion = pipeline(input, decompressed);
-  void completion.catch(() => undefined);
-  const lines = createInterface({ input: decompressed, crlfDelay: Infinity });
+  completion.catch(() => undefined);
+  const lines = createInterface({
+    input: decompressed,
+    crlfDelay: Number.POSITIVE_INFINITY,
+  });
 
   try {
     for await (const line of lines) {

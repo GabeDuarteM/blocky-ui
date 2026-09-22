@@ -1,4 +1,4 @@
-import { type KyInstance } from "ky";
+import type { KyInstance } from "ky";
 import { z } from "zod";
 
 const countByNameSchema = z.record(z.string(), z.number());

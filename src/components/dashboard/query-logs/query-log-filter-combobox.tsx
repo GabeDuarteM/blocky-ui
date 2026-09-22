@@ -1,31 +1,38 @@
 "use client";
 
-import { useState, useRef } from "react";
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import { Search, X } from "lucide-react";
-import { cn } from "~/lib/utils";
+import { useCallback, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxGroup,
+  ComboboxItem,
+  ComboboxLabel,
+  ComboboxList,
+} from "~/components/ui/combobox";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "~/components/ui/input-group";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxGroup,
-  ComboboxLabel,
-  ComboboxItem,
-  ComboboxList,
-} from "~/components/ui/combobox";
-import {
-  useFilterSuggestions,
-  formatCount,
   type FilterValue,
+  formatCount,
+  useFilterSuggestions,
 } from "~/hooks/use-filter-suggestions";
+import { cn } from "~/lib/utils";
 
 export type QueryLogFilter =
-  FilterValue | { type: "domain-search"; value: string };
+  | FilterValue
+  | { type: "domain-search"; value: string };
+
+const filterLabels = {
+  "domain-search": "Contains",
+  domain: "Domain",
+  client: "Client",
+};
 
 type FilterOption = NonNullable<QueryLogFilter> & { count: number | null };
 
@@ -45,19 +52,23 @@ export function QueryLogFilterCombobox({
   const groups = [
     {
       label: "Domains",
-      items: suggestions.domains.map(({ domain, count }): FilterOption => ({
-        type: "domain",
-        value: domain,
-        count,
-      })),
+      items: suggestions.domains.map(
+        ({ domain, count }): FilterOption => ({
+          type: "domain",
+          value: domain,
+          count,
+        }),
+      ),
     },
     {
       label: "Clients",
-      items: suggestions.clients.map(({ client, count }): FilterOption => ({
-        type: "client",
-        value: client,
-        count,
-      })),
+      items: suggestions.clients.map(
+        ({ client, count }): FilterOption => ({
+          type: "client",
+          value: client,
+          count,
+        }),
+      ),
     },
   ];
   const suggestionGroups = suggestions.isLoading
@@ -73,18 +84,34 @@ export function QueryLogFilterCombobox({
     ...suggestionGroups,
   ];
 
+  const handleSearchChange = useCallback(
+    (
+      inputValue: string,
+      details: ComboboxPrimitive.Root.ChangeEventDetails,
+    ) => {
+      setSearch(details.reason === "input-change" ? inputValue : "");
+    },
+    [],
+  );
+  const getFilterLabel = useCallback(
+    (item: NonNullable<QueryLogFilter>) => item.value,
+    [],
+  );
+  const isSameFilter = useCallback(
+    (
+      item: NonNullable<QueryLogFilter>,
+      selected: NonNullable<QueryLogFilter>,
+    ) => item.type === selected.type && item.value === selected.value,
+    [],
+  );
   return (
     <Combobox<NonNullable<QueryLogFilter>>
       items={visibleGroups}
       value={value}
       onValueChange={onChange}
-      onInputValueChange={(inputValue, details) => {
-        setSearch(details.reason === "input-change" ? inputValue : "");
-      }}
-      itemToStringLabel={(item) => item.value}
-      isItemEqualToValue={(item, selected) =>
-        item.type === selected.type && item.value === selected.value
-      }
+      onInputValueChange={handleSearchChange}
+      itemToStringLabel={getFilterLabel}
+      isItemEqualToValue={isSameFilter}
       filter={null}
       autoHighlight={query.length > 0}
     >
@@ -93,19 +120,12 @@ export function QueryLogFilterCombobox({
         controlSize="responsive"
         className="items-baseline sm:flex-1"
       >
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
-        {value && (
-          <InputGroupAddon className="items-baseline py-1 pl-8 text-base font-normal md:text-sm">
-            <span className="text-primary">
-              {value.type === "domain-search"
-                ? "Contains"
-                : value.type === "domain"
-                  ? "Domain"
-                  : "Client"}
-              :
-            </span>
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        {value ? (
+          <InputGroupAddon className="items-baseline py-1 pl-8 font-normal text-base md:text-sm">
+            <span className="text-primary">{filterLabels[value.type]}:</span>
           </InputGroupAddon>
-        )}
+        ) : null}
         <ComboboxPrimitive.Input
           aria-label="Filter query logs"
           placeholder="Filter by domain or client..."
@@ -113,7 +133,7 @@ export function QueryLogFilterCombobox({
             <InputGroupInput
               className={cn(
                 "h-full pr-8",
-                value ? "text-primary !pl-1" : "pl-8",
+                value ? "!pl-1 text-primary" : "pl-8",
               )}
             />
           }
@@ -124,7 +144,7 @@ export function QueryLogFilterCombobox({
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 h-auto w-auto -translate-y-1/2 p-0.5"
+              className="absolute top-1/2 right-2.5 h-auto w-auto -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground"
             />
           }
         >
@@ -152,8 +172,8 @@ export function QueryLogFilterCombobox({
                       ? `Domains containing "${item.value}"`
                       : item.value}
                   </span>
-                  {item.count !== null && (
-                    <span className="text-muted-foreground ml-2 text-xs">
+                  {item.count === null ? null : (
+                    <span className="ml-2 text-muted-foreground text-xs">
                       {formatCount(item.count)}
                     </span>
                   )}
@@ -162,12 +182,12 @@ export function QueryLogFilterCombobox({
             </ComboboxGroup>
           ))}
         </ComboboxList>
-        {(suggestions.isLoading || visibleGroups.length === 0) && (
+        {suggestions.isLoading || visibleGroups.length === 0 ? (
           <div role="status" className="py-6 text-center text-sm">
             {suggestions.isLoading ? "Searching..." : "No suggestions found."}
           </div>
-        )}
-        <p className="text-muted-foreground border-t px-3 py-2 text-xs">
+        ) : null}
+        <p className="border-t px-3 py-2 text-muted-foreground text-xs">
           Suggestions and counts cover the last 24 hours.
         </p>
       </ComboboxContent>

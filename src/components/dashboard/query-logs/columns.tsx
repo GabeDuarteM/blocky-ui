@@ -1,10 +1,9 @@
 "use client";
 
 import type { ColumnDef, CoreFeatures } from "@tanstack/react-table";
-import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
-
-import { QueryReasonBadge } from "~/components/dashboard/query-logs/query-reason-badge";
 import { formatQueryDuration } from "~/components/dashboard/query-logs/query-log-format";
+import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
+import { QueryReasonBadge } from "~/components/dashboard/query-logs/query-reason-badge";
 import { OverflowTooltip } from "~/components/overflow-tooltip";
 
 interface DomainCellProps {

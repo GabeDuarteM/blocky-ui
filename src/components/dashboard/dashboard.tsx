@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { Operations } from "~/components/dashboard/operations";
 import { QueryLogs } from "~/components/dashboard/query-logs/query-logs";

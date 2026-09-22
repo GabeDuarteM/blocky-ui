@@ -8,10 +8,12 @@ export async function mapConcurrent<T, R>(
 
   async function worker() {
     while (next < items.length) {
-      const index = next++;
+      const index = next;
+      next += 1;
       const item = items[index];
 
       if (item !== undefined) {
+        // biome-ignore lint/performance/noAwaitInLoops: A worker must finish its current item before taking another concurrency slot.
         results[index] = await run(item);
       }
     }

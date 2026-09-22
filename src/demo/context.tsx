@@ -11,15 +11,15 @@ import {
 import {
   DEFAULT_DEMO_CONFIGURATION,
   type DemoConfiguration,
-  type DemoService,
   type DemoServerCount,
+  type DemoService,
 } from "~/demo/config";
 
-type DemoConfigurationContextValue = {
+interface DemoConfigurationContextValue {
   configuration: DemoConfiguration;
   setServerCount: (count: DemoServerCount) => void;
   setServiceEnabled: (service: DemoService, enabled: boolean) => void;
-};
+}
 
 const DemoConfigurationContext =
   createContext<DemoConfigurationContextValue | null>(null);

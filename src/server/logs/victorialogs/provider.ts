@@ -1,23 +1,26 @@
-import { readQueryLogPage } from "~/server/logs/query-page";
 import ky from "ky";
+import type { TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import {
-  type LogEntry,
-  type LogScope,
-  type QueryLogFilters,
-  type LogProvider,
-  type QueriesOverTimeEntry,
-  type QueryLogsOptions,
-  type QueryLogsResult,
-  type QueryTypeEntry,
-  type TopClientEntry,
-  type TopDomainEntry,
+import { readQueryLogPage } from "~/server/logs/query-page";
+import type {
+  LogEntry,
+  LogProvider,
+  LogScope,
+  QueriesOverTimeEntry,
+  QueryLogFilters,
+  QueryLogsOptions,
+  QueryLogsResult,
+  QueryTypeEntry,
+  TopClientEntry,
+  TopDomainEntry,
 } from "~/server/logs/types";
-import { type TimeRange } from "~/lib/constants";
 
 // Base filter that identifies blocky query-log entries in VictoriaLogs.
 // blocky sets prefix:"queryLog" on every DNS query log line it emits to stdout,
 // which distinguishes them from blocky's startup and operational messages.
+const fractionalSecondsPattern = /\.\d+Z$/;
+const trailingSlashPattern = /\/$/;
+
 const BASE_FILTER = "prefix:queryLog";
 
 function rangeToVlStart(range: TimeRange): string {
@@ -34,6 +37,9 @@ function rangeToVlBucket(range: TimeRange): string {
       return "6h";
     case "30d":
       return "1d";
+
+    default:
+      throw new Error(`Unexpected value: ${range satisfies never}`);
   }
 }
 
@@ -51,7 +57,7 @@ function regexFilter(
 // Date.toISOString() returns "YYYY-MM-DDTHH:MM:SS.mmmZ". Strip the fractional
 // seconds so that generated keys and VL-returned keys can be matched.
 function toVlKey(isoStr: string): string {
-  return isoStr.replace(/\.\d+Z$/, "Z");
+  return isoStr.replace(fractionalSecondsPattern, "Z");
 }
 
 // Fill missing time buckets with zero values, matching the behaviour of
@@ -89,7 +95,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
   constructor({ url }: { url: string }) {
     this.client = ky.create({
-      baseUrl: url.replace(/\/$/, ""),
+      baseUrl: url.replace(trailingSlashPattern, ""),
       timeout: 30_000,
     });
   }
@@ -103,8 +109,9 @@ export class VictoriaLogsProvider implements LogProvider {
       if (params.start) {
         searchParams.set("start", params.start);
       }
-      if (params.limit !== undefined)
+      if (params.limit !== undefined) {
         searchParams.set("limit", String(params.limit));
+      }
 
       const text = await this.client
         .get("select/logsql/query", { searchParams })
@@ -115,6 +122,7 @@ export class VictoriaLogsProvider implements LogProvider {
         try {
           return JSON.parse(line) as Record<string, string>;
         } catch {
+          // biome-ignore lint/style/useErrorCause: JSON parse errors may include private DNS query contents.
           throw new Error(
             `VictoriaLogs: failed to parse response line (${line.length} chars)`,
           );
@@ -125,7 +133,7 @@ export class VictoriaLogsProvider implements LogProvider {
     }
   }
 
-  private mapEntry(raw: Record<string, string>): LogEntry {
+  private mapEntry(raw: Record<string, string | undefined>): LogEntry {
     return {
       requestTs: raw._time ?? null,
       clientIp: raw.client_ip || null,
@@ -231,7 +239,7 @@ export class VictoriaLogsProvider implements LogProvider {
       totalRows
         .filter(
           (r): r is Record<string, string> & { _time: string } =>
-            r._time != null,
+            typeof r._time === "string",
         )
         .map((r) => [toVlKey(r._time), Number(r.total)]),
     );
@@ -239,7 +247,7 @@ export class VictoriaLogsProvider implements LogProvider {
       blockedRows
         .filter(
           (r): r is Record<string, string> & { _time: string } =>
-            r._time != null,
+            typeof r._time === "string",
         )
         .map((r) => [toVlKey(r._time), Number(r.blocked)]),
     );
@@ -247,7 +255,7 @@ export class VictoriaLogsProvider implements LogProvider {
       cachedRows
         .filter(
           (r): r is Record<string, string> & { _time: string } =>
-            r._time != null,
+            typeof r._time === "string",
         )
         .map((r) => [toVlKey(r._time), Number(r.cached)]),
     );

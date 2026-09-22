@@ -4,7 +4,7 @@ import { join } from "node:path";
 import Database from "better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { type LogProvider } from "~/server/logs/types";
+import type { LogProvider } from "~/server/logs/types";
 
 const providers: LogProvider[] = [];
 let directory: string;

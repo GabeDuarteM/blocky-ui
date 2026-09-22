@@ -5,7 +5,7 @@ const idSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/);
 const headersSchema = z.record(z.string(), z.string());
 const databaseTargetSchema = z.strictObject({
   host: z.string().min(1),
-  port: z.number().int().min(1).max(65535).optional(),
+  port: z.number().int().min(1).max(65_535).optional(),
   username: z.string().min(1),
   password: z.string(),
   database: z.string().min(1),
@@ -135,7 +135,10 @@ export function parseConfiguration(value: unknown) {
 }
 
 class RawString {
-  constructor(readonly value: string) {}
+  readonly value: string;
+  constructor(value: string) {
+    this.value = value;
+  }
 }
 
 export function parseConfigurationYaml(contents: string) {
@@ -147,7 +150,7 @@ export function parseConfigurationYaml(contents: string) {
       prettyErrors: false,
       logLevel: "silent",
       customTags: [
-        { tag: "!raw", resolve: (value: string) => new RawString(value) },
+        { tag: "!raw", resolve: (raw: string) => new RawString(raw) },
       ],
     });
     if (document.errors.length || document.warnings.length) {
@@ -169,6 +172,7 @@ export function parseConfigurationYaml(contents: string) {
       },
     });
   } catch {
+    // biome-ignore lint/style/useErrorCause: Source errors may expose configuration secrets.
     throw new Error("Invalid YAML in Blocky UI configuration");
   }
 

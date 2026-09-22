@@ -1,12 +1,14 @@
-import { TransferError } from "./errors";
-import { importVictoriaLogs } from "./import-victorialogs";
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { TransferError } from "./errors";
 import { exportMysql } from "./export-mysql";
 import { importFiles } from "./import-files";
 import { importSql } from "./import-sql";
-import { readSnapshot, verifySnapshot } from "./snapshot";
+import { importVictoriaLogs } from "./import-victorialogs";
 import { transformRecord } from "./record";
+import { readSnapshot, verifySnapshot } from "./snapshot";
+
+const timezoneOffsetPattern = /^[+-](?:0\d|1[0-3]):[0-5]\d$|^[+-]14:00$/;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
@@ -39,7 +41,7 @@ function environment(name: string | undefined, flag: string) {
 }
 
 async function main() {
-  const command = positionals[0];
+  const [command] = positionals;
 
   if (values.help) {
     console.log(`Export: log-data export --source-env SOURCE_URL --out ./snapshot [--limit 10000] [--offset +00:00]
@@ -54,10 +56,7 @@ Console exports native JSON lines for ingestion into VictoriaLogs. See scripts/l
   }
 
   if (command === "export") {
-    const offset = z
-      .string()
-      .regex(/^[+-](?:0\d|1[0-3]):[0-5]\d$|^[+-]14:00$/)
-      .parse(values.offset);
+    const offset = z.string().regex(timezoneOffsetPattern).parse(values.offset);
     const limit =
       values.limit === undefined
         ? undefined
@@ -118,19 +117,17 @@ Console exports native JSON lines for ingestion into VictoriaLogs. See scripts/l
     }
   }
 
-  const result =
-    type === "csv" || type === "csv-client" || type === "console"
-      ? await importFiles(type, required(values.out, "--out"), records())
-      : type === "victorialogs"
-        ? await importVictoriaLogs(
-            environment(values["target-env"], "--target-env"),
-            records(),
-          )
-        : await importSql(
-            type,
-            environment(values["target-env"], "--target-env"),
-            records(),
-          );
+  async function importRecords() {
+    if (type === "csv" || type === "csv-client" || type === "console") {
+      return await importFiles(type, required(values.out, "--out"), records());
+    }
+    const target = environment(values["target-env"], "--target-env");
+    if (type === "victorialogs") {
+      return await importVictoriaLogs(target, records());
+    }
+    return await importSql(type, target, records());
+  }
+  const result = await importRecords();
 
   console.log(
     JSON.stringify(
@@ -166,12 +163,12 @@ try {
   await main();
 } catch (error) {
   // Driver errors can contain credentials or query values. Keep their details out of terminal output.
-  console.error(
-    error instanceof TransferError
-      ? error.message
-      : error instanceof Error
-        ? `Transfer failed (${error.name}). Check configuration, snapshot integrity and destination emptiness. No source data was modified.`
-        : "Transfer failed.",
-  );
+  let message = "Transfer failed.";
+  if (error instanceof TransferError) {
+    ({ message } = error);
+  } else if (error instanceof Error) {
+    message = `Transfer failed (${error.name}). Check configuration, snapshot integrity and destination emptiness. No source data was modified.`;
+  }
+  console.error(message);
   process.exitCode = 1;
 }

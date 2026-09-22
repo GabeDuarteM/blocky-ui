@@ -1,11 +1,15 @@
 "use client";
 
-import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
-
-import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
-import { useDashboardServers } from "~/components/dashboard/server-context";
-import { api } from "~/trpc/react";
 import { History, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
+import {
+  identifyQueryLogRows,
+  type QueryLogRow,
+} from "~/components/dashboard/query-logs/query-log-identity";
+import { useDashboardServers } from "~/components/dashboard/server-context";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,18 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Button } from "~/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "~/components/ui/tooltip";
-import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
-import { useEffect, useState } from "react";
-import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
-import { DataTable } from "./data-table";
-import { columns } from "./columns";
 import {
   Select,
   SelectContent,
@@ -32,18 +25,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Switch } from "~/components/ui/switch";
 import {
-  BLOCKY_RESPONSE_TYPES,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
+import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
+import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
+import {
   BLOCKY_DNS_RECORD_TYPES,
+  BLOCKY_RESPONSE_TYPES,
   isDnsRecordType,
   isResponseType,
 } from "~/lib/constants";
+import { api } from "~/trpc/react";
+import { columns } from "./columns";
+import { DataTable } from "./data-table";
 import {
-  QueryLogFilterCombobox,
   type QueryLogFilter,
+  QueryLogFilterCombobox,
 } from "./query-log-filter-combobox";
-import { toast } from "sonner";
-import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 
 const serverColumns: typeof columns = [
   { accessorKey: "hostname", header: "Server" },
@@ -60,27 +62,39 @@ export function QueryLogs({
   const scopeKey = serverIds.join(",");
   const [pageState, setPageState] = useState({ scopeKey, page: 0 });
   const pageIndex = pageState.scopeKey === scopeKey ? pageState.page : 0;
-  const setPageIndex = (page: number) => setPageState({ scopeKey, page });
+  const setPageIndex = useCallback(
+    (page: number) => setPageState({ scopeKey, page }),
+    [scopeKey],
+  );
   const [filter, setFilter] = useState<QueryLogFilter>(null);
   const [responseTypeFilter, setResponseTypeFilter] = useState("ALL");
   const [questionTypeFilter, setQuestionTypeFilter] = useState("ALL");
   const [pageSize, setPageSize] = useState(10);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const handleFilterChange = (value: QueryLogFilter) => {
-    setFilter(value);
-    setPageIndex(0);
-  };
+  const handleFilterChange = useCallback(
+    (value: QueryLogFilter) => {
+      setFilter(value);
+      setPageIndex(0);
+    },
+    [setPageIndex],
+  );
 
-  const handleResponseTypeChange = (value: string) => {
-    setResponseTypeFilter(value);
-    setPageIndex(0);
-  };
+  const handleResponseTypeChange = useCallback(
+    (value: string) => {
+      setResponseTypeFilter(value);
+      setPageIndex(0);
+    },
+    [setPageIndex],
+  );
 
-  const handleQuestionTypeChange = (value: string) => {
-    setQuestionTypeFilter(value);
-    setPageIndex(0);
-  };
+  const handleQuestionTypeChange = useCallback(
+    (value: string) => {
+      setQuestionTypeFilter(value);
+      setPageIndex(0);
+    },
+    [setPageIndex],
+  );
 
   const search = filter?.type === "domain-search" ? filter.value : undefined;
   const domain = filter?.type === "domain" ? filter.value : undefined;
@@ -137,15 +151,21 @@ export function QueryLogs({
     isPlaceholderData: isPlaceholderLogs,
     error,
   } = rows;
-  const refetch = () => Promise.all([rows.refetch(), count.refetch()]);
+  const refetch = useCallback(
+    () => Promise.all([rows.refetch(), count.refetch()]),
+    [count, rows],
+  );
   const hasNextPage = (rows.data?.items.length ?? 0) > pageSize;
 
-  const handleAutoRefreshChange = (enabled: boolean) => {
-    setAutoRefresh(enabled);
-    if (enabled) {
-      void refetch();
-    }
-  };
+  const handleAutoRefreshChange = useCallback(
+    (enabled: boolean) => {
+      setAutoRefresh(enabled);
+      if (enabled) {
+        refetch();
+      }
+    },
+    [refetch],
+  );
 
   useEffect(() => {
     if (error) {
@@ -170,7 +190,7 @@ export function QueryLogs({
     currentPage: pageIndex,
     totalPages: pageCount ?? 0,
     prefetchPage: (targetPage) => {
-      void utils.logs.rows.prefetch({
+      utils.logs.rows.prefetch({
         ...searchParams,
         serverIds,
         limit: pageSize + 1,
@@ -179,6 +199,14 @@ export function QueryLogs({
     },
   });
 
+  const getRowId = useCallback((entry: QueryLogRow) => entry.rowId, []);
+  const renderMobileRow = useCallback(
+    (entry: QueryLogRow) => (
+      <MobileQueryLog entry={entry} showServer={showServerColumn} />
+    ),
+    [showServerColumn],
+  );
+  const refreshLogs = useCallback(() => refetch(), [refetch]);
   const table = (
     <DataTable
       columns={showServerColumn ? serverColumns : columns}
@@ -190,10 +218,8 @@ export function QueryLogs({
       pageSize={pageSize}
       onPageSizeChange={setPageSize}
       isLoading={showLogsLoading}
-      getRowId={(entry) => entry.rowId}
-      renderMobileRow={(entry) => (
-        <MobileQueryLog entry={entry} showServer={showServerColumn} />
-      )}
+      getRowId={getRowId}
+      renderMobileRow={renderMobileRow}
     />
   );
 
@@ -238,7 +264,7 @@ export function QueryLogs({
                 <Button
                   variant="ghost"
                   size="responsive-icon"
-                  onClick={() => refetch()}
+                  onClick={refreshLogs}
                   disabled={isFetchingLogs}
                   aria-label="Refresh"
                 >

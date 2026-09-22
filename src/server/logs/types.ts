@@ -1,4 +1,4 @@
-import { type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
 
 export interface LogEntry {
   requestTs: string | null;
@@ -68,49 +68,49 @@ export interface QueryLogsResult {
 }
 
 export interface LogProvider {
-  close?(): Promise<void>;
+  close?: () => Promise<void>;
 
-  getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult>;
+  getQueryLogs: (options: QueryLogsOptions) => Promise<QueryLogsResult>;
 
-  getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]>;
+  getQueryLogRows: (options: QueryLogsOptions) => Promise<LogEntry[]>;
 
-  getQueryLogCount(options: QueryLogFilters): Promise<number>;
+  getQueryLogCount: (options: QueryLogFilters) => Promise<number>;
 
-  getQueryLogSnapshot?(): Promise<number | undefined>;
+  getQueryLogSnapshot?: () => Promise<number | undefined>;
 
-  getQueryLogCountSince?(
+  getQueryLogCountSince?: (
     options: QueryLogFilters,
     since: Date,
-  ): Promise<number>;
+  ) => Promise<number>;
 
-  getQueriesOverTime(
+  getQueriesOverTime: (
     options: LogScope & {
       range: TimeRange;
       domain?: string;
       client?: string;
     },
-  ): Promise<QueriesOverTimeEntry[]>;
+  ) => Promise<QueriesOverTimeEntry[]>;
 
-  getTopDomains(
+  getTopDomains: (
     options: LogScope & {
       range: TimeRange;
       limit?: number;
       offset: number;
       filter: "all" | "blocked";
     },
-  ): Promise<{ items: TopDomainEntry[]; totalCount: number }>;
+  ) => Promise<{ items: TopDomainEntry[]; totalCount: number }>;
 
-  getTopClients(
+  getTopClients: (
     options: LogScope & {
       range: TimeRange;
       limit?: number;
       offset: number;
       filter: "all" | "blocked";
     },
-  ): Promise<{ items: TopClientEntry[]; totalCount: number }>;
+  ) => Promise<{ items: TopClientEntry[]; totalCount: number }>;
 
-  getQueryTypesBreakdown(
+  getQueryTypesBreakdown: (
     range: TimeRange,
     scope?: LogScope,
-  ): Promise<QueryTypeEntry[]>;
+  ) => Promise<QueryTypeEntry[]>;
 }

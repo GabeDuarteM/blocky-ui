@@ -9,16 +9,15 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError, z } from "zod";
-
-import { createBlockyServers } from "~/server/blocky/servers";
-import { getDemoScenario } from "~/server/demo";
-import { getConfiguration } from "~/server/config";
-import { getLogCoordinator } from "~/server/logs";
 import {
   DEFAULT_DEMO_CONFIGURATION,
   type DemoService,
   getDemoConfigurationFromHeaders,
 } from "~/demo/config";
+import { createBlockyServers } from "~/server/blocky/servers";
+import { getConfiguration } from "~/server/config";
+import { getDemoScenario } from "~/server/demo";
+import { getLogCoordinator } from "~/server/logs";
 
 /**
  * 1. CONTEXT
@@ -79,7 +78,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
  *
  * @see https://trpc.io/docs/server/server-side-calls
  */
-export const createCallerFactory = t.createCallerFactory;
+export const { createCallerFactory } = t;
 
 /**
  * 3. ROUTER & PROCEDURE (THE IMPORTANT BIT)

@@ -1,11 +1,10 @@
-import { sql, type SQL } from "drizzle-orm";
+import { type SQL, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-
-import { type DatabaseTarget } from "~/server/config/schema";
+import type { TimeRange } from "~/lib/constants";
+import type { DatabaseTarget } from "~/server/config/schema";
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/postgres/schema";
-import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 
 export class PostgreSQLLogProvider extends BaseSqlLogProvider {
@@ -46,9 +45,8 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
     const db = drizzle(conn, { schema: { logEntries } });
 
     super({
-      db,
-      table: logEntries,
       columns: logEntries,
+      select: (fields) => db.select(fields).from(logEntries).$dynamic(),
     });
 
     this.conn = conn;
@@ -87,6 +85,9 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
       case "30d":
         // Round to daily intervals
         return sql.raw(`TO_CHAR(DATE_TRUNC('day', ${col}), 'YYYY-MM-DD')`);
+
+      default:
+        throw new Error(`Unexpected value: ${range satisfies never}`);
     }
   }
 }

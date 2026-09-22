@@ -1,4 +1,4 @@
-import { type DatabaseTarget } from "~/server/config/schema";
+import type { DatabaseTarget } from "~/server/config/schema";
 
 export function cachedConnection<T>(
   key: string | DatabaseTarget,
@@ -11,9 +11,12 @@ export function cachedConnection<T>(
       : JSON.stringify(key, (_key, value: unknown) => {
           if (value && typeof value === "object" && !Array.isArray(value)) {
             return Object.fromEntries(
-              Object.entries(value).sort(([left], [right]) =>
-                left < right ? -1 : left > right ? 1 : 0,
-              ),
+              Object.entries(value).sort(([left], [right]) => {
+                if (left === right) {
+                  return 0;
+                }
+                return left < right ? -1 : 1;
+              }),
             );
           }
           return value;

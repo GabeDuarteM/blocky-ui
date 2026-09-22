@@ -1,11 +1,7 @@
-import { normalizeLogTimestamp } from "~/server/logs/timestamp";
-import { type Configuration } from "~/server/config/schema";
-import {
-  type LogEntry,
-  type LogProvider,
-  type LogScope,
-} from "~/server/logs/types";
+import type { Configuration } from "~/server/config/schema";
 import { initializeLogSource } from "~/server/logs/factory";
+import { normalizeLogTimestamp } from "~/server/logs/timestamp";
+import type { LogEntry, LogProvider, LogScope } from "~/server/logs/types";
 
 export function createLogSources(
   configuration: Configuration,
@@ -25,7 +21,7 @@ export function createLogSources(
     }
     const pending = initialize(source);
     providers.set(id, pending);
-    void pending.catch(() => {
+    pending.catch(() => {
       if (providers.get(id) === pending) {
         providers.delete(id);
       }

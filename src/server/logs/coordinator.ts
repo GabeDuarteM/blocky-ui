@@ -1,17 +1,21 @@
-import { type Configuration } from "~/server/config/schema";
-import { type TimeRange } from "~/lib/constants";
-import { createLogSources } from "~/server/logs/sources";
-import { createResultCache } from "~/server/logs/result-cache";
-import { mapConcurrent } from "~/server/utils/map-concurrent";
+import type { TimeRange } from "~/lib/constants";
+import type { Configuration } from "~/server/config/schema";
 import { MAX_PREFIX_ROWS, mergePage } from "~/server/logs/merge-page";
 import { createRankedResults } from "~/server/logs/ranked-results";
-import {
-  type LogProvider,
-  type QueryLogFilters,
-  type QueryLogsOptions,
+import { createResultCache } from "~/server/logs/result-cache";
+import { createLogSources } from "~/server/logs/sources";
+import type {
+  LogProvider,
+  QueryLogFilters,
+  QueryLogsOptions,
 } from "~/server/logs/types";
+import { mapConcurrent } from "~/server/utils/map-concurrent";
 
-type RankedEntry = { name: string; count: number; blocked: number };
+interface RankedEntry {
+  name: string;
+  count: number;
+  blocked: number;
+}
 
 function rank(groups: RankedEntry[][]) {
   const merged = new Map<string, RankedEntry>();
@@ -100,7 +104,7 @@ export function createLogCoordinator(
     };
   }
 
-  async function ranking(
+  function ranking(
     ids: string[],
     options: {
       type: "domains" | "clients";
@@ -219,6 +223,7 @@ export function createLogCoordinator(
                 ),
             };
           });
+        // biome-ignore lint/performance/noAwaitInLoops: Retry the merge only after its failed sources have been identified.
         const items = await mergePage(
           readers,
           options,
@@ -233,7 +238,6 @@ export function createLogCoordinator(
         }
       }
     },
-
     async count(ids: string[], filters: QueryLogFilters) {
       const result = await run(ids, (source, provider) => {
         const options = {

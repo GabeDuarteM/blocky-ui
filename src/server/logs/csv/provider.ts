@@ -1,32 +1,34 @@
-import { type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
 import {
-  type LogProvider,
-  type QueryLogsOptions,
-  type QueryLogFilters,
-  type LogScope,
-} from "~/server/logs/types";
-import {
-  getTimeRangeConfig,
   aggregateQueriesOverTime,
+  getTimeRangeConfig,
 } from "~/server/logs/aggregation-utils";
 import { listCsvFiles } from "~/server/logs/csv/files";
+import { createLogPage } from "~/server/logs/csv/page";
 import {
-  createCsvReader,
   addCounts,
   type Counts,
+  createCsvReader,
   type Group,
 } from "~/server/logs/csv/reader";
-import { createLogPage } from "~/server/logs/csv/page";
 import { readQueryLogPage } from "~/server/logs/query-page";
+import type {
+  LogProvider,
+  LogScope,
+  QueryLogFilters,
+  QueryLogsOptions,
+} from "~/server/logs/types";
 
 type RankingOptions = Parameters<LogProvider["getTopDomains"]>[0];
 
 export class CsvLogProvider implements LogProvider {
   private readonly reader = createCsvReader();
 
-  constructor(
-    private readonly options: { directory: string; perClient?: boolean },
-  ) {}
+  private readonly options: { directory: string; perClient?: boolean };
+
+  constructor(options: { directory: string; perClient?: boolean }) {
+    this.options = options;
+  }
 
   private files(since?: number, until?: number) {
     return listCsvFiles(
@@ -49,13 +51,15 @@ export class CsvLogProvider implements LogProvider {
     const page = createLogPage(limit);
     const files = (await this.files()).sort(
       (a, b) =>
-        (b.day?.end ?? Infinity) - (a.day?.end ?? Infinity) ||
+        (b.day?.end ?? Number.POSITIVE_INFINITY) -
+          (a.day?.end ?? Number.POSITIVE_INFINITY) ||
         a.path.localeCompare(b.path),
     );
     for (const file of files) {
       if (file.day && page.canSkipBefore(file.day.end)) {
         break;
       }
+      // biome-ignore lint/performance/noAwaitInLoops: Finish this page before deciding whether older files can be skipped.
       const result = await this.reader.page(
         file,
         options,
@@ -71,6 +75,7 @@ export class CsvLogProvider implements LogProvider {
   async getQueryLogCount(filters: QueryLogFilters) {
     let count = 0;
     for (const file of await this.files()) {
+      // biome-ignore lint/performance/noAwaitInLoops: Scan one file at a time to bound memory use across retained history.
       count += await this.reader.count(file, filters);
     }
     return count;
@@ -86,6 +91,7 @@ export class CsvLogProvider implements LogProvider {
     const since = startTime.getTime();
     const merged = new Map<string, Counts>();
     for (const file of await this.files(since, until)) {
+      // biome-ignore lint/performance/noAwaitInLoops: Merge each file before loading the next summary to bound memory use.
       const groups = await this.reader.groups(file, {
         group,
         since,

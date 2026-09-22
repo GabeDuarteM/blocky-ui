@@ -6,10 +6,12 @@ export function isMissingFile(error: unknown) {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
+const fileDatePattern = /^(\d{4})-(\d{2})-(\d{2})_.+\.log$/;
+
 function fileDay(name: string) {
-  const date = /^(\d{4})-(\d{2})-(\d{2})_.+\.log$/.exec(name);
+  const date = name.match(fileDatePattern);
   if (!date) {
-    return undefined;
+    return;
   }
   const year = Number(date[1]);
   const month = Number(date[2]) - 1;
@@ -20,7 +22,7 @@ function fileDay(name: string) {
     start.getMonth() !== month ||
     start.getDate() !== day
   ) {
-    return undefined;
+    return;
   }
   return {
     start: start.getTime(),
@@ -31,8 +33,8 @@ function fileDay(name: string) {
 export async function listCsvFiles(
   directory: string,
   perClient: boolean,
-  since = -Infinity,
-  until = Infinity,
+  since = Number.NEGATIVE_INFINITY,
+  until = Number.POSITIVE_INFINITY,
 ) {
   const names = await readdir(directory);
   const candidates = names.flatMap((name) => {
@@ -90,7 +92,7 @@ export async function withCsvScan<T>(read: () => Promise<T>) {
   if (activeScans >= 2) {
     await new Promise<void>((resolve) => waiting.push(resolve));
   } else {
-    activeScans++;
+    activeScans += 1;
   }
   try {
     return await read();
@@ -99,7 +101,7 @@ export async function withCsvScan<T>(read: () => Promise<T>) {
     if (next) {
       next();
     } else {
-      activeScans--;
+      activeScans -= 1;
     }
   }
 }

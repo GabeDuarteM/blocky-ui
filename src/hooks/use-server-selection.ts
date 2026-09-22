@@ -64,7 +64,10 @@ export function useServerSelection(ids: string[]) {
     fallback = value;
     try {
       localStorage.setItem(STORAGE_KEY, value);
-    } catch {}
+    } catch {
+      window.dispatchEvent(new Event(CHANGE_EVENT));
+      return;
+    }
     window.dispatchEvent(new Event(CHANGE_EVENT));
   }
 

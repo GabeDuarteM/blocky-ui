@@ -21,8 +21,8 @@ vi.mock("~/server/config", () => ({
   }),
 }));
 
-import { serversRouter } from "~/server/api/routers/servers";
 import { logsRouter } from "~/server/api/routers/logs";
+import { serversRouter } from "~/server/api/routers/servers";
 import { createTRPCContext } from "~/server/api/trpc";
 
 function createHeaders(enabledServices?: string): Headers {
@@ -43,14 +43,16 @@ describe("demo request configuration", () => {
       const servers = await serversRouter.createCaller(context).list();
       expect(servers).toHaveLength(count);
 
-      for (const server of servers) {
-        const result = await logsRouter.createCaller(context).rows({
-          serverIds: [server.id],
-          limit: 1,
-        });
-        expect(result.diagnostics).toEqual([]);
-        expect(result.items[0]?.serverId).toBe(server.id);
-      }
+      await Promise.all(
+        Array.from(servers, async (server) => {
+          const result = await logsRouter.createCaller(context).rows({
+            serverIds: [server.id],
+            limit: 1,
+          });
+          expect(result.diagnostics).toEqual([]);
+          expect(result.items[0]?.serverId).toBe(server.id);
+        }),
+      );
     },
   );
 

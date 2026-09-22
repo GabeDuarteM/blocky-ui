@@ -1,14 +1,12 @@
 import { createServer } from "node:http";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseConfiguration } from "~/server/config/schema";
-import { createBlockyServers } from "~/server/blocky/servers";
 import { executeCommand, readBlockingStatus } from "~/server/blocky/commands";
+import { createBlockyServers } from "~/server/blocky/servers";
+import { parseConfiguration } from "~/server/config/schema";
 
 const cleanup: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  for (const close of cleanup.splice(0)) {
-    await close();
-  }
+  await Promise.all(cleanup.splice(0).map((close) => close()));
 });
 
 async function fixture(failingServer?: string) {
@@ -25,10 +23,10 @@ async function fixture(failingServer?: string) {
       method: request.method ?? "",
       authorization: request.headers.authorization,
     });
-    active++;
+    active += 1;
     maximumActive = Math.max(active, maximumActive);
     setTimeout(() => {
-      active--;
+      active -= 1;
       response.setHeader("Content-Type", "application/json");
       if (failingServer && request.url?.startsWith(`/${failingServer}/`)) {
         response.writeHead(503);

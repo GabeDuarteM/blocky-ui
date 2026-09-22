@@ -1,11 +1,9 @@
 "use client";
 
-import { useServerCommand } from "~/hooks/use-server-command";
-import { ActionLayout } from "~/components/dashboard/action-layout";
-
-import { type ReactNode } from "react";
-
 import { Activity, Shield, XCircle } from "lucide-react";
+import type { ReactNode } from "react";
+import { useCallback } from "react";
+import { ActionLayout } from "~/components/dashboard/action-layout";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -14,9 +12,18 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { useServerCommand } from "~/hooks/use-server-command";
 
 export function Operations({ controls }: { controls?: ReactNode }) {
   const command = useServerCommand("maintenance");
+  const clearCache = useCallback(
+    () => command.execute({ action: "clearCache" }),
+    [command],
+  );
+  const refreshLists = useCallback(
+    () => command.execute({ action: "refreshLists" }),
+    [command],
+  );
   return (
     <Card>
       <CardHeader>
@@ -37,7 +44,7 @@ export function Operations({ controls }: { controls?: ReactNode }) {
               size="responsive"
               variant="outline"
               className="flex w-full items-center gap-2"
-              onClick={() => void command.execute({ action: "clearCache" })}
+              onClick={clearCache}
               disabled={command.isPending}
             >
               <XCircle className="h-4 w-4" />
@@ -47,7 +54,7 @@ export function Operations({ controls }: { controls?: ReactNode }) {
               size="responsive"
               variant="outline"
               className="flex w-full items-center gap-2"
-              onClick={() => void command.execute({ action: "refreshLists" })}
+              onClick={refreshLists}
               disabled={command.isPending}
             >
               <Shield className="h-4 w-4" />

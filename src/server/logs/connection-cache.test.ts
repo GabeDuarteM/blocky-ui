@@ -16,7 +16,7 @@ it("shares connections when nested option keys appear in a different order", () 
       ...target,
       options: {
         connectionLimit: 5,
-        ssl: { rejectUnauthorized: true, ca: ["first", "second"] },
+        ssl: { ca: ["first", "second"], rejectUnauthorized: true },
       },
     },
     connections,
@@ -26,8 +26,8 @@ it("shares connections when nested option keys appear in a different order", () 
     {
       ...target,
       options: {
-        ssl: { ca: ["first", "second"], rejectUnauthorized: true },
         connectionLimit: 5,
+        ssl: { ca: ["first", "second"], rejectUnauthorized: true },
       },
     },
     connections,

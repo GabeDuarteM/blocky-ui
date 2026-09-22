@@ -1,13 +1,12 @@
-import { desc, gte, inArray, sql, type SQL } from "drizzle-orm";
+import { desc, gte, inArray, type SQL, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
-
-import { type DatabaseTarget } from "~/server/config/schema";
+import type { TimeRange } from "~/lib/constants";
+import type { DatabaseTarget } from "~/server/config/schema";
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/mysql/schema";
-import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
-import { type QueryLogsOptions } from "~/server/logs/types";
+import type { QueryLogsOptions } from "~/server/logs/types";
 
 const RECENT_SEARCH_ROWS = 65_536;
 
@@ -37,9 +36,9 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     const db = drizzle(pool, { schema: { logEntries }, mode: "default" });
 
     super({
-      db,
-      table: logEntries,
       columns: logEntries,
+      select: (fields, indexHints) =>
+        db.select(fields).from(logEntries, indexHints).$dynamic(),
     });
 
     this.pool = pool;
@@ -144,6 +143,9 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
       case "30d":
         // Round to daily intervals
         return sql.raw(`DATE_FORMAT(${col}, '%Y-%m-%d')`);
+
+      default:
+        throw new Error(`Unexpected value: ${range satisfies never}`);
     }
   }
 }

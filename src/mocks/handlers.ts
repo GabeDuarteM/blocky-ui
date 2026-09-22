@@ -1,6 +1,8 @@
+import { HttpResponse, http } from "msw";
 import { DEMO_SERVER_ID_HEADER } from "~/demo/config";
-import { http, HttpResponse } from "msw";
 import { env } from "~/env";
+
+const durationPattern = /(\d+)([smh])/;
 
 interface BlockingStatus {
   enabled: boolean;
@@ -91,10 +93,10 @@ export const handlers = [
 
     let seconds = 0;
     if (duration && duration !== "0") {
-      const match = /(\d+)([smh])/.exec(duration);
+      const match = duration.match(durationPattern);
       if (match) {
         const [, value, unit] = match;
-        const numValue = parseInt(value ?? "0");
+        const numValue = Number.parseInt(value ?? "0", 10);
         switch (unit) {
           case "s":
             seconds = numValue;
@@ -104,6 +106,9 @@ export const handlers = [
             break;
           case "h":
             seconds = numValue * 3600;
+            break;
+
+          default:
             break;
         }
       }
@@ -119,22 +124,24 @@ export const handlers = [
     return new HttpResponse(null, { status: 200 });
   }),
 
-  http.post(`${env.BLOCKY_API_URL}/api/query`, () => {
-    return HttpResponse.json<QueryResult>({
+  http.post(`${env.BLOCKY_API_URL}/api/query`, () =>
+    HttpResponse.json<QueryResult>({
       reason: "MOCK",
       response: "93.184.216.34",
       responseType: "RESOLVED",
       returnCode: "NOERROR",
-    });
-  }),
+    }),
+  ),
 
-  http.post(`${env.BLOCKY_API_URL}/api/cache/flush`, () => {
-    return new HttpResponse(null, { status: 200 });
-  }),
+  http.post(
+    `${env.BLOCKY_API_URL}/api/cache/flush`,
+    () => new HttpResponse(null, { status: 200 }),
+  ),
 
-  http.post(`${env.BLOCKY_API_URL}/api/lists/refresh`, () => {
-    return new HttpResponse(null, { status: 200 });
-  }),
+  http.post(
+    `${env.BLOCKY_API_URL}/api/lists/refresh`,
+    () => new HttpResponse(null, { status: 200 }),
+  ),
 
   http.get(`${env.BLOCKY_API_URL}/api/stats`, () => {
     const end = new Date();
@@ -149,8 +156,8 @@ export const handlers = [
         Math.round(value * previous ** 1.5);
 
       return {
-        hour: new Date(hour.getTime() - (23 - index) * 3600000).toISOString(),
-        queries: share(12453),
+        hour: new Date(hour.getTime() - (23 - index) * 3_600_000).toISOString(),
+        queries: share(12_453),
         blocked: share(2134),
         filtered: 0,
       };
@@ -160,7 +167,7 @@ export const handlers = [
       start: start.toISOString(),
       end: end.toISOString(),
       summary: {
-        queries: 12453,
+        queries: 12_453,
         cached: 8976,
         forwarded: 1343,
         blocked: 2134,
@@ -176,7 +183,7 @@ export const handlers = [
         RESOLVED: 1343,
       },
       byQueryType: { A: 9000, AAAA: 3453 },
-      byResponseCode: { NOERROR: 12453 },
+      byResponseCode: { NOERROR: 12_453 },
       perHour,
       topDomains: [
         { name: "connectivitycheck.gstatic.com", count: 842 },
@@ -200,7 +207,7 @@ export const handlers = [
         { name: "phone", count: 1527 },
       ],
       lists: {
-        denylist: { default: 86832, ads: 42156, malware: 12543 },
+        denylist: { default: 86_832, ads: 42_156, malware: 12_543 },
         allowlist: { default: 156, ads: 89 },
       },
       cache: { entries: 4521 },

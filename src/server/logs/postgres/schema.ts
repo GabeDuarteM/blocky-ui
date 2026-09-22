@@ -1,4 +1,4 @@
-import { pgTable, index, timestamp, text, bigint } from "drizzle-orm/pg-core";
+import { bigint, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { createLogEntryColumns } from "~/server/logs/sql/schema";
 

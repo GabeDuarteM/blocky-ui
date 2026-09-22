@@ -1,18 +1,18 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Pool } from "mysql2/promise";
-import { type Sql } from "postgres";
-import { Scalar, stringify } from "yaml";
+import type { Pool } from "mysql2/promise";
+import type { Sql } from "postgres";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { type DatabaseTarget } from "~/server/config/schema";
-import { MySQLLogProvider } from "~/server/logs/mysql/provider";
-import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
+import { Scalar, stringify } from "yaml";
+import type { DatabaseTarget } from "~/server/config/schema";
 import {
   makeEntry,
   setupMysql,
   setupPostgres,
 } from "~/server/logs/__tests__/setup";
+import { MySQLLogProvider } from "~/server/logs/mysql/provider";
+import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 
 const applicationName = new Scalar("file:worker");
 applicationName.tag = "!raw";
@@ -24,7 +24,7 @@ it.each([
   {
     type: "mysql",
     setup: setupMysql,
-    options: { charset: "latin1", connectTimeout: 15000 },
+    options: { charset: "latin1", connectTimeout: 15_000 },
     connect(target: DatabaseTarget) {
       const connections = new Map<string, Pool>();
       const provider = new MySQLLogProvider({ target, connections });
@@ -60,10 +60,12 @@ it.each([
       const connection = connections.values().next().value;
       return {
         provider,
-        async verifyOptions() {
+        verifyOptions() {
           expect(connection?.parameters.application_name).toBe("file:worker");
           expect(connection?.options.connect_timeout).toBe(15);
           expect(connection?.options.prepare).toBe(false);
+
+          return Promise.resolve();
         },
         close: () => connection?.end(),
       };
@@ -97,11 +99,11 @@ it.each([
                 database: fixture.container.getDatabase(),
                 options: {
                   ...options,
+                  database: "wrong-database",
                   host: "invalid.example",
+                  password: "wrong-password",
                   port: 1,
                   user: "wrong-user",
-                  password: "wrong-password",
-                  database: "wrong-database",
                   ...(type === "mysql"
                     ? {
                         password1: "wrong-password",
@@ -120,7 +122,7 @@ it.each([
       );
       vi.stubEnv("BLOCKY_UI_CONFIG", configPath);
       const { getConfiguration } = await import("~/server/config");
-      const target = (await getConfiguration()).logSources.test?.target;
+      const { target } = (await getConfiguration()).logSources.test ?? {};
       if (!target || typeof target === "string") {
         throw new Error("Expected a structured database target");
       }

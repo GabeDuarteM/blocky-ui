@@ -62,6 +62,7 @@ function rankedResults(blocks: Buffer[], totalCount: number) {
       const lower = query.toLowerCase();
 
       for (const block of blocks) {
+        // biome-ignore lint/performance/noAwaitInLoops: Stop decompressing blocks as soon as enough matching rows have been found.
         const items = await decode(block);
         matches.push(
           ...items

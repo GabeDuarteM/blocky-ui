@@ -1,5 +1,8 @@
 import { execFileSync } from "node:child_process";
 
+const contributorsHeadingPattern = /^## New Contributors\n/m;
+const contributorsEndPattern = /^## |^\*\*Full Changelog\*\*:/m;
+
 export function getFirstTimeContributors({
   repo,
   version,
@@ -32,8 +35,8 @@ export function getFirstTimeContributors({
   return (
     notes
       .replaceAll("\r\n", "\n")
-      .split(/^## New Contributors\n/m)[1]
-      ?.split(/^## |^\*\*Full Changelog\*\*:/m)[0]
+      .split(contributorsHeadingPattern)[1]
+      ?.split(contributorsEndPattern)[0]
       ?.trim() ?? ""
   );
 }

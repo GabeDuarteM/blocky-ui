@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { cn } from "~/lib/utils";
+import { useCallback } from "react";
 import {
   CommandEmpty,
   CommandGroup,
@@ -10,9 +10,10 @@ import {
 } from "~/components/ui/command";
 import {
   type FilterSuggestions,
-  formatCount,
   type FilterValue,
+  formatCount,
 } from "~/hooks/use-filter-suggestions";
+import { cn } from "~/lib/utils";
 
 interface FilterSelectProps {
   value: FilterValue;
@@ -26,17 +27,25 @@ export function FilterSelect({
   onSelect,
 }: FilterSelectProps) {
   const { domains, clients } = suggestions;
+  const selectDomain = useCallback(
+    (item: string) => onSelect("domain", item.slice("domain:".length)),
+    [onSelect],
+  );
+  const selectClient = useCallback(
+    (item: string) => onSelect("client", item.slice("client:".length)),
+    [onSelect],
+  );
 
   return (
     <CommandList>
       <CommandEmpty>No results found.</CommandEmpty>
-      {domains.length > 0 && (
+      {domains.length > 0 ? (
         <CommandGroup heading="Domains">
           {domains.map((domain) => (
             <CommandItem
               key={`domain:${domain.domain}`}
               value={`domain:${domain.domain}`}
-              onSelect={() => onSelect("domain", domain.domain)}
+              onSelect={selectDomain}
             >
               <Check
                 className={cn(
@@ -47,20 +56,20 @@ export function FilterSelect({
                 )}
               />
               <span className="flex-1 truncate">{domain.domain}</span>
-              <span className="text-muted-foreground ml-2 text-xs">
+              <span className="ml-2 text-muted-foreground text-xs">
                 {formatCount(domain.count)}
               </span>
             </CommandItem>
           ))}
         </CommandGroup>
-      )}
-      {clients.length > 0 && (
+      ) : null}
+      {clients.length > 0 ? (
         <CommandGroup heading="Clients">
           {clients.map((client) => (
             <CommandItem
               key={`client:${client.client}`}
               value={`client:${client.client}`}
-              onSelect={() => onSelect("client", client.client)}
+              onSelect={selectClient}
             >
               <Check
                 className={cn(
@@ -71,13 +80,13 @@ export function FilterSelect({
                 )}
               />
               <span className="flex-1 truncate">{client.client}</span>
-              <span className="text-muted-foreground ml-2 text-xs">
+              <span className="ml-2 text-muted-foreground text-xs">
                 {formatCount(client.count)}
               </span>
             </CommandItem>
           ))}
         </CommandGroup>
-      )}
+      ) : null}
     </CommandList>
   );
 }

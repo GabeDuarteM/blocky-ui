@@ -1,9 +1,18 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stringify } from "yaml";
-import { type Configuration } from "~/server/config/schema";
+import type { Configuration } from "~/server/config/schema";
+
+const missingTargetPattern =
+  /^Cannot read the file configured by logSources.home.target$/;
+const invalidTargetPattern =
+  /^Invalid Blocky UI configuration at: logSources.home.target$/;
+const missingPasswordPattern =
+  /^Cannot read the file configured by logSources.home.target.password$/;
+const missingCertificatePattern =
+  /^Cannot read the file configured by logSources.home.target.options.ssl.ca.0$/;
 
 let directory: string;
 beforeEach(async () => {
@@ -231,9 +240,7 @@ describe("YAML log target secrets", () => {
       });
 
       const { getConfiguration } = await import("~/server/config");
-      await expect(getConfiguration()).rejects.toThrow(
-        /^Cannot read the file configured by logSources.home.target$/,
-      );
+      await expect(getConfiguration()).rejects.toThrow(missingTargetPattern);
     },
   );
 
@@ -247,9 +254,7 @@ describe("YAML log target secrets", () => {
       });
 
       const { getConfiguration } = await import("~/server/config");
-      await expect(getConfiguration()).rejects.toThrow(
-        /^Invalid Blocky UI configuration at: logSources.home.target$/,
-      );
+      await expect(getConfiguration()).rejects.toThrow(invalidTargetPattern);
     },
   );
 });
@@ -280,7 +285,7 @@ describe("separate database connection fields", () => {
       });
 
       const { getConfiguration } = await import("~/server/config");
-      const target = (await getConfiguration()).logSources.home?.target;
+      const { target } = (await getConfiguration()).logSources.home ?? {};
       expect(target).toEqual({
         host: "db",
         port: 1234,
@@ -330,9 +335,7 @@ describe("separate database connection fields", () => {
       },
     });
     const { getConfiguration } = await import("~/server/config");
-    await expect(getConfiguration()).rejects.toThrow(
-      /^Cannot read the file configured by logSources.home.target.password$/,
-    );
+    await expect(getConfiguration()).rejects.toThrow(missingPasswordPattern);
   });
 });
 
@@ -400,9 +403,7 @@ describe("provider option files", () => {
       },
     });
     const { getConfiguration } = await import("~/server/config");
-    await expect(getConfiguration()).rejects.toThrow(
-      /^Cannot read the file configured by logSources.home.target.options.ssl.ca.0$/,
-    );
+    await expect(getConfiguration()).rejects.toThrow(missingCertificatePattern);
   });
 });
 

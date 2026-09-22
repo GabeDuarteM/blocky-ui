@@ -1,12 +1,12 @@
-import { normalizeLogTimestamp } from "~/server/logs/timestamp";
-import { isEntryInScope } from "~/server/logs/scope";
-import * as fs from "fs";
-import Papa from "papaparse";
+import fs from "node:fs";
+import { pipeline } from "node:stream/promises";
 import { parse } from "csv-parse";
 import { parse as parseSync } from "csv-parse/sync";
-import { pipeline } from "node:stream/promises";
+import Papa from "papaparse";
 import { z } from "zod";
-import { type LogEntry, type QueryLogsOptions } from "~/server/logs/types";
+import { isEntryInScope } from "~/server/logs/scope";
+import { normalizeLogTimestamp } from "~/server/logs/timestamp";
+import type { LogEntry, QueryLogsOptions } from "~/server/logs/types";
 
 const CSV_OPTIONS = {
   delimiter: "\t",
@@ -31,7 +31,7 @@ async function detectNewline(filePath: string, size: number) {
     });
     const end = recordPositionsSchema.parse(records)[0]?.info.bytes;
     if (!end || end >= bytesRead) {
-      return undefined;
+      return;
     }
     if (buffer[end - 1] === 10) {
       return buffer[end - 2] === 13 ? "\r\n" : "\n";
@@ -39,7 +39,6 @@ async function detectNewline(filePath: string, size: number) {
     if (buffer[end - 1] === 13) {
       return "\r";
     }
-    return undefined;
   } finally {
     await handle.close();
   }
@@ -55,7 +54,9 @@ function parseLogFields(value: unknown): LogEntry | null {
   }
 
   const fields = value;
-  const parsedDuration = fields[3] ? parseInt(fields[3], 10) : NaN;
+  const parsedDuration = fields[3]
+    ? Number.parseInt(fields[3], 10)
+    : Number.NaN;
 
   return {
     requestTs: normalizeLogTimestamp(fields[0] || null, "local"),
