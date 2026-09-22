@@ -1,9 +1,9 @@
 "use client";
 
-import { useServerQuery } from "~/hooks/use-server-query";
-import { ActionLayout } from "~/components/dashboard/action-layout";
-
 import { Radio, Search, Server } from "lucide-react";
+import type { ChangeEvent } from "react";
+import { type ReactNode, useCallback, useState } from "react";
+import { ActionLayout } from "~/components/dashboard/action-layout";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -12,7 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Skeleton } from "~/components/ui/skeleton";
 import { Input } from "~/components/ui/input";
 import {
   Select,
@@ -21,10 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { type RouterOutputs } from "~/trpc/react";
-import { type ReactNode, useState } from "react";
+import { Skeleton } from "~/components/ui/skeleton";
+import { useServerQuery } from "~/hooks/use-server-query";
 import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 import { cn } from "~/lib/utils";
+import type { RouterOutputs } from "~/trpc/react";
 
 type DNS_RECORD_TYPE = (typeof BLOCKY_DNS_RECORD_TYPES)[number];
 type QueryResult = Extract<
@@ -42,10 +42,10 @@ function QueryResultCard({
   return (
     <section
       aria-label={`Query result for ${name}`}
-      className="bg-card overflow-hidden rounded-lg border"
+      className="overflow-hidden rounded-lg border bg-card"
     >
-      <div className="flex items-center gap-2 border-b px-5 py-3 text-sm font-medium">
-        <Server className="text-muted-foreground size-4 shrink-0" />
+      <div className="flex items-center gap-2 border-b px-5 py-3 font-medium text-sm">
+        <Server className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 break-words">{name}</span>
       </div>
       {children}
@@ -74,6 +74,12 @@ function QueryResultPane({
   answers,
   detail,
 }: QueryResult) {
+  const occurrences = new Map<string, number>();
+  const keyedAnswers = answers.map((answer) => {
+    const occurrence = occurrences.get(answer) ?? 0;
+    occurrences.set(answer, occurrence + 1);
+    return { answer, key: JSON.stringify([answer, occurrence]) };
+  });
   const answerLabel = answers.length === 1 ? "answer" : "answers";
   const isBlocked = responseType === "BLOCKED";
 
@@ -88,45 +94,42 @@ function QueryResultPane({
               : "border-l-primary bg-primary/5",
           )}
         >
-          <div className="flex items-center gap-2 text-xs tracking-widest uppercase">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-widest">
             <Radio className="h-3.5 w-3.5" /> Query outcome
           </div>
           <div className="mt-8 min-w-0">
-            <p className="text-3xl font-black tracking-tight break-all">
+            <p className="break-all font-black text-3xl tracking-tight">
               {responseType}
             </p>
-            <p className="text-muted-foreground mt-1 font-mono text-xs">
+            <p className="mt-1 font-mono text-muted-foreground text-xs">
               {returnCode} / {answers.length} {answerLabel}
             </p>
-            {detail && (
+            {detail ? (
               <p
-                className="text-muted-foreground mt-2 truncate text-xs"
+                className="mt-2 truncate text-muted-foreground text-xs"
                 title={detail}
               >
                 {detail}
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       }
       answers={
         <div className="flex max-h-64 min-h-0 min-w-0 flex-col gap-3 px-5 py-5 sm:border-l">
-          <p className="text-muted-foreground text-xs tracking-wide uppercase">
+          <p className="text-muted-foreground text-xs uppercase tracking-wide">
             DNS answers
           </p>
           {answers.length === 0 ? (
             <p className="text-muted-foreground text-sm">No answer returned</p>
           ) : (
             <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-2">
-              {answers.map((answer, index) => (
-                <div
-                  key={`${answer}-${index}`}
-                  className="flex items-baseline gap-3"
-                >
-                  <span className="text-muted-foreground font-mono text-xs">
+              {keyedAnswers.map(({ answer, key }, index) => (
+                <div key={key} className="flex items-baseline gap-3">
+                  <span className="font-mono text-muted-foreground text-xs">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="min-w-0 font-mono text-lg break-all select-text">
+                  <span className="min-w-0 select-text break-all font-mono text-lg">
                     {answer}
                   </span>
                 </div>
@@ -144,17 +147,28 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState<DNS_RECORD_TYPE>(BLOCKY_DNS_RECORD_TYPES[0]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!query) {
-      return;
-    }
-    serverQuery.execute({
-      query,
-      type,
-    });
-  };
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!query) {
+        return;
+      }
+      serverQuery.execute({
+        query,
+        type,
+      });
+    },
+    [serverQuery, type, query],
+  );
 
+  const handleQueryChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => setQuery(e.target.value),
+    [],
+  );
+  const handleTypeChange = useCallback(
+    (value: DNS_RECORD_TYPE) => setType(value),
+    [],
+  );
   return (
     <Card role="region" aria-label="Query Tool">
       <CardHeader>
@@ -175,13 +189,10 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                 controlSize="responsive"
                 placeholder="Enter domain (e.g., example.com)"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={handleQueryChange}
                 className="sm:flex-1"
               />
-              <Select
-                value={type}
-                onValueChange={(value: DNS_RECORD_TYPE) => setType(value)}
-              >
+              <Select value={type} onValueChange={handleTypeChange}>
                 <SelectTrigger
                   aria-label="DNS record type"
                   size="responsive"
@@ -210,13 +221,13 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
             </div>
           </form>
 
-          {(serverQuery.results.length > 0 || serverQuery.isPending) && (
+          {serverQuery.results.length > 0 || serverQuery.isPending ? (
             <div className="@container mt-5">
-              <div
-                role="region"
+              <section
                 aria-label="DNS query results"
                 aria-live="polite"
                 aria-busy={serverQuery.isPending}
+                // biome-ignore lint/a11y/noNoninteractiveTabindex: Safari needs explicit focus to let keyboard users scroll this results panel.
                 tabIndex={0}
                 className="-mr-5 max-h-[min(36rem,70vh)] overflow-y-auto overscroll-contain [color-scheme:dark]"
               >
@@ -229,7 +240,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                       >
                         <QueryResultColumns
                           outcome={
-                            <div className="border-muted space-y-8 border-l-4 px-5 py-5">
+                            <div className="space-y-8 border-muted border-l-4 px-5 py-5">
                               <Skeleton className="h-4 w-28" />
                               <div className="space-y-2">
                                 <Skeleton className="h-9 w-36" />
@@ -256,16 +267,16 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                       {result.success ? (
                         <QueryResultPane {...result.data} />
                       ) : (
-                        <p className="text-destructive px-5 py-5 text-sm">
+                        <p className="px-5 py-5 text-destructive text-sm">
                           {result.error.message}
                         </p>
                       )}
                     </QueryResultCard>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
-          )}
+          ) : null}
         </ActionLayout>
       </CardContent>
     </Card>

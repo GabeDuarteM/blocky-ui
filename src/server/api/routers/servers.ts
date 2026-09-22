@@ -1,17 +1,17 @@
-import {
-  readBlockyStatistics,
-  createStatisticsSnapshot,
-} from "~/server/blocky/statistics";
 import { z } from "zod";
-import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
+import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
 import { blockyApiProcedure } from "~/server/api/demo";
+import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import {
   commandSchema,
   executeCommand,
   readBlockingStatus,
 } from "~/server/blocky/commands";
 import { parseBlockyQueryResult } from "~/server/blocky/query";
-import { BLOCKY_DNS_RECORD_TYPES } from "~/lib/constants";
+import {
+  createStatisticsSnapshot,
+  readBlockyStatistics,
+} from "~/server/blocky/statistics";
 
 const targetsSchema = z.object({ serverIds: z.array(z.string()).min(1) });
 

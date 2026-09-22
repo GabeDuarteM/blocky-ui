@@ -1,4 +1,4 @@
-import { type Configuration } from "~/server/config/schema";
+import type { Configuration } from "~/server/config/schema";
 
 export function serverSummaries(configuration: Configuration) {
   return Object.entries(configuration.servers).map(([id, server]) => ({

@@ -1,13 +1,13 @@
-import { type createPool } from "mysql2/promise";
-import { type default as postgres } from "postgres";
-import { type DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
+import type { createPool } from "mysql2/promise";
+import type { default as postgres } from "postgres";
 
-import { type Configuration } from "~/server/config/schema";
-import { type LogProvider } from "~/server/logs/types";
+import type { Configuration } from "~/server/config/schema";
+import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
 import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
-import { CsvLogProvider } from "~/server/logs/csv/provider";
-import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import type { LogProvider } from "~/server/logs/types";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 
 declare global {
@@ -23,11 +23,12 @@ declare global {
 export async function initializeLogSource(
   source: Configuration["logSources"][string],
 ): Promise<LogProvider> {
-  const connections = (globalThis.blockyLogConnections ??= {
+  globalThis.blockyLogConnections ??= {
     mysql: new Map(),
     postgres: new Map(),
     sqlite: new Map(),
-  });
+  };
+  const connections = globalThis.blockyLogConnections;
 
   switch (source.type) {
     case "mysql":
@@ -48,13 +49,17 @@ export async function initializeLogSource(
     case "console":
       return new VictoriaLogsProvider({ url: source.target });
     case "sqlite": {
-      const { SQLiteLogProvider } =
-        await import("~/server/logs/sqlite/provider");
+      const { SQLiteLogProvider } = await import(
+        "~/server/logs/sqlite/provider"
+      );
 
       return new SQLiteLogProvider({
         filePath: source.target,
         connections: connections.sqlite,
       });
     }
+
+    default:
+      throw new Error(`Unexpected value: ${source satisfies never}`);
   }
 }

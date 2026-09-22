@@ -7,33 +7,34 @@ import { readQueryLogPage } from "~/server/logs/query-page";
  */
 
 import {
-  asc,
-  desc,
-  sql,
   and,
+  asc,
+  Column,
+  desc,
   eq,
   gte,
-  lte,
-  or,
-  notInArray,
-  isNull,
   inArray,
+  is,
+  isNull,
+  lte,
+  notInArray,
+  or,
   type SQL,
-  type Column,
+  sql,
 } from "drizzle-orm";
-import { type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import {
-  type LogProvider,
-  type LogScope,
-  type QueryLogFilters,
-  type LogEntry,
-  type QueriesOverTimeEntry,
-  type TopDomainEntry,
-  type TopClientEntry,
-  type QueryTypeEntry,
-  type QueryLogsOptions,
-  type QueryLogsResult,
+import type {
+  LogEntry,
+  LogProvider,
+  LogScope,
+  QueriesOverTimeEntry,
+  QueryLogFilters,
+  QueryLogsOptions,
+  QueryLogsResult,
+  QueryTypeEntry,
+  TopClientEntry,
+  TopDomainEntry,
 } from "~/server/logs/types";
 
 /**
@@ -56,30 +57,15 @@ export interface LogEntriesColumns {
   hostname: Column;
 }
 
-// Generic database type that works with any Drizzle SQL database
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyDrizzleDb = any;
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnyTable = any;
+interface SqlQuery extends PromiseLike<Record<string, unknown>[]> {
+  groupBy: (...columns: SQL[]) => SqlQuery;
+  limit: (count: number) => SqlQuery;
+  offset: (count: number) => SqlQuery;
+  orderBy: (...columns: SQL[]) => SqlQuery;
+  where: (condition: SQL | undefined) => SqlQuery;
+}
 
 type SqlFilter = ReturnType<typeof eq>;
-
-interface TopDomainsRow {
-  domain: string | null;
-  count: number;
-  blocked: number;
-  totalCount: number;
-  totalQueriesCount: number;
-}
-
-interface TopClientsRow {
-  client: string | null;
-  total: number;
-  blocked: number;
-  totalCount: number;
-  totalQueriesCount: number;
-}
 
 interface GroupedTotalsRow {
   totalCount: number;
@@ -87,9 +73,11 @@ interface GroupedTotalsRow {
 }
 
 export interface BaseSqlLogProviderConfig {
-  db: AnyDrizzleDb;
-  table: AnyTable;
   columns: LogEntriesColumns;
+  select: (
+    fields: Record<string, SQL>,
+    indexHints?: { useIndex: string[] },
+  ) => SqlQuery;
 }
 
 function getUtcDateParts(date: Date) {
@@ -106,14 +94,27 @@ function getUtcDateParts(date: Date) {
  * Subclasses can override any method if they need database-specific optimizations.
  */
 export abstract class BaseSqlLogProvider implements LogProvider {
-  protected readonly db: AnyDrizzleDb;
-  protected readonly table: AnyTable;
+  private readonly selectQuery: BaseSqlLogProviderConfig["select"];
   protected readonly columns: LogEntriesColumns;
 
   constructor(config: BaseSqlLogProviderConfig) {
-    this.db = config.db;
-    this.table = config.table;
+    this.selectQuery = config.select;
     this.columns = config.columns;
+  }
+
+  private select(
+    fields: Record<string, Column | SQL>,
+    indexHints?: { useIndex: string[] },
+  ) {
+    return this.selectQuery(
+      Object.fromEntries(
+        Object.entries(fields).map(([key, value]) => [
+          key,
+          is(value, Column) ? sql`${value}`.mapWith(value) : value,
+        ]),
+      ),
+      indexHints,
+    );
   }
 
   /**
@@ -158,13 +159,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     filters: SqlFilter[];
     groupColumn: Column;
   }): Promise<{ totalCount: number; totalQueriesCount: number }> {
-    const result = await this.db
-      .select({
-        totalCount: sql<number>`count(distinct coalesce(${options.groupColumn}, '__null__'))`,
-        totalQueriesCount: sql<number>`count(*)`,
-      })
-      .from(this.table)
-      .where(and(...options.filters));
+    const result = await this.select({
+      totalCount: sql<number>`count(distinct coalesce(${options.groupColumn}, '__null__'))`,
+      totalQueriesCount: sql<number>`count(*)`,
+    }).where(and(...options.filters));
 
     return {
       totalCount: Number(result[0]?.totalCount ?? 0),
@@ -172,8 +170,8 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     };
   }
 
-  private async resolveGroupedTotals(options: {
-    row: GroupedTotalsRow | undefined;
+  private resolveGroupedTotals(options: {
+    row: Record<string, unknown> | undefined;
     offset: number;
     filters: SqlFilter[];
     groupColumn: Column;
@@ -185,10 +183,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       });
     }
 
-    return {
-      totalQueriesCount: Number(options.row?.totalQueriesCount ?? 0),
+    return Promise.resolve({
       totalCount: Number(options.row?.totalCount ?? 0),
-    };
+      totalQueriesCount: Number(options.row?.totalQueriesCount ?? 0),
+    });
   }
 
   /**
@@ -200,13 +198,15 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       typeof value === "string" ? value : null;
 
     const toNullableNumber = (value: unknown): number | null => {
-      if (value == null) return null;
+      if (value === null || value === undefined) {
+        return null;
+      }
       const num = typeof value === "number" ? value : Number(value);
       return Number.isFinite(num) ? num : null;
     };
 
     return {
-      id: row.id != null ? Number(row.id) : undefined,
+      id: row.id === null || row.id === undefined ? undefined : Number(row.id),
       requestTs: toNullableString(row.requestTs),
       clientIp: toNullableString(row.clientIp),
       clientName: toNullableString(row.clientName),
@@ -237,8 +237,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return filter ? [filter] : [];
   }
 
-  protected async clientFilter(client: string): Promise<SQL> {
-    return sql`LOWER(${this.columns.clientName}) LIKE LOWER(${`%${client}%`})`;
+  protected clientFilter(client: string): Promise<SQL> {
+    return Promise.resolve(
+      sql`LOWER(${this.columns.clientName}) LIKE LOWER(${`%${client}%`})`,
+    );
   }
 
   protected getClientRankingIndexHints(
@@ -283,21 +285,20 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   }
 
   async getQueryLogCount(options: QueryLogFilters): Promise<number> {
-    const result = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(this.table)
-      .where(and(...(await this.buildLogFilters(options))));
+    const result = await this.select({ count: sql<number>`count(*)` }).where(
+      and(...(await this.buildLogFilters(options))),
+    );
     return Number(result[0]?.count ?? 0);
   }
 
   async getQueryLogSnapshot() {
     if (!this.columns.id) {
-      return undefined;
+      return;
     }
 
-    const result = await this.db
-      .select({ id: sql<number>`max(${this.columns.id})` })
-      .from(this.table);
+    const result = await this.select({
+      id: sql<number>`max(${this.columns.id})`,
+    });
 
     return Number(result[0]?.id ?? 0);
   }
@@ -310,17 +311,14 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       this.columns.requestTs,
       this.formatDateTimeForFilter(since),
     );
-    const result = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(this.table)
-      .where(
-        and(
-          ...(await this.buildLogFilters(options)),
-          since.getTime() <= 0
-            ? or(timestamp, isNull(this.columns.requestTs))
-            : timestamp,
-        ),
-      );
+    const result = await this.select({ count: sql<number>`count(*)` }).where(
+      and(
+        ...(await this.buildLogFilters(options)),
+        since.getTime() <= 0
+          ? or(timestamp, isNull(this.columns.requestTs))
+          : timestamp,
+      ),
+    );
 
     return Number(result[0]?.count ?? 0);
   }
@@ -372,9 +370,10 @@ export abstract class BaseSqlLogProvider implements LogProvider {
           ]),
     ];
     const seekById = options.offset > 0 && this.columns.id;
-    const query = this.db
-      .select(seekById ? { id: seekById } : selectFields)
-      .from(this.table, indexHints)
+    const query = this.select(
+      seekById ? { id: seekById } : selectFields,
+      indexHints,
+    )
       .orderBy(...order)
       .limit(options.limit)
       .offset(options.offset)
@@ -383,9 +382,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     let rows = await query;
 
     if (seekById && rows.length > 0) {
-      rows = await this.db
-        .select(selectFields)
-        .from(this.table)
+      rows = await this.select(selectFields)
         .where(
           and(
             ...filters,
@@ -433,14 +430,12 @@ export abstract class BaseSqlLogProvider implements LogProvider {
       );
     }
 
-    const result = await this.db
-      .select({
-        timeBucket: sql<string>`${bucketExpr}`,
-        total: sql<number>`count(*)`,
-        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
-        cached: sql<number>`sum(case when ${this.columns.responseType} = 'CACHED' then 1 else 0 end)`,
-      })
-      .from(this.table)
+    const result = await this.select({
+      timeBucket: sql<string>`${bucketExpr}`,
+      total: sql<number>`count(*)`,
+      blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
+      cached: sql<number>`sum(case when ${this.columns.responseType} = 'CACHED' then 1 else 0 end)`,
+    })
       .where(and(...filters))
       .groupBy(sql`${bucketExpr}`)
       .orderBy(sql`${bucketExpr}`);
@@ -458,17 +453,15 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   ): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const filters = this.buildRangeFilters(options);
 
-    const query = this.db
-      .select({
-        domain: this.columns.questionName,
-        count: sql<number>`count(*)`,
-        blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
-        totalCount: sql<number>`count(*) over ()`,
-        totalQueriesCount: sql<number>`sum(count(*)) over ()`,
-      })
-      .from(this.table)
+    const query = this.select({
+      domain: this.columns.questionName,
+      count: sql<number>`count(*)`,
+      blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
+      totalCount: sql<number>`count(*) over ()`,
+      totalQueriesCount: sql<number>`sum(count(*)) over ()`,
+    })
       .where(and(...filters))
-      .groupBy(this.columns.questionName)
+      .groupBy(sql`${this.columns.questionName}`)
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionName)),
@@ -486,8 +479,8 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     });
 
     return {
-      items: result.map((row: TopDomainsRow) => ({
-        domain: row.domain ?? "unknown",
+      items: result.map((row) => ({
+        domain: typeof row.domain === "string" ? row.domain : "unknown",
         count: Number(row.count),
         blocked: Number(row.blocked),
         percentage:
@@ -509,20 +502,18 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   ): Promise<{ items: TopClientEntry[]; totalCount: number }> {
     const filters = this.buildRangeFilters(options);
 
-    const query = this.db
-      .select({
+    const query = this.select(
+      {
         client: this.columns.clientName,
         total: sql<number>`count(*)`,
         blocked: sql<number>`sum(case when ${this.columns.responseType} = 'BLOCKED' then 1 else 0 end)`,
         totalCount: sql<number>`count(*) over ()`,
         totalQueriesCount: sql<number>`sum(count(*)) over ()`,
-      })
-      .from(
-        this.table,
-        this.getClientRankingIndexHints(options.range, options.filter),
-      )
+      },
+      this.getClientRankingIndexHints(options.range, options.filter),
+    )
       .where(and(...filters))
-      .groupBy(this.columns.clientName)
+      .groupBy(sql`${this.columns.clientName}`)
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.clientName)),
@@ -540,8 +531,8 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     });
 
     return {
-      items: result.map((row: TopClientsRow) => ({
-        client: row.client ?? "unknown",
+      items: result.map((row) => ({
+        client: typeof row.client === "string" ? row.client : "unknown",
         total: Number(row.total),
         blocked: Number(row.blocked),
         percentage:
@@ -559,38 +550,35 @@ export abstract class BaseSqlLogProvider implements LogProvider {
   ): Promise<QueryTypeEntry[]> {
     const { startTime } = getTimeRangeConfig(range);
 
-    const totalResult = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(this.table)
-      .where(
-        and(
-          gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
-          ...this.scopeFilters(scope),
-        ),
-      );
+    const totalResult = await this.select({
+      count: sql<number>`count(*)`,
+    }).where(
+      and(
+        gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
+        ...this.scopeFilters(scope),
+      ),
+    );
     const totalCount = Number(totalResult[0]?.count ?? 0);
 
-    const result = await this.db
-      .select({
-        type: this.columns.questionType,
-        count: sql<number>`count(*)`,
-      })
-      .from(this.table)
+    const result = await this.select({
+      type: this.columns.questionType,
+      count: sql<number>`count(*)`,
+    })
       .where(
         and(
           gte(this.columns.requestTs, this.formatDateTimeForFilter(startTime)),
           ...this.scopeFilters(scope),
         ),
       )
-      .groupBy(this.columns.questionType)
+      .groupBy(sql`${this.columns.questionType}`)
       .orderBy(
         desc(sql`count(*)`),
         asc(this.getTextSortExpression(this.columns.questionType)),
         asc(this.columns.questionType),
       );
 
-    return result.map((row: { type: string | null; count: number }) => ({
-      type: row.type ?? "unknown",
+    return result.map((row) => ({
+      type: typeof row.type === "string" ? row.type : "unknown",
       count: Number(row.count),
       percentage: totalCount > 0 ? (Number(row.count) / totalCount) * 100 : 0,
     }));
@@ -601,12 +589,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
  * Fills in missing time buckets with zero values.
  */
 function fillTimeBuckets(
-  data: {
-    timeBucket: string;
-    total: number;
-    blocked: number;
-    cached: number;
-  }[],
+  data: Record<string, unknown>[],
   startTime: Date,
   interval: number,
   range: TimeRange,
@@ -658,5 +641,8 @@ function formatDateForRange(date: Date, range: TimeRange): string {
     }
     case "30d":
       return `${year}-${month}-${day}`;
+
+    default:
+      throw new Error(`Unexpected value: ${range satisfies never}`);
   }
 }

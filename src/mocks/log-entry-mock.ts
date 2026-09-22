@@ -1,9 +1,9 @@
-import type { LogEntry } from "~/server/logs/types";
 import { en, Faker } from "@faker-js/faker";
 import {
   BLOCKY_DNS_RECORD_TYPES,
   BLOCKY_RESPONSE_TYPES,
 } from "~/lib/constants";
+import type { LogEntry } from "~/server/logs/types";
 
 const faker = new Faker({ locale: en });
 
@@ -38,7 +38,7 @@ const CLIENT_POOL = [
 ];
 
 function weightedPick<T extends { weight: number }>(pool: readonly T[]): T {
-  const first = pool[0];
+  const [first] = pool;
   if (!first) {
     throw new Error("weightedPick called with empty pool");
   }
@@ -64,7 +64,7 @@ const generateMockLogEntry = (id: number, now: number): LogEntry => {
   let reason = responseType;
 
   if (responseType === "BLOCKED") {
-    reason += ` (ad-group)`;
+    reason += " (ad-group)";
   } else if (responseType === "RESOLVED") {
     reason += ` (${faker.helpers.arrayElement([
       "https://dns.google/dns-query",

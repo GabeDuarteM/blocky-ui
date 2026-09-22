@@ -1,7 +1,7 @@
-import { type ReactNode } from "react";
-import { type LucideIcon } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { Badge, type BadgeVariants } from "~/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
   Tooltip,
@@ -52,16 +52,16 @@ export function StatCard({
         </CardHeader>
         <CardContent className="min-h-15">
           <Skeleton className="mb-2 h-9 w-20" />
-          {(children || detail !== undefined) && (
+          {children || detail !== undefined ? (
             <Skeleton className="h-4 w-full" />
-          )}
+          ) : null}
         </CardContent>
       </Card>
     );
   }
 
   const titleElement = (
-    <CardTitle className="text-muted-foreground cursor-default text-sm font-medium">
+    <CardTitle className="cursor-default font-medium text-muted-foreground text-sm">
       {title}
     </CardTitle>
   );
@@ -77,29 +77,29 @@ export function StatCard({
         ) : (
           titleElement
         )}
-        <Icon className="text-muted-foreground h-5 w-5" />
+        <Icon className="h-5 w-5 text-muted-foreground" />
       </CardHeader>
       <CardContent className="min-h-15">
         {children ?? (
           <>
             <div className="mb-2 flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{formatValue(value)}</span>
-              {valueLabel && (
-                <span className="text-foreground text-sm font-medium">
+              <span className="font-bold text-3xl">{formatValue(value)}</span>
+              {valueLabel ? (
+                <span className="font-medium text-foreground text-sm">
                   {valueLabel}
                 </span>
-              )}
-              {badge && (
+              ) : null}
+              {badge ? (
                 <Badge variant={badge.variant ?? "secondary"}>
                   {badge.value}
                 </Badge>
-              )}
+              ) : null}
             </div>
-            {detail && (
-              <p className="text-muted-foreground mt-2 text-xs tabular-nums">
+            {detail ? (
+              <p className="mt-2 text-muted-foreground text-xs tabular-nums">
                 {detail}
               </p>
-            )}
+            ) : null}
           </>
         )}
       </CardContent>

@@ -1,23 +1,23 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { DatabaseSync } from "node:sqlite";
 import Database from "better-sqlite3";
-import { type DatabaseSync } from "node:sqlite";
-import { type Pool } from "mysql2/promise";
-import { type Sql } from "postgres";
-import { MySQLLogProvider } from "~/server/logs/mysql/provider";
-import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
+import type { Pool } from "mysql2/promise";
+import type { Sql } from "postgres";
 import { afterEach, expect, it, vi } from "vitest";
-import { aggregateQueriesOverTime } from "~/server/logs/aggregation-utils";
-import { CsvLogProvider } from "~/server/logs/csv/provider";
-import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
-import { SQLiteLogProvider } from "~/server/logs/sqlite/provider";
 import {
   entryToCsvLine,
   makeEntry,
   setupMysql,
   setupPostgres,
 } from "~/server/logs/__tests__/setup";
+import { aggregateQueriesOverTime } from "~/server/logs/aggregation-utils";
+import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
+import { MySQLLogProvider } from "~/server/logs/mysql/provider";
+import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
+import { SQLiteLogProvider } from "~/server/logs/sqlite/provider";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -104,9 +104,9 @@ it.each([
       return {
         provider: () => new MySQLLogProvider({ target, connections }),
         async close() {
-          for (const connection of connections.values()) {
-            await connection.end();
-          }
+          await Promise.all(
+            Array.from(connections.values(), (connection) => connection.end()),
+          );
         },
       };
     },
@@ -119,9 +119,9 @@ it.each([
       return {
         provider: () => new PostgreSQLLogProvider({ target, connections }),
         async close() {
-          for (const connection of connections.values()) {
-            await connection.end();
-          }
+          await Promise.all(
+            Array.from(connections.values(), (connection) => connection.end()),
+          );
         },
       };
     },
@@ -163,15 +163,15 @@ it("reuses the MySQL pool when the driver normalizes nested SSL options", async 
   const connections = new Map<string, Pool>();
 
   try {
-    new MySQLLogProvider({ target, connections });
-    new MySQLLogProvider({ target, connections });
+    expect(() => new MySQLLogProvider({ target, connections })).not.toThrow();
+    expect(() => new MySQLLogProvider({ target, connections })).not.toThrow();
 
     expect(connections.size).toBe(1);
     expect(target.options.ssl).toEqual({});
   } finally {
-    for (const connection of connections.values()) {
-      await connection.end();
-    }
+    await Promise.all(
+      Array.from(connections.values(), (connection) => connection.end()),
+    );
   }
 });
 
@@ -180,15 +180,18 @@ it("preserves an empty PostgreSQL password when PGPASSWORD is set", async () => 
   const connections = new Map<string, Sql>();
 
   try {
-    new PostgreSQLLogProvider({
-      target: {
-        host: "localhost",
-        username: "blocky",
-        password: "",
-        database: "blocky",
-      },
-      connections,
-    });
+    expect(
+      () =>
+        new PostgreSQLLogProvider({
+          target: {
+            host: "localhost",
+            username: "blocky",
+            password: "",
+            database: "blocky",
+          },
+          connections,
+        }),
+    ).not.toThrow();
     const password: unknown = connections.values().next().value?.options.pass;
     expect(
       typeof password === "function"
@@ -197,8 +200,8 @@ it("preserves an empty PostgreSQL password when PGPASSWORD is set", async () => 
     ).toBe("");
   } finally {
     vi.unstubAllEnvs();
-    for (const connection of connections.values()) {
-      await connection.end();
-    }
+    await Promise.all(
+      Array.from(connections.values(), (connection) => connection.end()),
+    );
   }
 });

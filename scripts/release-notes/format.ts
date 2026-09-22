@@ -1,4 +1,13 @@
+import { closesCodeFence, readCodeFence } from "./code-fence";
 import { getContributionTitle } from "./contribution-title";
+
+const headingPattern = /^#{1,6} /;
+const creditPattern =
+  /^ {2}<!-- changeset-credit: ([^|]*)\|([^|]*)\|([^|]*) -->$/;
+const entryIndentPattern = /^ {2}/;
+const changeTypeHeadingPattern = /^### (Major|Minor|Patch) Changes$/;
+const releaseHeadingPattern = /^## /m;
+const rawChangesetPattern = /^\s*### (Major|Minor|Patch) Changes\n/;
 
 const SECTIONS = [
   "Upgrade notes",
@@ -20,16 +29,11 @@ function splitSections(markdown: string) {
   );
 
   for (const line of markdown.split("\n")) {
-    const match = /^( {0,3})(`{3,}|~{3,})/.exec(line);
-    const marker = match?.[2];
+    const opening = readCodeFence(line);
+    const marker = opening?.marker;
     let output = line;
     if (fence) {
-      if (
-        marker &&
-        marker[0] === fence.marker[0] &&
-        marker.length >= fence.marker.length &&
-        line.trim() === marker
-      ) {
+      if (closesCodeFence(line, marker, fence.marker)) {
         output = " ".repeat(fence.indent) + outputFence;
         fence = undefined;
       } else {
@@ -38,7 +42,7 @@ function splitSections(markdown: string) {
           line.replace(new RegExp(`^ {0,${fence.indent}}`), "");
       }
     } else if (marker) {
-      fence = { marker, indent: match?.[1]?.length ?? 0 };
+      fence = { marker, indent: opening?.indent ?? 0 };
       output =
         " ".repeat(fence.indent) +
         outputFence +
@@ -51,15 +55,11 @@ function splitSections(markdown: string) {
       }
       section = nextSection;
       continue;
-    } else if (/^#{1,6} /.test(line)) {
-      if (!line.startsWith("### ") && !line.startsWith("#### ")) {
+    } else if (headingPattern.test(line)) {
+      if (!(line.startsWith("### ") || line.startsWith("#### "))) {
         throw new Error("Use ### or #### for headings inside release notes.");
       }
-      const prefix =
-        section === "Highlights" || section === "Other improvements"
-          ? "##"
-          : "#";
-      output = `${prefix}${line}`;
+      output = sectionHeading(line, section);
     }
     const lines = sections.get(section) ?? [];
     lines.push(output);
@@ -73,23 +73,24 @@ function splitSections(markdown: string) {
 
 function parseEntry(entry: string) {
   const [title = "", metadata = "", ...lines] = entry.split("\n");
-  const fields =
-    /^  <!-- changeset-credit: ([^|]*)\|([^|]*)\|([^|]*) -->$/.exec(metadata);
-  if (!title || !fields) {
+  const fields = metadata.match(creditPattern);
+  if (!(title && fields)) {
     throw new Error(`Cannot read Changesets entry: ${title}`);
   }
   const [, pull, commit, authors] = fields;
   const credit = [pull, commit, authors ? `by ${authors}` : ""]
     .filter(Boolean)
     .join(" ");
-  const body = lines.map((line) => line.replace(/^ {2}/, "")).join("\n");
+  const body = lines
+    .map((line) => line.replace(entryIndentPattern, ""))
+    .join("\n");
   return { title, credit, sections: splitSections(body) };
 }
 
-function formatEntries(markdown: string, firstTimeContributors: string) {
+function readEntries(markdown: string) {
   const entries: string[] = [];
   for (const line of markdown.trim().split("\n")) {
-    if (/^### (Major|Minor|Patch) Changes$/.test(line)) {
+    if (changeTypeHeadingPattern.test(line)) {
       continue;
     }
     if (line.startsWith("- ")) {
@@ -104,6 +105,10 @@ function formatEntries(markdown: string, firstTimeContributors: string) {
     throw new Error("No release-note entries found.");
   }
 
+  return entries;
+}
+
+function groupEntries(entries: string[]) {
   const grouped = new Map<Section, string[]>();
   const contributions = new Set<string>();
   for (const entry of entries) {
@@ -115,12 +120,7 @@ function formatEntries(markdown: string, firstTimeContributors: string) {
         continue;
       }
       hasContent = true;
-      let content = body;
-      if (section === "Other improvements") {
-        content = `- ${title}\n\n${body.replace(/^(?=.)/gm, "  ")}`;
-      } else if (section === "Highlights") {
-        content = `#### ${title}\n\n${body}`;
-      }
+      const content = sectionContent(body, title, section);
       grouped.set(section, [...(grouped.get(section) ?? []), content]);
     }
     if (!hasContent) {
@@ -138,6 +138,11 @@ function formatEntries(markdown: string, firstTimeContributors: string) {
       );
     }
   }
+  return { contributions, grouped };
+}
+
+function formatEntries(markdown: string, firstTimeContributors: string) {
+  const { grouped, contributions } = groupEntries(readEntries(markdown));
   const result: string[] = [];
   for (const section of SECTIONS) {
     const entries = grouped.get(section);
@@ -171,11 +176,27 @@ export function formatChangelog(
     throw new Error(`Cannot find changelog for version ${version}.`);
   }
   const bodyStart = start + heading.length;
-  const nextRelease = /^## /m.exec(changelog.slice(bodyStart));
-  const end = nextRelease ? bodyStart + nextRelease.index : changelog.length;
+  const nextRelease = changelog.slice(bodyStart).search(releaseHeadingPattern);
+  const end = nextRelease < 0 ? changelog.length : bodyStart + nextRelease;
   const body = changelog.slice(bodyStart, end);
-  if (!/^\s*### (Major|Minor|Patch) Changes\n/.test(body)) {
+  if (!rawChangesetPattern.test(body)) {
     return changelog;
   }
   return `${changelog.slice(0, bodyStart)}\n${formatEntries(body, firstTimeContributors)}\n\n${changelog.slice(end)}`;
+}
+
+function sectionHeading(line: string, section: Section) {
+  const prefix =
+    section === "Highlights" || section === "Other improvements" ? "##" : "#";
+  return `${prefix}${line}`;
+}
+
+function sectionContent(body: string, title: string, section: Section) {
+  if (section === "Other improvements") {
+    return `- ${title}\n\n${body.replace(/^(?=.)/gm, "  ")}`;
+  }
+  if (section === "Highlights") {
+    return `#### ${title}\n\n${body}`;
+  }
+  return body;
 }

@@ -2,7 +2,14 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, FlaskConical, Server } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "~/components/ui/button";
 import {
   Popover,
@@ -18,8 +25,8 @@ import {
 } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import {
-  DEMO_SERVICES,
   DEMO_SERVER_COUNTS,
+  DEMO_SERVICES,
   parseDemoServerCount,
   serializeDemoConfiguration,
 } from "~/demo/config";
@@ -65,7 +72,7 @@ function DemoModeShell({ children }: { children: ReactNode }) {
     }
 
     previousConfiguration.current = configurationKey;
-    void queryClient.resetQueries();
+    queryClient.resetQueries();
   }, [queryClient, configurationKey]);
 
   return (
@@ -90,6 +97,15 @@ function DemoDevtoolsBar({
 }) {
   const { configuration, setServiceEnabled, setServerCount } =
     useDemoConfigurationController();
+  const serviceOptions = useMemo(
+    () =>
+      DEMO_SERVICES.map((service) => ({
+        ...service,
+        onCheckedChange: (enabled: boolean) =>
+          setServiceEnabled(service.id, enabled),
+      })),
+    [setServiceEnabled],
+  );
   const enabledServices = DEMO_SERVICES.filter(
     ({ id }) => configuration.services[id],
   );
@@ -97,6 +113,18 @@ function DemoDevtoolsBar({
     enabledServices.map((service) => service.label),
   );
 
+  const expand = useCallback(
+    () => onMinimizedChange(false),
+    [onMinimizedChange],
+  );
+  const handleServerCountChange = useCallback(
+    (value: string) => setServerCount(parseDemoServerCount(value)),
+    [setServerCount],
+  );
+  const minimize = useCallback(
+    () => onMinimizedChange(true),
+    [onMinimizedChange],
+  );
   if (isMinimized) {
     return (
       <aside
@@ -106,13 +134,13 @@ function DemoDevtoolsBar({
         <Button
           aria-label="Expand demo configuration"
           variant="outline"
-          onClick={() => onMinimizedChange(false)}
+          onClick={expand}
           className="pointer-events-auto h-10 rounded-full border-amber-400/25 bg-zinc-950/95 px-3 text-zinc-100 shadow-2xl shadow-black/40 backdrop-blur hover:bg-zinc-900 hover:text-zinc-100"
         >
           <span className="flex size-6 items-center justify-center rounded-full bg-amber-400 text-zinc-950">
             <FlaskConical className="size-3.5" />
           </span>
-          <span className="text-[10px] font-semibold tracking-[0.16em] text-amber-300 uppercase">
+          <span className="font-semibold text-[10px] text-amber-300 uppercase tracking-[0.16em]">
             Demo
           </span>
           <span className="h-4 w-px bg-white/10" />
@@ -135,7 +163,7 @@ function DemoDevtoolsBar({
           <FlaskConical className="size-4" />
         </span>
         <div className="leading-tight">
-          <p className="text-[10px] font-semibold tracking-[0.18em] text-amber-300 uppercase">
+          <p className="font-semibold text-[10px] text-amber-300 uppercase tracking-[0.18em]">
             Demo mode
           </p>
           <p className="hidden text-xs text-zinc-400 sm:block">
@@ -163,15 +191,13 @@ function DemoDevtoolsBar({
           side="top"
           className="w-72 border-white/10 bg-zinc-950 p-1 text-zinc-100"
         >
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3 border-white/10 border-b px-3 py-2.5">
             <label htmlFor="demo-server-count" className="text-sm">
               Servers
             </label>
             <Select
               value={String(configuration.serverCount)}
-              onValueChange={(value) =>
-                setServerCount(parseDemoServerCount(value))
-              }
+              onValueChange={handleServerCountChange}
             >
               <SelectTrigger id="demo-server-count" className="w-28">
                 <SelectValue />
@@ -185,8 +211,8 @@ function DemoDevtoolsBar({
               </SelectContent>
             </Select>
           </div>
-          <div aria-label="Enabled demo services" role="group">
-            {DEMO_SERVICES.map((service) => (
+          <fieldset aria-label="Enabled demo services">
+            {serviceOptions.map((service) => (
               <label
                 key={service.id}
                 htmlFor={`demo-service-${service.id}`}
@@ -202,14 +228,12 @@ function DemoDevtoolsBar({
                   id={`demo-service-${service.id}`}
                   aria-label={`${service.label} enabled`}
                   checked={configuration.services[service.id]}
-                  onCheckedChange={(enabled) =>
-                    setServiceEnabled(service.id, enabled)
-                  }
+                  onCheckedChange={service.onCheckedChange}
                   className="data-[state=checked]:bg-amber-400"
                 />
               </label>
             ))}
-          </div>
+          </fieldset>
         </PopoverContent>
       </Popover>
 
@@ -217,7 +241,7 @@ function DemoDevtoolsBar({
         aria-label="Minimize demo configuration"
         size="icon"
         variant="ghost"
-        onClick={() => onMinimizedChange(true)}
+        onClick={minimize}
         className="absolute top-2 right-2 size-8 rounded-full text-zinc-500 hover:bg-white/10 hover:text-zinc-200 sm:static"
       >
         <ChevronDown className="size-4" />

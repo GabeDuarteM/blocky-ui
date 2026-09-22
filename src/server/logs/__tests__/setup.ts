@@ -1,6 +1,6 @@
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   MySqlContainer,
   type StartedMySqlContainer,
@@ -9,28 +9,28 @@ import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
 } from "@testcontainers/postgresql";
+import Database from "better-sqlite3";
+import { sql } from "drizzle-orm";
+import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
+import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import { createConnection } from "mysql2/promise";
 import postgres from "postgres";
-import { sql } from "drizzle-orm";
-import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
-import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
 
 import {
   GenericContainer,
-  Wait,
   type StartedTestContainer,
+  Wait,
 } from "testcontainers";
+import { createSeedData } from "~/server/logs/__tests__/seed-data";
+import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
 import { MySQLLogProvider } from "~/server/logs/mysql/provider";
 import { PostgreSQLLogProvider } from "~/server/logs/postgres/provider";
 import { logEntries as pgLogEntries } from "~/server/logs/postgres/schema";
 import { SQLiteLogProvider } from "~/server/logs/sqlite/provider";
 import { logEntries as sqliteLogEntries } from "~/server/logs/sqlite/schema";
-import { CsvLogProvider } from "~/server/logs/csv/provider";
-import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import type { LogEntry, LogProvider } from "~/server/logs/types";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
-import { type LogEntry, type LogProvider } from "~/server/logs/types";
-import { createSeedData } from "~/server/logs/__tests__/seed-data";
 
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS log_entries (
@@ -74,7 +74,7 @@ export function entryToCsvLine(entry: LogEntry): string {
     entry.requestTs ?? "",
     entry.clientIp ?? "",
     entry.clientName ?? "",
-    entry.durationMs != null ? String(entry.durationMs) : "",
+    entry.durationMs === null ? "" : String(entry.durationMs),
     entry.reason ?? "",
     entry.questionName ?? "",
     entry.answer ?? "",
@@ -177,7 +177,7 @@ export async function setupMysql(
     .withUserPassword(password)
     // Podman lists the image's X Protocol port even when it is not mapped.
     // Testcontainers waits for every listed port, so map this one as well.
-    .withExposedPorts(33060)
+    .withExposedPorts(33_060)
     .start();
 
   try {
@@ -189,6 +189,7 @@ export async function setupMysql(
 
       for (let offset = 0; offset < entries.length; offset += 1000) {
         const rows = entries.slice(offset, offset + 1000).map(entryToMysqlRow);
+        // biome-ignore lint/performance/noAwaitInLoops: Limit seed writes to one batch in flight.
         await connection.query(INSERT_SQL, [rows]);
       }
     } finally {
@@ -379,7 +380,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
         prefix: "queryLog",
         client_ip: entry.clientIp ?? "",
         client_names: entry.clientName ?? "",
-        duration_ms: entry.durationMs != null ? String(entry.durationMs) : "",
+        duration_ms: entry.durationMs === null ? "" : String(entry.durationMs),
         response_reason: entry.reason ?? "",
         instance: entry.hostname ?? "",
         question_name: entry.questionName ?? "",
@@ -407,6 +408,7 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
     const deadline = Date.now() + 10_000;
     let lastCount = 0;
     while (Date.now() < deadline) {
+      // biome-ignore lint/performance/noAwaitInLoops: Poll readiness until the previous insert becomes searchable.
       const resp = await fetch(
         `${url}/select/logsql/query?query=prefix%3AqueryLog+%7C+stats+count()+as+n`,
       );
@@ -416,7 +418,9 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
           ? (JSON.parse(text.trim()) as { n?: string })
           : null;
         lastCount = parsed ? Number(parsed.n) : 0;
-        if (lastCount >= entries.length) break;
+        if (lastCount >= entries.length) {
+          break;
+        }
       }
       await new Promise((r) => setTimeout(r, 500));
     }

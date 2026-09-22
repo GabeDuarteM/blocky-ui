@@ -1,3 +1,5 @@
+const resolvedReasonPattern = /RESOLVED: Resolved by:/;
+
 import { expect, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
 import { logEntries, longDomain } from "./visual-data";
@@ -105,6 +107,11 @@ test("log edge cases and expanded mobile details", async ({
     "logs.rows": { data: { items: logEntries, diagnostics: [] } },
     "logs.count": { data: { totalCount: logEntries.length, diagnostics: [] } },
   });
+  const viewport = page.viewportSize();
+  if (isMobile && viewport) {
+    // Keep the expanded list inside the viewport to avoid Chromium's beyond-viewport capture.
+    await page.setViewportSize({ ...viewport, height: 1200 });
+  }
   await page.goto("/");
   await configureDemo(page);
   const logs = getQueryLogs(page);
@@ -113,6 +120,7 @@ test("log edge cases and expanded mobile details", async ({
   if (isMobile) {
     const entries = logs.region.locator("details");
     for (const entry of await entries.all()) {
+      // biome-ignore lint/performance/noAwaitInLoops: Browser clicks must complete before moving the pointer again.
       await entry.locator("summary").click();
     }
     await expect(
@@ -121,6 +129,7 @@ test("log edge cases and expanded mobile details", async ({
     await expect(
       entries.first().getByText(longDomain, { exact: true }),
     ).toHaveCount(2);
+    await page.mouse.move(0, 0);
     await capture(logs.entries, "mobile-log-details");
   } else {
     await capture(logs.entries.locator(".."), "log-edge-cases");
@@ -128,7 +137,7 @@ test("log edge cases and expanded mobile details", async ({
     await capture(tooltip(page), "log-domain-tooltip");
     await page.mouse.move(0, 0);
     await logs.entries
-      .getByRole("button", { name: /RESOLVED: Resolved by:/ })
+      .getByRole("button", { name: resolvedReasonPattern })
       .hover();
     await capture(tooltip(page), "log-reason-tooltip");
   }
@@ -168,6 +177,7 @@ test("editable and unknown-total pagination", async ({ page }) => {
 });
 
 test("ordinary explanatory tooltip", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: Touch devices do not have a hover state.
   test.skip(isMobile, "Shared hover tooltip is covered on desktop.");
   await page.goto("/");
   await ready(page);

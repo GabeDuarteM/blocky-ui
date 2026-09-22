@@ -1,9 +1,8 @@
-import { sql, type Column, type SQL } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { DatabaseSync, type SQLInputValue } from "node:sqlite";
-
+import { type Column, type SQL, sql } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
+import type { TimeRange } from "~/lib/constants";
 import { cachedConnection } from "~/server/logs/connection-cache";
-import { type TimeRange } from "~/lib/constants";
 import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
 import { logEntries } from "~/server/logs/sqlite/schema";
 
@@ -26,31 +25,34 @@ export class SQLiteLogProvider extends BaseSqlLogProvider {
     );
 
     const db = drizzle(
-      async (query, params: SQLInputValue[], method) => {
+      (query, params: SQLInputValue[], method) => {
         if (method !== "all" && method !== "values") {
-          throw new Error("SQLite log queries must return rows");
+          return Promise.reject(
+            new Error("SQLite log queries must return rows"),
+          );
         }
         const statement = dbFile.prepare(query);
         statement.setReturnArrays(true);
-        return { rows: statement.all(...params) };
+        return Promise.resolve({ rows: statement.all(...params) });
       },
       { schema: { logEntries } },
     );
 
     super({
-      db,
-      table: logEntries,
       columns: logEntries,
+      select: (fields) => db.select(fields).from(logEntries).$dynamic(),
     });
 
     this.dbFile = dbFile;
     this.ownsConnection = !options.connections;
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
     if (this.ownsConnection) {
       this.dbFile.close();
     }
+
+    return Promise.resolve();
   }
 
   protected getTextSortExpression(column: Column): SQL {
@@ -73,6 +75,9 @@ export class SQLiteLogProvider extends BaseSqlLogProvider {
         );
       case "30d":
         return sql.raw(`strftime('%Y-%m-%d', ${col})`);
+
+      default:
+        throw new Error(`Unexpected value: ${range satisfies never}`);
     }
   }
 }

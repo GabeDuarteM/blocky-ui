@@ -1,4 +1,4 @@
-import { type KyInstance } from "ky";
+import type { KyInstance } from "ky";
 import { z } from "zod";
 
 const blockingStatusSchema = z.object({
@@ -49,6 +49,9 @@ export async function executeCommand(
     case "refreshLists":
       await client.post("api/lists/refresh");
       break;
+
+    default:
+      throw new Error(`Unexpected value: ${command satisfies never}`);
   }
   return { success: true };
 }

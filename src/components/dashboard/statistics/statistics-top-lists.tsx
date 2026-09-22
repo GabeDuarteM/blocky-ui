@@ -1,15 +1,15 @@
 "use client";
 
+import { Globe, ListOrdered, type LucideIcon, Users } from "lucide-react";
 import { useState } from "react";
-import { Globe, ListOrdered, Users, type LucideIcon } from "lucide-react";
 
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "~/components/ui/select";
 import {
   TopListCard,
@@ -74,7 +74,7 @@ function StatisticsTopList({
                 </div>
               }
             >
-              <div className="bg-muted h-2 w-full overflow-hidden rounded-full">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                 <div
                   className="h-full rounded-full bg-[var(--chart-1)]/75 transition-all duration-300"
                   style={{ width: `${width}%` }}
@@ -101,7 +101,7 @@ export function StatisticsTopLists() {
   const snapshot = current?.data;
   const isLoading = dashboard.statisticsLoading;
 
-  if (!isLoading && !snapshot) {
+  if (!(isLoading || snapshot)) {
     return null;
   }
 

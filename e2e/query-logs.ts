@@ -1,4 +1,4 @@
-import { type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 export function getQueryLogs(page: Page) {
   const region = page.getByRole("region", { name: "Query Logs", exact: true });

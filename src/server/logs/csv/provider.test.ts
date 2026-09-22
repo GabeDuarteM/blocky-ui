@@ -1,22 +1,23 @@
-import { mkdtemp, writeFile, appendFile, rm, rename } from "node:fs/promises";
+import { appendFile, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CsvLogProvider } from "~/server/logs/csv/provider";
-import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
-import * as csvUtils from "~/server/logs/csv/utils";
 import {
-  makeEntry,
   entryToCsvLine,
   formatDate,
+  makeEntry,
 } from "~/server/logs/__tests__/setup";
 import {
   aggregateQueriesOverTime,
-  aggregateTopDomains,
-  aggregateTopClients,
   aggregateQueryTypes,
+  aggregateTopClients,
+  aggregateTopDomains,
 } from "~/server/logs/aggregation-utils";
-import { type LogEntry } from "~/server/logs/types";
+import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
+// biome-ignore lint/performance/noNamespaceImport: Spy on the module export used by the CSV reader.
+import * as csvUtils from "~/server/logs/csv/utils";
+import type { LogEntry } from "~/server/logs/types";
 
 let directory: string;
 let now: number;
@@ -47,11 +48,13 @@ async function save(entries: LogEntry[], client = "ALL") {
     rows.push(row);
     grouped.set(file, rows);
   }
-  for (const [file, rows] of grouped) {
-    await writeFile(file, rows.map(entryToCsvLine).join("\n") + "\n");
-  }
+  await Promise.all(
+    [...grouped].map(([file, rows]) =>
+      writeFile(file, `${rows.map(entryToCsvLine).join("\n")}\n`),
+    ),
+  );
 }
-const DAY = 86400000;
+const DAY = 86_400_000;
 
 describe.each([CsvLogProvider, CsvClientLogProvider])(
   "%s history",
@@ -67,6 +70,7 @@ describe.each([CsvLogProvider, CsvClientLogProvider])(
       await save(rows);
       const provider = new Provider({ directory });
       for (const range of ["1h", "24h", "7d", "30d"] as const) {
+        // biome-ignore lint/performance/noAwaitInLoops: Exercise successive requests against the same provider cache.
         expect(await provider.getQueriesOverTime({ range })).toEqual(
           aggregateQueriesOverTime(rows, range),
         );
@@ -151,7 +155,7 @@ describe.each([CsvLogProvider, CsvClientLogProvider])(
           directory,
           `${formatDate(new Date(late.requestTs ?? ""))}_ALL.log`,
         ),
-        entryToCsvLine(late) + "\n",
+        `${entryToCsvLine(late)}\n`,
       );
       expect(await provider.getQueryLogs({ offset: 0, limit: 10 })).toEqual({
         items: [second, first, late],
@@ -247,6 +251,7 @@ describe.each([CsvLogProvider, CsvClientLogProvider])(
         },
       ];
       for (const { filters, expected } of cases) {
+        // biome-ignore lint/performance/noAwaitInLoops: Exercise successive requests against the same provider cache.
         expect(await provider.getQueryLogCount(filters)).toBe(expected.length);
         expect(
           await provider.getQueryLogRows({ ...filters, offset: 0, limit: 10 }),
@@ -266,7 +271,7 @@ describe.each([CsvLogProvider, CsvClientLogProvider])(
       const replacement = entry(DAY, { questionName: "other-domain.com" });
       await writeFile(
         join(directory, "replacement"),
-        entryToCsvLine(replacement) + "\n",
+        `${entryToCsvLine(replacement)}\n`,
       );
       await rename(join(directory, "replacement"), file);
       expect(
@@ -310,6 +315,7 @@ describe.each([CsvLogProvider, CsvClientLogProvider])(
           .reverse(),
       );
       for (const offset of [0, 255, 510, 1050, 1200]) {
+        // biome-ignore lint/performance/noAwaitInLoops: Exercise successive requests against the same provider cache.
         expect(await provider.getQueryLogRows({ offset, limit: 100 })).toEqual(
           first.items.slice(offset, offset + 100),
         );

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { Filter, X } from "lucide-react";
+import { useCallback, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Command, CommandInput } from "~/components/ui/command";
 import {
@@ -14,11 +14,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import { type TimeRange } from "~/lib/constants";
 import {
-  useFilterSuggestions,
   type FilterValue,
+  useFilterSuggestions,
 } from "~/hooks/use-filter-suggestions";
+import type { TimeRange } from "~/lib/constants";
 import { FilterSelect } from "../filter-select";
 
 export type ChartFilter = FilterValue;
@@ -39,15 +39,18 @@ export function ChartFilterCombobox({
 
   const suggestions = useFilterSuggestions(search, range);
 
-  const handleSelect = (type: "domain" | "client", selectedValue: string) => {
-    onChange({ type, value: selectedValue });
-    setOpen(false);
-    setSearch("");
-  };
+  const handleSelect = useCallback(
+    (type: "domain" | "client", selectedValue: string) => {
+      onChange({ type, value: selectedValue });
+      setOpen(false);
+      setSearch("");
+    },
+    [onChange],
+  );
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange(null);
-  };
+  }, [onChange]);
 
   const hasFilter = value !== null;
 
@@ -81,7 +84,7 @@ export function ChartFilterCombobox({
             suggestions={suggestions}
             onSelect={handleSelect}
           />
-          {hasFilter && (
+          {hasFilter ? (
             <div className="border-t p-2">
               <Button
                 variant="ghost"
@@ -93,7 +96,7 @@ export function ChartFilterCombobox({
                 Clear filter
               </Button>
             </div>
-          )}
+          ) : null}
         </Command>
       </PopoverContent>
     </Popover>
@@ -106,12 +109,14 @@ interface ActiveFilterChipProps {
 }
 
 export function ActiveFilterChip({ filter, onClear }: ActiveFilterChipProps) {
-  if (!filter) return null;
+  if (!filter) {
+    return null;
+  }
 
   const typeLabel = filter.type === "domain" ? "Domain" : "Client";
 
   return (
-    <div className="bg-primary/10 text-primary inline-flex items-center gap-1.5 rounded-full py-0.5 pr-1 pl-2.5 text-xs font-medium">
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 py-0.5 pr-1 pl-2.5 font-medium text-primary text-xs">
       <span className="max-w-[150px] truncate">
         {typeLabel}: {filter.value}
       </span>
@@ -119,7 +124,7 @@ export function ActiveFilterChip({ filter, onClear }: ActiveFilterChipProps) {
         variant="ghost"
         size="icon"
         onClick={onClear}
-        className="hover:bg-primary/20 h-auto w-auto rounded-full p-0.5"
+        className="h-auto w-auto rounded-full p-0.5 hover:bg-primary/20"
         aria-label="Clear filter"
       >
         <X className="h-3 w-3" />

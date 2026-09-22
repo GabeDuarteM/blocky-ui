@@ -1,7 +1,8 @@
 "use client";
 
-import { type LucideIcon } from "lucide-react";
-import { type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { useCallback } from "react";
 
 import { Button } from "~/components/ui/button";
 import {
@@ -40,7 +41,7 @@ export function TopListsSection({
       <CardHeader>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <CardTitle className="flex items-center gap-2 font-medium text-base">
               <Icon className="h-5 w-5" />
               Top Lists
             </CardTitle>
@@ -57,13 +58,15 @@ export function TopListsSection({
 }
 
 function TopListFilterToggle({ value, onChange }: TopListFilterControls) {
+  const showAll = useCallback(() => onChange("all"), [onChange]);
+  const showBlocked = useCallback(() => onChange("blocked"), [onChange]);
   return (
     <div className="flex gap-1 sm:justify-end">
       <Button
         variant={value === "all" ? "default" : "outline"}
         size="responsive"
         aria-pressed={value === "all"}
-        onClick={() => onChange("all")}
+        onClick={showAll}
       >
         All
       </Button>
@@ -71,7 +74,7 @@ function TopListFilterToggle({ value, onChange }: TopListFilterControls) {
         variant={value === "blocked" ? "default" : "outline"}
         size="responsive"
         aria-pressed={value === "blocked"}
-        onClick={() => onChange("blocked")}
+        onClick={showBlocked}
       >
         Blocked
       </Button>
@@ -107,25 +110,27 @@ export function TopListCard({
   if (isLoading) {
     content = (
       <div className="space-y-3">
-        {Array.from({ length: skeletonRows }).map((_, index) => (
-          <Skeleton key={index} className="h-8 w-full" />
-        ))}
+        {Array.from({ length: skeletonRows }, (_, index) => `row-${index}`).map(
+          (key) => (
+            <Skeleton key={key} className="h-8 w-full" />
+          ),
+        )}
       </div>
     );
   } else if (isEmpty) {
     content = (
-      <p className="text-muted-foreground py-8 text-center text-sm">
+      <p className="py-8 text-center text-muted-foreground text-sm">
         No data available
       </p>
     );
   }
 
   return (
-    <Card className="bg-muted/30 flex min-w-0 flex-col border-0 shadow-none">
+    <Card className="flex min-w-0 flex-col border-0 bg-muted/30 shadow-none">
       <CardHeader>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
+            <CardTitle className="flex items-center gap-2 font-medium text-base">
               <Icon className="h-5 w-5" />
               {title}
             </CardTitle>
@@ -158,7 +163,7 @@ export function TopListEntry({
       <div className="cursor-default space-y-1 py-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate font-mono text-sm">{name}</span>
-          <span className="text-muted-foreground shrink-0 text-sm tabular-nums">
+          <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
             {formatCount(count)}
           </span>
         </div>

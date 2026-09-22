@@ -1,4 +1,4 @@
-import { type LogProvider, type QueryLogsOptions } from "~/server/logs/types";
+import type { LogProvider, QueryLogsOptions } from "~/server/logs/types";
 
 export async function readQueryLogPage(
   provider: Pick<LogProvider, "getQueryLogRows" | "getQueryLogCount">,

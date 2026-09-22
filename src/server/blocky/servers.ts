@@ -1,8 +1,8 @@
+import ky, { HTTPError, type KyInstance, TimeoutError } from "ky";
+import { ZodError } from "zod";
+import type { Configuration } from "~/server/config/schema";
 import { serverSummaries } from "~/server/config/servers";
 import { mapConcurrent } from "~/server/utils/map-concurrent";
-import ky, { HTTPError, TimeoutError, type KyInstance } from "ky";
-import { ZodError } from "zod";
-import { type Configuration } from "~/server/config/schema";
 
 function describeFailure(error: unknown) {
   if (error instanceof TimeoutError) {
@@ -54,12 +54,14 @@ export function createBlockyServers(configuration: Configuration) {
     list() {
       return serverSummaries(configuration);
     },
-    async run<T>(
+    run<T>(
       ids: string[],
       request: (client: KyInstance) => Promise<T>,
     ): Promise<ServerResult<T>[]> {
       if (!ids.length || ids.some((id) => !connections.has(id))) {
-        throw new Error("Select configured servers before issuing a request.");
+        return Promise.reject(
+          new Error("Select configured servers before issuing a request."),
+        );
       }
       const selected = [...new Set(ids)].map((id) => {
         const server = connections.get(id);

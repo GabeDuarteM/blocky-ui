@@ -1,11 +1,14 @@
 import { readFile } from "node:fs/promises";
 import { env } from "~/env";
 import {
-  parseConfiguration,
-  parseConfigurationYaml,
   type Configuration,
   type DatabaseTarget,
+  parseConfiguration,
+  parseConfigurationYaml,
 } from "~/server/config/schema";
+
+const filePrefixPattern = /^file:(?:\/\/)?/;
+const trailingNewlinePattern = /\r?\n$/;
 
 let configuration: Promise<Configuration> | undefined;
 
@@ -13,19 +16,20 @@ async function readConfigurationFile(path: string, setting: string) {
   try {
     return await readFile(path, "utf8");
   } catch {
+    // biome-ignore lint/style/useErrorCause: Source errors may expose configuration secrets.
     throw new Error(`Cannot read the file configured by ${setting}`);
   }
 }
 
 async function resolveFileValue(value: string, setting: string) {
-  const prefix = /^file:(?:\/\/)?/.exec(value);
+  const prefix = value.match(filePrefixPattern);
   if (!prefix) {
     return value;
   }
 
   return (
     await readConfigurationFile(value.slice(prefix[0].length), setting)
-  ).replace(/\r?\n$/, "");
+  ).replace(trailingNewlinePattern, "");
 }
 
 type ConfigurationValue = NonNullable<DatabaseTarget["options"]>[string];
@@ -85,15 +89,16 @@ async function loadConfiguration(): Promise<Configuration> {
     return parseConfiguration({ ...config, logSources });
   }
 
+  const configuredSource = env.QUERY_LOG_TYPE
+    ? {
+        type: env.QUERY_LOG_TYPE,
+        target: env.QUERY_LOG_TARGET,
+        consoleProvider: env.QUERY_LOG_CONSOLE_PROVIDER,
+      }
+    : undefined;
   const logSource = env.DEMO_MODE
     ? { type: "csv", target: "demo" }
-    : env.QUERY_LOG_TYPE
-      ? {
-          type: env.QUERY_LOG_TYPE,
-          target: env.QUERY_LOG_TARGET,
-          consoleProvider: env.QUERY_LOG_CONSOLE_PROVIDER,
-        }
-      : undefined;
+    : configuredSource;
   return parseConfiguration({
     instanceName: env.INSTANCE_NAME,
     demoMode: env.DEMO_MODE,

@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseConfigurationYaml } from "~/server/config/schema";
 
+const invalidYamlPattern = /^Invalid YAML in Blocky UI configuration$/;
+const invalidSourcePattern =
+  /^Invalid Blocky UI configuration at: logSources.home/;
+const invalidConfigPattern = /Invalid (YAML|Blocky UI configuration)/;
+
 describe("server configuration", () => {
   it("keeps connections independent while referencing one shared log source", () => {
     const { config } = parseConfigurationYaml(`
@@ -56,7 +61,7 @@ logSources:
   it("does not include credentials in malformed YAML errors", () => {
     expect(() =>
       parseConfigurationYaml("servers: [secret-token: {broken"),
-    ).toThrow(/^Invalid YAML in Blocky UI configuration$/);
+    ).toThrow(invalidYamlPattern);
   });
 });
 
@@ -69,7 +74,7 @@ describe("database target validation", () => {
     { type: "console", consoleProvider: "victorialogs" },
     { target: { host: "" } },
     { target: { port: 0 } },
-    { target: { port: 65536 } },
+    { target: { port: 65_536 } },
     { target: { port: "3306" } },
     { target: { username: "" } },
     { target: { database: "" } },
@@ -98,7 +103,7 @@ describe("database target validation", () => {
       },
     };
     expect(() => parseConfigurationYaml(JSON.stringify(value))).toThrow(
-      /^Invalid Blocky UI configuration at: logSources.home/,
+      invalidSourcePattern,
     );
   });
 });
@@ -125,7 +130,7 @@ logSources:
   expect(config.logSources.home?.target).toMatchObject({
     options: {
       futureOption: null,
-      connectTimeout: 15000,
+      connectTimeout: 15_000,
       ssl: {
         rejectUnauthorized: true,
         ca: ["first-certificate", "second-certificate"],
@@ -192,5 +197,5 @@ logSources:
       ${field.startsWith("host:") ? "" : "host: db"}
       ${field}
 `),
-  ).toThrow(/Invalid (YAML|Blocky UI configuration)/);
+  ).toThrow(invalidConfigPattern);
 });

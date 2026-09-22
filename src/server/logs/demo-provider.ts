@@ -1,14 +1,14 @@
-import { createFilterFn } from "~/server/logs/csv/utils";
-import { isEntryInScope } from "~/server/logs/scope";
-import { type TimeRange } from "~/lib/constants";
-import {
-  type LogEntry,
-  type LogScope,
-  type QueryLogsOptions,
-  type QueryLogsResult,
-} from "~/server/logs/types";
+import type { TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
 import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
+import { createFilterFn } from "~/server/logs/csv/utils";
+import { isEntryInScope } from "~/server/logs/scope";
+import type {
+  LogEntry,
+  LogScope,
+  QueryLogsOptions,
+  QueryLogsResult,
+} from "~/server/logs/types";
 
 /**
  * Demo log provider that uses mock data.
@@ -16,7 +16,7 @@ import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
  */
 export class DemoLogProvider extends BaseMemoryLogProvider {
   async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
-    const { getMockLogEntries } = await import("~/mocks/logEntryMock");
+    const { getMockLogEntries } = await import("~/mocks/log-entry-mock");
 
     const filteredLogs = getMockLogEntries()
       .filter(createFilterFn(options))
@@ -24,8 +24,12 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
         const date1 = new Date(item1.requestTs ?? 0);
         const date2 = new Date(item2.requestTs ?? 0);
 
-        if (date1 > date2) return -1;
-        if (date1 < date2) return 1;
+        if (date1 > date2) {
+          return -1;
+        }
+        if (date1 < date2) {
+          return 1;
+        }
 
         return 0;
       });
@@ -43,7 +47,7 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
   }
 
   protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
-    const { getMockLogEntries } = await import("~/mocks/logEntryMock");
+    const { getMockLogEntries } = await import("~/mocks/log-entry-mock");
     const { startTime } = getTimeRangeConfig(range);
 
     return getMockLogEntries().filter((log) => {

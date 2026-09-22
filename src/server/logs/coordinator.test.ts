@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
+import { type Configuration, parseConfiguration } from "~/server/config/schema";
 import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
-import { createFilterFn } from "~/server/logs/csv/utils";
 import { createLogCoordinator } from "~/server/logs/coordinator";
-import { parseConfiguration, type Configuration } from "~/server/config/schema";
-import {
-  type LogEntry,
-  type QueryLogFilters,
-  type QueryLogsOptions,
+import { createFilterFn } from "~/server/logs/csv/utils";
+import type {
+  LogEntry,
+  QueryLogFilters,
+  QueryLogsOptions,
 } from "~/server/logs/types";
 
 function entry(
@@ -32,18 +32,20 @@ function entry(
 }
 
 class MemorySource extends BaseMemoryLogProvider {
-  constructor(private readonly entries: LogEntry[]) {
+  private readonly entries: LogEntry[];
+  constructor(entries: LogEntry[]) {
     super();
+    this.entries = entries;
   }
-  async getQueryLogs(options: QueryLogsOptions) {
+  getQueryLogs(options: QueryLogsOptions) {
     const filtered = this.entries.filter(createFilterFn(options));
-    return {
+    return Promise.resolve({
       items: filtered.slice(options.offset, options.offset + options.limit),
       totalCount: filtered.length,
-    };
+    });
   }
-  protected async fetchEntriesInRange() {
-    return this.entries;
+  protected fetchEntriesInRange() {
+    return Promise.resolve(this.entries);
   }
 }
 
@@ -60,12 +62,16 @@ describe("multi-source query logs", () => {
     let inserted = false;
 
     class SnapshotSource extends MemorySource {
-      constructor(private readonly rows: LogEntry[]) {
+      private readonly rows: LogEntry[];
+      constructor(rows: LogEntry[]) {
         super(rows);
+        this.rows = rows;
       }
 
-      async getQueryLogSnapshot() {
-        return Math.max(...this.rows.map((row) => row.id ?? 0));
+      getQueryLogSnapshot() {
+        return Promise.resolve(
+          Math.max(...this.rows.map((row) => row.id ?? 0)),
+        );
       }
 
       private visible(filters: QueryLogFilters) {
@@ -75,14 +81,16 @@ describe("multi-source query logs", () => {
         );
       }
 
-      async getQueryLogRows(options: QueryLogsOptions) {
-        return this.visible(options).slice(
-          options.offset,
-          options.offset + options.limit,
+      getQueryLogRows(options: QueryLogsOptions) {
+        return Promise.resolve(
+          this.visible(options).slice(
+            options.offset,
+            options.offset + options.limit,
+          ),
         );
       }
 
-      async getQueryLogCountSince(filters: QueryLogFilters, since: Date) {
+      getQueryLogCountSince(filters: QueryLogFilters, since: Date) {
         if (!inserted) {
           inserted = true;
           records.a.unshift(
@@ -93,9 +101,11 @@ describe("multi-source query logs", () => {
           );
         }
 
-        return this.visible(filters).filter(
-          (row) => new Date(row.requestTs ?? 0) >= since,
-        ).length;
+        return Promise.resolve(
+          this.visible(filters).filter(
+            (row) => new Date(row.requestTs ?? 0) >= since,
+          ).length,
+        );
       }
     }
 
@@ -109,12 +119,12 @@ describe("multi-source query logs", () => {
         b: { type: "csv", target: "b" },
       },
     });
-    const logs = createLogCoordinator(
-      configuration,
-      async (source) =>
+    const logs = createLogCoordinator(configuration, (source) =>
+      Promise.resolve(
         new SnapshotSource(source.target === "a" ? records.a : records.b),
+      ),
     );
-    const result = await logs.rows(["a", "b"], { offset: 600, limit: 11 });
+    const result = await logs.rows(["a", "b"], { limit: 11, offset: 600 });
 
     expect(inserted).toBe(true);
     expect(result.diagnostics).toEqual([]);
@@ -129,24 +139,26 @@ describe("multi-source query logs", () => {
       logSources: { a: { type: "csv", target: "a" } },
     });
     const provider = new MemorySource([]);
-    const groups = vi
-      .spyOn(provider, "getTopDomains")
-      .mockImplementation(async () => ({
-        totalCount: 250_000,
+    const groups = vi.spyOn(provider, "getTopDomains").mockImplementation(() =>
+      Promise.resolve({
         items: Array.from({ length: 250_000 }, (_, index) => ({
           domain: `domain-${index}.${"long-domain-name".repeat(4)}`,
           count: 250_000 - index,
           blocked: 0,
           percentage: 0,
         })),
-      }));
-    const logs = createLogCoordinator(configuration, async () => provider);
+        totalCount: 250_000,
+      }),
+    );
+    const logs = createLogCoordinator(configuration, () =>
+      Promise.resolve(provider),
+    );
     const options = {
-      type: "domains",
-      range: "30d",
       filter: "all",
-      offset: 0,
       limit: 10,
+      offset: 0,
+      range: "30d",
+      type: "domains",
     } as const;
 
     await logs.topList(["a"], options);
@@ -170,41 +182,41 @@ describe("multi-source query logs", () => {
       },
     });
     let transferred = 0;
-    const logs = createLogCoordinator(configuration, async (source) => {
+    const logs = createLogCoordinator(configuration, (source) => {
       const provider = new MemorySource([]);
       vi.spyOn(provider, "getQueryLogCount").mockResolvedValue(size);
-      vi.spyOn(provider, "getQueryLogRows").mockImplementation(
-        async (options) => {
-          if (options.limit > 256) {
-            throw new Error("Unbounded row allocation");
-          }
+      vi.spyOn(provider, "getQueryLogRows").mockImplementation((options) => {
+        if (options.limit > 256) {
+          return Promise.reject(new Error("Unbounded row allocation"));
+        }
 
-          const length = Math.max(
-            0,
-            Math.min(options.limit, size - options.offset),
-          );
-          transferred += length;
+        const length = Math.max(
+          0,
+          Math.min(options.limit, size - options.offset),
+        );
+        transferred += length;
 
-          return Array.from({ length }, (_, index) =>
+        return Promise.resolve(
+          Array.from({ length }, (_, index) =>
             entry(
               "virtual",
               null,
               (options.offset + index) * 2 + (source.target === "a" ? 0 : 1),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      return provider;
+      return Promise.resolve(provider);
     });
 
-    const result = await logs.rows(["a", "b"], { offset: size, limit: 11 });
+    const result = await logs.rows(["a", "b"], { limit: 11, offset: size });
 
     expect(result.diagnostics).toEqual([]);
     expect(result.items.map((item) => item.id)).toEqual(
       Array.from({ length: 11 }, (_, index) => size + index),
     );
-    expect(transferred).toBeLessThan(1_000);
+    expect(transferred).toBeLessThan(1000);
   });
 
   it("pages equal timestamps consistently across sources and selection order", async () => {
@@ -219,19 +231,20 @@ describe("multi-source query logs", () => {
         b: { type: "csv", target: "b" },
       },
     });
-    const logs = createLogCoordinator(
-      configuration,
-      async () =>
+    const logs = createLogCoordinator(configuration, () =>
+      Promise.resolve(
         new MemorySource(
           Array.from({ length: 7 }, (_, id) => ({
             ...entry("same", null, id),
             requestTs: timestamp,
           })),
         ),
+      ),
     );
     const collected: string[] = [];
 
     for (let offset = 0; offset < 14; offset += 3) {
+      // biome-ignore lint/performance/noAwaitInLoops: Exercise consecutive pages against the same cached snapshot.
       const page = await logs.rows(offset % 2 ? ["b", "a"] : ["a", "b"], {
         limit: 3,
         offset,
@@ -270,19 +283,19 @@ describe("multi-source query logs", () => {
     );
     const read = failing.getQueryLogRows.bind(failing);
     let calls = 0;
-    vi.spyOn(failing, "getQueryLogRows").mockImplementation(async (options) => {
-      calls++;
+    vi.spyOn(failing, "getQueryLogRows").mockImplementation((options) => {
+      calls += 1;
 
       if (calls === 2) {
-        throw new Error("Disconnected");
+        return Promise.reject(new Error("Disconnected"));
       }
 
       return read(options);
     });
-    const logs = createLogCoordinator(configuration, async (source) =>
-      source.target === "a" ? healthy : failing,
+    const logs = createLogCoordinator(configuration, (source) =>
+      Promise.resolve(source.target === "a" ? healthy : failing),
     );
-    const result = await logs.rows(["a", "b"], { offset: 600, limit: 11 });
+    const result = await logs.rows(["a", "b"], { limit: 11, offset: 600 });
 
     expect(result.diagnostics).toEqual([
       { sourceId: "b", message: "Unable to read this log source." },
@@ -311,9 +324,8 @@ describe("multi-source query logs", () => {
         dedicated: { type: "csv", target: "dedicated" },
       },
     });
-    const initialize = vi.fn(
-      async (source: Configuration["logSources"][string]) =>
-        source.target === "shared" ? shared : dedicated,
+    const initialize = vi.fn((source: Configuration["logSources"][string]) =>
+      Promise.resolve(source.target === "shared" ? shared : dedicated),
     );
     const logs = createLogCoordinator(configuration, initialize);
     const all = await logs.rows(["a", "b", "c"], { limit: 10, offset: 0 });
@@ -354,8 +366,8 @@ describe("multi-source query logs", () => {
         b: { type: "csv", target: "b" },
       },
     });
-    const logs = createLogCoordinator(configuration, async (source) =>
-      source.target === "a" ? a : b,
+    const logs = createLogCoordinator(configuration, (source) =>
+      Promise.resolve(source.target === "a" ? a : b),
     );
     const page = await logs.rows(["a", "b"], { limit: 3, offset: 3 });
     expect(page.items.map((item) => item.id)).toEqual([3, 4, 5]);
@@ -372,11 +384,11 @@ describe("multi-source query logs", () => {
     );
 
     const options = {
-      type: "domains",
-      range: "24h",
       filter: "all",
       limit: 1,
       offset: 0,
+      range: "24h",
+      type: "domains",
     } as const;
     const first = await logs.topList(["a", "b"], options);
     expect(first.items[0]).toMatchObject({ name: "shared", count: 10 });
@@ -403,14 +415,12 @@ describe("multi-source query logs", () => {
       },
     });
     let offline = true;
-    const initialize = vi.fn(
-      async (source: Configuration["logSources"][string]) => {
-        if (source.target === "b" && offline) {
-          throw new Error("secret connection URI");
-        }
-        return available;
-      },
-    );
+    const initialize = vi.fn((source: Configuration["logSources"][string]) => {
+      if (source.target === "b" && offline) {
+        return Promise.reject(new Error("secret connection URI"));
+      }
+      return Promise.resolve(available);
+    });
     const logs = createLogCoordinator(configuration, initialize);
     const result = await logs.rows(["a", "b"], { limit: 10, offset: 0 });
     expect(result.items).toHaveLength(1);
@@ -419,11 +429,11 @@ describe("multi-source query logs", () => {
     ]);
     expect(JSON.stringify(result)).not.toContain("secret");
     const options = {
-      type: "domains",
-      range: "24h",
       filter: "all",
       limit: 10,
       offset: 0,
+      range: "24h",
+      type: "domains",
     } as const;
     expect((await logs.topList(["a", "b"], options)).diagnostics).toHaveLength(
       1,

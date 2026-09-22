@@ -1,8 +1,8 @@
 "use client";
 
+import { useDashboardServers } from "~/components/dashboard/server-context";
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import { api, type RouterInputs } from "~/trpc/react";
-import { useDashboardServers } from "~/components/dashboard/server-context";
 
 export function useLogTopList(
   options: Omit<RouterInputs["logs"]["topList"], "serverIds">,

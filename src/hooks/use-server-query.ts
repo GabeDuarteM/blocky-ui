@@ -13,7 +13,7 @@ export function useServerQuery() {
   const mutation = api.servers.query.useMutation();
   const notificationId = useId();
   const generation = useRef(0);
-  const pending = useRef(false);
+  const pending = useRef<boolean>(false);
   const [results, setResults] = useState<Results>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
@@ -45,14 +45,15 @@ export function useServerQuery() {
           description: `${input.query} (${input.type})`,
           action: {
             label: "Retry",
-            onClick: () =>
-              void request(
+            onClick: () => {
+              request(
                 {
                   ...input,
                   serverIds: failed.map((result) => result.serverId),
                 },
                 current,
-              ),
+              );
+            },
           },
         });
       }
@@ -62,7 +63,9 @@ export function useServerQuery() {
         description: error instanceof Error ? error.message : undefined,
         action: {
           label: "Retry",
-          onClick: () => void request(input, current),
+          onClick: () => {
+            request(input, current);
+          },
         },
       });
     } finally {
@@ -75,7 +78,7 @@ export function useServerQuery() {
       return;
     }
 
-    generation.current++;
+    generation.current += 1;
     toast.dismiss(notificationId);
     setResults([]);
     setNames(
@@ -84,7 +87,7 @@ export function useServerQuery() {
       ),
     );
 
-    void request(
+    request(
       { ...input, serverIds: dashboard.selection.selected("query") },
       generation.current,
     );

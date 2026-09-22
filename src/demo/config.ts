@@ -38,10 +38,10 @@ export const DEMO_SERVICES = [
 
 export type DemoService = (typeof DEMO_SERVICES)[number]["id"];
 
-export type DemoConfiguration = {
+export interface DemoConfiguration {
   serverCount: DemoServerCount;
   services: Record<DemoService, boolean>;
-};
+}
 
 export const DEFAULT_DEMO_CONFIGURATION: DemoConfiguration = {
   serverCount: 1,

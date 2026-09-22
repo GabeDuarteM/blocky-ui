@@ -1,7 +1,9 @@
-import { normalizeLogTimestamp } from "~/server/logs/timestamp";
-import { TransferError } from "./errors";
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { normalizeLogTimestamp } from "~/server/logs/timestamp";
+import { TransferError } from "./errors";
+
+const timezonePattern = /(?:Z|[+-]\d\d(?::?\d\d)?)$/;
 
 const columns = {
   requestTs: "request_ts",
@@ -45,9 +47,7 @@ export function timestamp(value: unknown, offset = "+00:00") {
   }
 
   const iso = value.replace(" ", "T");
-  const zoned = /(?:Z|[+-]\d\d(?::?\d\d)?)$/.test(iso)
-    ? iso
-    : `${iso}${offset}`;
+  const zoned = timezonePattern.test(iso) ? iso : `${iso}${offset}`;
   const parsed = normalizeLogTimestamp(zoned);
 
   if (!parsed) {
@@ -73,7 +73,7 @@ export function databaseRecord(value: unknown, offset = "+00:00") {
 export function fingerprint() {
   let count = 0;
   let sum = 0n;
-  const modulus = 1n << 256n;
+  const modulus = 2n ** 256n;
 
   return {
     add(record: RecordEntry) {
@@ -82,7 +82,7 @@ export function fingerprint() {
         (sum +
           BigInt(`0x${createHash("sha256").update(bytes).digest("hex")}`)) %
         modulus;
-      count++;
+      count += 1;
     },
     result() {
       return { count, fingerprint: sum.toString(16).padStart(64, "0") };

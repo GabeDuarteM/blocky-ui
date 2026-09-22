@@ -1,21 +1,21 @@
-import { createLogCoordinator } from "~/server/logs/coordinator";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { parseConfiguration } from "~/server/config/schema";
-import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
-import { type LogEntry, type LogProvider } from "~/server/logs/types";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { createLogCoordinator } from "~/server/logs/coordinator";
 import { normalizeLogTimestamp } from "~/server/logs/timestamp";
-import { setupProviders } from "./setup";
+import type { LogEntry, LogProvider } from "~/server/logs/types";
 import { countEntriesInRange } from "./seed-data";
+import { setupProviders } from "./setup";
+
+const timezoneHourPattern = /[+-]\d{2}$/;
 
 let providers: Map<string, LogProvider>;
-let cleanup: () => Promise<void> = async () => {};
+let cleanup: () => Promise<void> = () => Promise.resolve();
 let seedData: LogEntry[];
 
 beforeAll(async () => {
   const result = await setupProviders();
-  providers = result.providers;
-  cleanup = result.cleanup;
-  seedData = result.seedData;
+  ({ providers, cleanup, seedData } = result);
 }, 300_000);
 
 afterAll(async () => {
@@ -29,7 +29,7 @@ function normalizeTimestamp(ts: string | null | undefined): string {
   const normalized = ts
     .replace("T", " ")
     .replace("Z", "")
-    .replace(/[+-]\d{2}$/, "");
+    .replace(timezoneHourPattern, "");
 
   // Pad fractional seconds to 3 digits for consistent comparison.
   // PostgreSQL strips trailing zeros (e.g. ".160" → ".16", ".000" → omitted)
@@ -66,26 +66,30 @@ function defineProviderTests(providerName: string) {
         servers: { test: { url: "http://test", logs: { source: "test" } } },
         logSources: { test: { type: "csv", target: "test" } },
       });
-      const logs = createLogCoordinator(configuration, async () => provider);
+      const logs = createLogCoordinator(configuration, () =>
+        Promise.resolve(provider),
+      );
 
-      for (const type of ["domains", "clients"] as const) {
-        const query = type === "domains" ? "GOOGLE.COM" : "LAP";
-        const result = await logs.search(["test"], {
-          type,
-          range: "30d",
-          query,
-          limit: 1,
-        });
-        const matching = entriesInRange("30d").filter((entry) =>
-          (type === "domains" ? entry.questionName : entry.clientName)
-            ?.toLowerCase()
-            .includes(query.toLowerCase()),
-        );
+      await Promise.all(
+        Array.from(["domains", "clients"] as const, async (type) => {
+          const query = type === "domains" ? "GOOGLE.COM" : "LAP";
+          const result = await logs.search(["test"], {
+            type,
+            range: "30d",
+            query,
+            limit: 1,
+          });
+          const matching = entriesInRange("30d").filter((entry) =>
+            (type === "domains" ? entry.questionName : entry.clientName)
+              ?.toLowerCase()
+              .includes(query.toLowerCase()),
+          );
 
-        expect(result.diagnostics).toEqual([]);
-        expect(result.items).toHaveLength(1);
-        expect(result.items[0]?.count).toBe(matching.length);
-      }
+          expect(result.diagnostics).toEqual([]);
+          expect(result.items).toHaveLength(1);
+          expect(result.items[0]?.count).toBe(matching.length);
+        }),
+      );
 
       expect(
         (
@@ -155,8 +159,8 @@ function defineProviderTests(providerName: string) {
         }
 
         const all = await provider.getQueryLogRows({
-          offset: 0,
           limit: seedData.length,
+          offset: 0,
         });
         const maxId = Math.floor(snapshot / 2);
         const expected = all.filter((row) => (row.id ?? 0) <= maxId);
@@ -170,7 +174,8 @@ function defineProviderTests(providerName: string) {
       });
 
       it("counts scoped records at inclusive timestamp boundaries for indexed pagination", async () => {
-        if (!provider.getQueryLogCountSince) {
+        const countSince = provider.getQueryLogCountSince?.bind(provider);
+        if (!countSince) {
           return;
         }
 
@@ -184,24 +189,28 @@ function defineProviderTests(providerName: string) {
           limit: seedData.length,
         });
 
-        for (const row of rows.slice(0, 5)) {
-          const timestamp = new Date(
-            normalizeLogTimestamp(row.requestTs) ?? 0,
-          ).getTime();
+        await Promise.all(
+          Array.from(rows.slice(0, 5), async (row) => {
+            const timestamp = new Date(
+              normalizeLogTimestamp(row.requestTs) ?? 0,
+            ).getTime();
 
-          for (const delta of [0, 1]) {
-            const since = new Date(timestamp + delta);
-            const count = await provider.getQueryLogCountSince(filters, since);
+            await Promise.all(
+              Array.from([0, 1], async (delta) => {
+                const since = new Date(timestamp + delta);
+                const count = await countSince(filters, since);
 
-            expect(count).toBe(
-              rows.filter(
-                (entry) =>
-                  new Date(normalizeLogTimestamp(entry.requestTs) ?? 0) >=
-                  since,
-              ).length,
+                expect(count).toBe(
+                  rows.filter(
+                    (entry) =>
+                      new Date(normalizeLogTimestamp(entry.requestTs) ?? 0) >=
+                      since,
+                  ).length,
+                );
+              }),
             );
-          }
-        }
+          }),
+        );
       });
 
       it.each(['"', "\\", "[", "|"])(
@@ -257,10 +266,8 @@ function defineProviderTests(providerName: string) {
           offset: 0,
           client: "phone",
         });
-        const expectedCount = seedData.filter(
-          (e) =>
-            e.clientName !== null &&
-            e.clientName.toLowerCase().includes("phone"),
+        const expectedCount = seedData.filter((e) =>
+          e.clientName?.toLowerCase().includes("phone"),
         ).length;
         expect(result.totalCount).toBe(expectedCount);
         for (const item of result.items) {
@@ -289,10 +296,8 @@ function defineProviderTests(providerName: string) {
           offset: 0,
           search: "github",
         });
-        const expectedCount = seedData.filter(
-          (e) =>
-            e.questionName !== null &&
-            e.questionName.toLowerCase().includes("github"),
+        const expectedCount = seedData.filter((e) =>
+          e.questionName?.toLowerCase().includes("github"),
         ).length;
         expect(result.totalCount).toBe(expectedCount);
         for (const item of result.items) {
@@ -347,7 +352,7 @@ function defineProviderTests(providerName: string) {
 
       it("results ordered by requestTs descending", async () => {
         const result = await provider.getQueryLogs({ limit: 100, offset: 0 });
-        for (let i = 0; i < result.items.length - 1; i++) {
+        for (let i = 0; i < result.items.length - 1; i += 1) {
           const current = result.items[i]?.requestTs ?? "";
           const next = result.items[i + 1]?.requestTs ?? "";
           expect(current >= next).toBe(true);
@@ -429,10 +434,8 @@ function defineProviderTests(providerName: string) {
           domain: "google",
         });
         const totalSum = result.reduce((sum, entry) => sum + entry.total, 0);
-        const expected = entriesInRange("24h").filter(
-          (e) =>
-            e.questionName !== null &&
-            e.questionName.toLowerCase().includes("google"),
+        const expected = entriesInRange("24h").filter((e) =>
+          e.questionName?.toLowerCase().includes("google"),
         ).length;
         expect(totalSum).toBe(expected);
       });
@@ -443,10 +446,8 @@ function defineProviderTests(providerName: string) {
           client: "laptop",
         });
         const totalSum = result.reduce((sum, entry) => sum + entry.total, 0);
-        const expected = entriesInRange("24h").filter(
-          (e) =>
-            e.clientName !== null &&
-            e.clientName.toLowerCase().includes("laptop"),
+        const expected = entriesInRange("24h").filter((e) =>
+          e.clientName?.toLowerCase().includes("laptop"),
         ).length;
         expect(totalSum).toBe(expected);
       });
@@ -485,10 +486,8 @@ function defineProviderTests(providerName: string) {
             domain: "google",
           });
           const totalSum = result.reduce((sum, entry) => sum + entry.total, 0);
-          const expected = entriesInRange(range).filter(
-            (e) =>
-              e.questionName !== null &&
-              e.questionName.toLowerCase().includes("google"),
+          const expected = entriesInRange(range).filter((e) =>
+            e.questionName?.toLowerCase().includes("google"),
           ).length;
           expect(totalSum).toBe(expected);
         });
@@ -499,10 +498,8 @@ function defineProviderTests(providerName: string) {
             client: "laptop",
           });
           const totalSum = result.reduce((sum, entry) => sum + entry.total, 0);
-          const expected = entriesInRange(range).filter(
-            (e) =>
-              e.clientName !== null &&
-              e.clientName.toLowerCase().includes("laptop"),
+          const expected = entriesInRange(range).filter((e) =>
+            e.clientName?.toLowerCase().includes("laptop"),
           ).length;
           expect(totalSum).toBe(expected);
         });
@@ -517,7 +514,7 @@ function defineProviderTests(providerName: string) {
           offset: 0,
           filter: "all",
         });
-        for (let i = 0; i < result.items.length - 1; i++) {
+        for (let i = 0; i < result.items.length - 1; i += 1) {
           const current = result.items[i]?.count ?? 0;
           const next = result.items[i + 1]?.count ?? 0;
           expect(current).toBeGreaterThanOrEqual(next);
@@ -662,7 +659,7 @@ function defineProviderTests(providerName: string) {
           offset: 0,
           filter: "all",
         });
-        for (let i = 0; i < result.items.length - 1; i++) {
+        for (let i = 0; i < result.items.length - 1; i += 1) {
           const current = result.items[i]?.total ?? 0;
           const next = result.items[i + 1]?.total ?? 0;
           expect(current).toBeGreaterThanOrEqual(next);
@@ -810,7 +807,7 @@ function defineProviderTests(providerName: string) {
         expect(types).toContain("A");
         expect(types).toContain("AAAA");
         expect(types).toContain("CNAME");
-        for (let i = 0; i < result.length - 1; i++) {
+        for (let i = 0; i < result.length - 1; i += 1) {
           expect(result[i]?.count ?? 0).toBeGreaterThanOrEqual(
             result[i + 1]?.count ?? 0,
           );
@@ -856,7 +853,7 @@ describe("cross-provider consistency", () => {
           provider.getQueriesOverTime({ range: "24h" }),
         ),
       );
-      const baseline = charts[0];
+      const [baseline] = charts;
       for (const chart of charts.slice(1)) {
         expect(chart).toEqual(baseline);
       }
@@ -874,16 +871,16 @@ describe("cross-provider consistency", () => {
     "victorialogs",
   ] as const;
 
-  async function queryAllProviders<T>(
+  function queryAllProviders<T>(
     fn: (provider: LogProvider) => Promise<T>,
   ): Promise<T[]> {
     return Promise.all(
-      providerNames.map(async (name) => {
+      providerNames.map((name) => {
         const provider = providers.get(name);
         if (!provider) {
-          throw new Error(`Provider ${name} not found`);
+          return Promise.reject(new Error(`Provider ${name} not found`));
         }
-        return fn(provider);
+        return Promise.resolve(fn(provider));
       }),
     );
   }
@@ -892,11 +889,11 @@ describe("cross-provider consistency", () => {
     results: T[],
     compareFn: (baseline: T, current: T) => void,
   ) {
-    const baseline = results[0];
+    const [baseline] = results;
     if (!baseline) {
       throw new Error("No baseline result");
     }
-    for (let i = 1; i < results.length; i++) {
+    for (let i = 1; i < results.length; i += 1) {
       const current = results[i];
       if (!current) {
         throw new Error(`No result for provider ${providerNames[i]}`);
@@ -912,7 +909,7 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.totalCount).toBe(baseline.totalCount);
-      for (let j = 0; j < baseline.items.length; j++) {
+      for (let j = 0; j < baseline.items.length; j += 1) {
         const baseItem = baseline.items[j];
         const currItem = current.items[j];
         // Normalize timestamps: MySQL returns "YYYY-MM-DD HH:mm:ss.SSS"
@@ -938,7 +935,7 @@ describe("cross-provider consistency", () => {
       expect(current.items.map((i) => i.domain)).toEqual(
         baseline.items.map((i) => i.domain),
       );
-      for (let j = 0; j < baseline.items.length; j++) {
+      for (let j = 0; j < baseline.items.length; j += 1) {
         expect(current.items[j]?.count).toBe(baseline.items[j]?.count);
         expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
         expect(current.items[j]?.percentage).toBeCloseTo(
@@ -959,7 +956,7 @@ describe("cross-provider consistency", () => {
       expect(current.items.map((i) => i.client)).toEqual(
         baseline.items.map((i) => i.client),
       );
-      for (let j = 0; j < baseline.items.length; j++) {
+      for (let j = 0; j < baseline.items.length; j += 1) {
         expect(current.items[j]?.total).toBe(baseline.items[j]?.total);
         expect(current.items[j]?.blocked).toBe(baseline.items[j]?.blocked);
         expect(current.items[j]?.percentage).toBeCloseTo(
@@ -977,7 +974,7 @@ describe("cross-provider consistency", () => {
 
     compareAcrossProviders(results, (baseline, current) => {
       expect(current.map((e) => e.type)).toEqual(baseline.map((e) => e.type));
-      for (let j = 0; j < baseline.length; j++) {
+      for (let j = 0; j < baseline.length; j += 1) {
         expect(current[j]?.count).toBe(baseline[j]?.count);
         expect(current[j]?.percentage).toBeCloseTo(
           baseline[j]?.percentage ?? 0,
@@ -988,26 +985,28 @@ describe("cross-provider consistency", () => {
   });
 
   it("getQueriesOverTime totals match across all providers", async () => {
-    for (const range of ["1h", "24h", "7d", "30d"] as const) {
-      const results = await queryAllProviders((p) =>
-        p.getQueriesOverTime({ range }),
-      );
+    await Promise.all(
+      Array.from(["1h", "24h", "7d", "30d"] as const, async (range) => {
+        const results = await queryAllProviders((p) =>
+          p.getQueriesOverTime({ range }),
+        );
 
-      compareAcrossProviders(results, (baseline, current) => {
-        const baselineTotals = {
-          total: baseline.reduce((s, e) => s + e.total, 0),
-          blocked: baseline.reduce((s, e) => s + e.blocked, 0),
-          cached: baseline.reduce((s, e) => s + e.cached, 0),
-        };
-        const currentTotals = {
-          total: current.reduce((s, e) => s + e.total, 0),
-          blocked: current.reduce((s, e) => s + e.blocked, 0),
-          cached: current.reduce((s, e) => s + e.cached, 0),
-        };
-        expect(currentTotals.total).toBe(baselineTotals.total);
-        expect(currentTotals.blocked).toBe(baselineTotals.blocked);
-        expect(currentTotals.cached).toBe(baselineTotals.cached);
-      });
-    }
+        compareAcrossProviders(results, (baseline, current) => {
+          const baselineTotals = {
+            total: baseline.reduce((s, e) => s + e.total, 0),
+            blocked: baseline.reduce((s, e) => s + e.blocked, 0),
+            cached: baseline.reduce((s, e) => s + e.cached, 0),
+          };
+          const currentTotals = {
+            total: current.reduce((s, e) => s + e.total, 0),
+            blocked: current.reduce((s, e) => s + e.blocked, 0),
+            cached: current.reduce((s, e) => s + e.cached, 0),
+          };
+          expect(currentTotals.total).toBe(baselineTotals.total);
+          expect(currentTotals.blocked).toBe(baselineTotals.blocked);
+          expect(currentTotals.cached).toBe(baselineTotals.cached);
+        });
+      }),
+    );
   });
 });

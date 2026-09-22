@@ -1,3 +1,5 @@
+const lineThroughPattern = /line-through/;
+
 import { expect, test } from "@playwright/test";
 import {
   capture,
@@ -34,7 +36,7 @@ test("chart filter suggestions and active filter", async ({ page }) => {
   await chart.getByRole("button", { name: "Cached", exact: true }).click();
   await expect(
     chart.getByRole("button", { name: "Cached", exact: true }),
-  ).toHaveClass(/line-through/);
+  ).toHaveClass(lineThroughPattern);
   await chart.getByRole("button", { name: "Cached", exact: true }).blur();
   await page.mouse.move(0, 0);
   await expect(chart.locator(".recharts-tooltip-wrapper")).toBeHidden();
@@ -58,6 +60,7 @@ for (const range of ["7d", "30d"] as const) {
 }
 
 test("chart hover tooltip", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: Touch devices do not have a hover state.
   test.skip(isMobile, "Chart hover is covered on desktop.");
   const chart = card(page, "Queries over time");
   await chart
@@ -98,7 +101,7 @@ test("top list with no pagination", async ({ page }) => {
         items: [
           {
             name: "a-very-long-domain-name.for-the-production-network.example.com",
-            count: 12345,
+            count: 12_345,
             blocked: 345,
             percentage: 100,
           },

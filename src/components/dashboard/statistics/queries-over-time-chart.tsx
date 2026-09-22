@@ -1,15 +1,11 @@
 "use client";
 
-import { type ReactNode, useState, useCallback, useId } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { format } from "date-fns";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartLegend,
-  type ChartConfig,
-} from "~/components/ui/chart";
+import { BarChart3 } from "lucide-react";
+import { type ReactNode, useCallback, useId, useMemo, useState } from "react";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useDashboardServers } from "~/components/dashboard/server-context";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -17,19 +13,23 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { BarChart3 } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import { type TimeRange } from "~/lib/constants";
-import { TimeRangeSelector } from "./time-range-selector";
 import {
-  ChartFilterCombobox,
+  type ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "~/components/ui/chart";
+import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
+import type { TimeRange } from "~/lib/constants";
+import { cn } from "~/lib/utils";
+import { api } from "~/trpc/react";
+import {
   ActiveFilterChip,
   type ChartFilter,
+  ChartFilterCombobox,
 } from "./chart-filter-combobox";
-import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
-import { useDashboardServers } from "~/components/dashboard/server-context";
-import { api } from "~/trpc/react";
-import { cn } from "~/lib/utils";
+import { TimeRangeSelector } from "./time-range-selector";
 
 const timeRangeConfig: Record<
   TimeRange,
@@ -83,9 +83,13 @@ function InteractiveLegend({
   visibleSeries,
   onToggle,
 }: InteractiveLegendProps) {
+  const options = useMemo(
+    () => series.map((key) => ({ key, onClick: () => onToggle(key) })),
+    [series, onToggle],
+  );
   return (
     <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3">
-      {series.map((key) => {
+      {options.map(({ key, onClick }) => {
         const config = chartConfig[key];
         const isVisible = visibleSeries.has(key);
         return (
@@ -93,7 +97,7 @@ function InteractiveLegend({
             key={key}
             variant="ghost"
             size="sm"
-            onClick={() => onToggle(key)}
+            onClick={onClick}
             className={cn(
               "h-auto gap-1.5 px-1 py-0",
               !isVisible && "line-through opacity-40",
@@ -117,14 +121,15 @@ function ChartSkeleton() {
 
   return (
     <div
-      className="text-muted-foreground relative h-[220px] w-full sm:h-[250px]"
+      className="relative h-[220px] w-full text-muted-foreground sm:h-[250px]"
       aria-hidden="true"
     >
       <svg
+        aria-hidden="true"
         className="h-full w-full"
-        viewBox="0 0 800 250"
         fill="none"
         preserveAspectRatio="none"
+        viewBox="0 0 800 250"
       >
         <defs>
           <linearGradient id={sheenId} x1="-120" x2="120" y1="0" y2="0">
@@ -194,7 +199,7 @@ function ChartSkeleton() {
               style={{ backgroundColor: item.color }}
             />
             <div
-              className={cn("bg-muted-foreground/25 h-2 rounded", item.width)}
+              className={cn("h-2 rounded bg-muted-foreground/25", item.width)}
             />
           </div>
         ))}
@@ -229,6 +234,7 @@ export function QueriesOverTimeChart({
   useLogDiagnostics("chart", connected.data?.diagnostics);
   const showLoading = isLoading || isPlaceholderData;
 
+  const clearFilter = useCallback(() => setFilter(null), []);
   return (
     <TrafficChart
       range={range}
@@ -248,7 +254,7 @@ export function QueriesOverTimeChart({
         filter ? (
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground text-xs">Showing:</span>
-            <ActiveFilterChip filter={filter} onClear={() => setFilter(null)} />
+            <ActiveFilterChip filter={filter} onClear={clearFilter} />
           </div>
         ) : undefined
       }
@@ -299,7 +305,7 @@ export function TrafficChart({
 
   const formatTooltipLabel = useCallback(
     (value: ReactNode, payload: readonly { payload?: { time?: string } }[]) => {
-      const time = payload[0]?.payload?.time;
+      const { time } = payload[0]?.payload ?? {};
       if (!time) {
         return value;
       }
@@ -308,13 +314,94 @@ export function TrafficChart({
     [range],
   );
 
+  const formatYAxisTick = useCallback((value: number) => {
+    if (value >= 1_000_000) {
+      return `${(value / 1_000_000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `${(value / 1000).toFixed(0)}K`;
+    }
+    return value.toString();
+  }, []);
+  function renderChart() {
+    if (isLoading) {
+      return <ChartSkeleton />;
+    }
+    if (data?.length === 0) {
+      return (
+        <div className="flex h-[220px] items-center justify-center text-muted-foreground text-sm sm:h-[250px]">
+          No queries recorded yet.
+        </div>
+      );
+    }
+    return (
+      <ChartContainer
+        config={chartConfig}
+        className="h-[220px] min-h-[220px] w-full min-w-0 sm:h-[250px]"
+      >
+        <AreaChart
+          data={data ?? []}
+          margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <XAxis
+            dataKey="time"
+            tickFormatter={formatXAxisTick}
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            fontSize={12}
+            interval={timeRangeConfig[range].tickInterval}
+          />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+            fontSize={12}
+            width={50}
+            tickFormatter={formatYAxisTick}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                indicator="line"
+                labelFormatter={formatTooltipLabel}
+              />
+            }
+          />
+          <ChartLegend
+            content={
+              <InteractiveLegend
+                series={series}
+                visibleSeries={visibleSeries}
+                onToggle={handleToggle}
+              />
+            }
+          />
+          {series
+            .filter((key) => visibleSeries.has(key))
+            .map((key) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                stroke={`var(--color-${key})`}
+                fill={`var(--color-${key})`}
+                fillOpacity={0.2}
+                strokeWidth={2}
+              />
+            ))}
+        </AreaChart>
+      </ChartContainer>
+    );
+  }
   return (
     <Card>
       <CardHeader>
         <div className="flex w-full flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <CardTitle className="flex items-center gap-2 text-base font-medium">
+              <CardTitle className="flex items-center gap-2 font-medium text-base">
                 <BarChart3 className="h-5 w-5" />
                 Queries over time
               </CardTitle>
@@ -331,82 +418,7 @@ export function TrafficChart({
           {activeFilter}
         </div>
       </CardHeader>
-      <CardContent className="min-w-0">
-        {isLoading ? (
-          <ChartSkeleton />
-        ) : data?.length === 0 ? (
-          <div className="text-muted-foreground flex h-[220px] items-center justify-center text-sm sm:h-[250px]">
-            No queries recorded yet.
-          </div>
-        ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="h-[220px] min-h-[220px] w-full min-w-0 sm:h-[250px]"
-          >
-            <AreaChart
-              data={data ?? []}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <XAxis
-                dataKey="time"
-                tickFormatter={formatXAxisTick}
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-                interval={timeRangeConfig[range].tickInterval}
-              />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-                width={50}
-                tickFormatter={(value: number) => {
-                  if (value >= 1000000) {
-                    return `${(value / 1000000).toFixed(1)}M`;
-                  }
-                  if (value >= 1000) {
-                    return `${(value / 1000).toFixed(0)}K`;
-                  }
-                  return value.toString();
-                }}
-              />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    indicator="line"
-                    labelFormatter={formatTooltipLabel}
-                  />
-                }
-              />
-              <ChartLegend
-                content={
-                  <InteractiveLegend
-                    series={series}
-                    visibleSeries={visibleSeries}
-                    onToggle={handleToggle}
-                  />
-                }
-              />
-              {series
-                .filter((key) => visibleSeries.has(key))
-                .map((key) => (
-                  <Area
-                    key={key}
-                    type="monotone"
-                    dataKey={key}
-                    stroke={`var(--color-${key})`}
-                    fill={`var(--color-${key})`}
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                  />
-                ))}
-            </AreaChart>
-          </ChartContainer>
-        )}
-      </CardContent>
+      <CardContent className="min-w-0">{renderChart()}</CardContent>
     </Card>
   );
 }

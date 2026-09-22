@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({

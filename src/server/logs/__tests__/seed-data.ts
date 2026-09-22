@@ -1,6 +1,6 @@
-import { type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import { type LogEntry } from "~/server/logs/types";
+import type { LogEntry } from "~/server/logs/types";
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -568,11 +568,7 @@ export function createSeedData(): LogEntry[] {
   return entries.map((entry, index) => ({
     ...entry,
     hostname:
-      index % 3 === 0
-        ? null
-        : index % 3 === 1
-          ? "blocky-instance-1"
-          : "blocky-instance-2",
+      [null, "blocky-instance-1", "blocky-instance-2"][index % 3] ?? null,
   }));
 }
 
@@ -589,12 +585,12 @@ export function countEntriesInRange(
   for (const entry of entries) {
     const ts = entry.requestTs ? new Date(entry.requestTs).getTime() : 0;
     if (ts >= startTime.getTime()) {
-      total++;
+      total += 1;
       if (entry.responseType === "BLOCKED") {
-        blocked++;
+        blocked += 1;
       }
       if (entry.responseType === "CACHED") {
-        cached++;
+        cached += 1;
       }
     }
   }

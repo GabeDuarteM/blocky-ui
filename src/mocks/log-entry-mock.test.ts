@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { getMockLogEntries } from "./logEntryMock";
+import { getMockLogEntries } from "./log-entry-mock";
 
 it("generates the same demo data for the same time", () => {
   const now = Date.UTC(2026, 0, 15, 12);

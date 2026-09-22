@@ -1,5 +1,5 @@
-import { ImageResponse } from "next/og";
 import { Jersey_15 } from "next/font/google";
+import { ImageResponse } from "next/og";
 
 const jersey15 = Jersey_15({
   subsets: ["latin"],

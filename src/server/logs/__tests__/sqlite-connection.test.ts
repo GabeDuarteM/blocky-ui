@@ -67,7 +67,7 @@ logSources:
   vi.stubEnv("BLOCKY_UI_CONFIG", configPath);
   try {
     const { getConfiguration } = await import("~/server/config");
-    const target = (await getConfiguration()).logSources.home?.target;
+    const { target } = (await getConfiguration()).logSources.home ?? {};
     if (typeof target !== "string") {
       throw new Error("Expected a SQLite target");
     }

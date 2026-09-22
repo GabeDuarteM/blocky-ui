@@ -21,14 +21,14 @@
     "jsx": "react-jsx",
     "plugins": [
       {
-        "name": "next"
-      }
+        "name": "next",
+      },
     ],
     "incremental": true,
     /* Path Aliases */
     "paths": {
-      "~/*": ["./src/*"]
-    }
+      "~/*": ["./src/*"],
+    },
   },
   "include": [
     "next-env.d.ts",
@@ -37,7 +37,7 @@
     "**/*.cjs",
     "**/*.js",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
 }

@@ -2,10 +2,10 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import { recordSchema } from "../record";
-import { verifySnapshot, writeSnapshot } from "../snapshot";
 import { importFiles } from "../import-files";
 import { importVictoriaLogs } from "../import-victorialogs";
+import { recordSchema } from "../record";
+import { verifySnapshot, writeSnapshot } from "../snapshot";
 
 const sample = recordSchema.parse({
   requestTs: "2026-09-10T10:00:00.000Z",
@@ -23,8 +23,7 @@ const sample = recordSchema.parse({
 });
 
 async function* records() {
-  yield sample;
-  yield { ...sample, requestTs: "2026-09-10T11:00:00.000Z" };
+  yield* [sample, { ...sample, requestTs: "2026-09-10T11:00:00.000Z" }];
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -78,13 +77,13 @@ it.each(["/vlogs", "/vlogs/", "/vlogs?tenant=demo"])(
     let inserted = false;
     vi.stubGlobal(
       "fetch",
-      vi.fn(async (url: URL) => {
+      vi.fn((url: URL) => {
         requests.push(url);
         if (url.pathname.endsWith("insert/jsonline")) {
           inserted = true;
-          return new Response("");
+          return Promise.resolve(new Response(""));
         }
-        return Response.json({ total: inserted ? 2 : 0 });
+        return Promise.resolve(Response.json({ total: inserted ? 2 : 0 }));
       }),
     );
 

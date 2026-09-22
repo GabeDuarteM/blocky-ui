@@ -1,15 +1,19 @@
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import { createResultCache } from "~/server/logs/result-cache";
-import { type QueryLogFilters, type LogEntry } from "~/server/logs/types";
 import {
   type CsvFile,
   isMissingFile,
   withCsvScan,
 } from "~/server/logs/csv/files";
-import { createFilterFn, scanEntries } from "~/server/logs/csv/utils";
 import { createLogPage } from "~/server/logs/csv/page";
+import { createFilterFn, scanEntries } from "~/server/logs/csv/utils";
+import { createResultCache } from "~/server/logs/result-cache";
+import type { LogEntry, QueryLogFilters } from "~/server/logs/types";
 
-export type Counts = { total: number; blocked: number; cached: number };
+export interface Counts {
+  total: number;
+  blocked: number;
+  cached: number;
+}
 export type Group = "time" | "questionName" | "clientName" | "questionType";
 
 export function addCounts(target: Counts, value: Counts) {
@@ -60,18 +64,18 @@ function addEntry(groups: Map<string, Counts>, key: string, entry: LogEntry) {
     // Copy cached keys so field substrings cannot retain entire CSV chunks.
     groups.set(Buffer.from(key).toString(), counts);
   }
-  counts.total++;
+  counts.total += 1;
   if (entry.responseType === "BLOCKED") {
-    counts.blocked++;
+    counts.blocked += 1;
   }
   if (entry.responseType === "CACHED") {
-    counts.cached++;
+    counts.cached += 1;
   }
 }
 
 export function createCsvReader() {
   const summaries = createResultCache<ReturnType<typeof createSummary>>({
-    ttlMs: Infinity,
+    ttlMs: Number.POSITIVE_INFINITY,
     maxEntries: 2048,
     maxWeight: 16 * 1024 * 1024,
     weightOf: ({ groups }) =>
@@ -88,7 +92,7 @@ export function createCsvReader() {
   const pages = createResultCache<
     ReturnType<ReturnType<typeof createLogPage>["result"]>
   >({
-    ttlMs: Infinity,
+    ttlMs: Number.POSITIVE_INFINITY,
     maxEntries: 512,
     maxWeight: 16 * 1024 * 1024,
     weightOf: ({ items }) =>
@@ -107,8 +111,8 @@ export function createCsvReader() {
   function summary(
     file: CsvFile,
     filters: QueryLogFilters,
-    since = -Infinity,
-    until = Infinity,
+    since = Number.NEGATIVE_INFINITY,
+    until = Number.POSITIVE_INFINITY,
   ) {
     const key = JSON.stringify([
       file.path,
@@ -124,7 +128,7 @@ export function createCsvReader() {
         if (!matches(entry)) {
           return;
         }
-        result.totalCount++;
+        result.totalCount += 1;
         const time = Date.parse(entry.requestTs ?? "");
         if (!Number.isFinite(time) || time < since || time > until) {
           return;
@@ -189,9 +193,13 @@ export function createCsvReader() {
     ) {
       const { group, interval, filters } = options;
       const since =
-        file.day && options.since <= file.day.start ? -Infinity : options.since;
+        file.day && options.since <= file.day.start
+          ? Number.NEGATIVE_INFINITY
+          : options.since;
       const until =
-        file.day && options.until >= file.day.end ? Infinity : options.until;
+        file.day && options.until >= file.day.end
+          ? Number.POSITIVE_INFINITY
+          : options.until;
       const result = (await summary(file, filters, since, until)).groups[group];
       if (group !== "time" || interval === SUMMARY_INTERVAL) {
         return result;

@@ -1,7 +1,8 @@
 "use client";
 
-import { aggregateStatistics } from "~/lib/aggregate-statistics";
+import { Activity, ChartPie, ChevronDown, Database, List } from "lucide-react";
 import { useDashboardServers } from "~/components/dashboard/server-context";
+import { Button } from "~/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -9,14 +10,13 @@ import {
 } from "~/components/ui/popover";
 import {
   Table,
-  TableHeader,
   TableBody,
-  TableRow,
-  TableHead,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "~/components/ui/table";
-import { Button } from "~/components/ui/button";
-import { Activity, ChartPie, Database, List, ChevronDown } from "lucide-react";
+import { aggregateStatistics } from "~/lib/aggregate-statistics";
 import { formatCount } from "~/lib/utils";
 import { StatCard } from "./stat-card";
 
@@ -39,7 +39,7 @@ export function StatisticsOverview() {
           ]
         : [],
     ) ?? [];
-  const inventory = inventories[0];
+  const [inventory] = inventories;
   const domainCounts = inventories.map((server) => server.listedDomains);
   const minimum = domainCounts.length ? Math.min(...domainCounts) : 0;
   const maximum = domainCounts.length ? Math.max(...domainCounts) : 0;
@@ -48,7 +48,7 @@ export function StatisticsOverview() {
       ? formatCount(minimum)
       : `${formatCount(minimum)} to ${formatCount(maximum)}`;
 
-  if (!isLoading && !overview) {
+  if (!(isLoading || overview)) {
     return null;
   }
 
@@ -106,15 +106,15 @@ export function StatisticsOverview() {
               <Button
                 variant="ghost"
                 aria-label="View listed domains by server"
-                className="hover:bg-accent -mx-2 -my-1 h-17 w-[calc(100%+1rem)] flex-col items-start gap-2 px-2 py-1 text-left"
+                className="-mx-2 -my-1 h-17 w-[calc(100%+1rem)] flex-col items-start gap-2 px-2 py-1 text-left hover:bg-accent"
               >
                 <span className="flex w-full items-center justify-between gap-2">
-                  <span className="text-xl font-bold tabular-nums">
+                  <span className="font-bold text-xl tabular-nums">
                     {domainRange}
                   </span>
-                  <ChevronDown className="text-muted-foreground size-4 shrink-0" />
+                  <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 </span>
-                <span className="text-muted-foreground text-xs font-normal">
+                <span className="font-normal text-muted-foreground text-xs">
                   {minimum === maximum ? "Per server" : "Range per server"}
                 </span>
               </Button>
@@ -122,12 +122,12 @@ export function StatisticsOverview() {
             <PopoverContent
               align="end"
               collisionPadding={16}
-              className="bg-popover dark:bg-popover w-132 max-w-[calc(100vw-2rem)] p-0"
+              className="w-132 max-w-[calc(100vw-2rem)] bg-popover p-0 dark:bg-popover"
               aria-label="Listed domains by server"
             >
-              <div className="max-h-[min(32rem,60vh,var(--radix-popover-content-available-height))] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain rounded-md [color-scheme:dark] [&>[data-slot=table-container]]:overflow-visible">
+              <div className="max-h-[min(32rem,60vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain rounded-md [color-scheme:dark] [scrollbar-gutter:stable] [&>[data-slot=table-container]]:overflow-visible">
                 <Table className="table-fixed text-xs sm:text-sm">
-                  <TableHeader className="bg-popover sticky top-0 z-10">
+                  <TableHeader className="sticky top-0 z-10 bg-popover">
                     <TableRow className="hover:bg-transparent [&>th]:h-auto [&>th]:py-3 [&>th]:leading-5">
                       <TableHead className="w-[30%] pl-4">Server</TableHead>
                       <TableHead className="w-[22%] text-right">
@@ -136,7 +136,7 @@ export function StatisticsOverview() {
                       <TableHead className="w-[24%] text-right">
                         Allowlisted
                       </TableHead>
-                      <TableHead className="w-[24%] pr-4 text-right whitespace-normal">
+                      <TableHead className="w-[24%] whitespace-normal pr-4 text-right">
                         Deny groups
                       </TableHead>
                     </TableRow>
@@ -144,16 +144,16 @@ export function StatisticsOverview() {
                   <TableBody>
                     {inventories.map((server) => (
                       <TableRow key={server.id}>
-                        <TableCell className="py-3 pl-4 font-medium break-words whitespace-normal">
+                        <TableCell className="whitespace-normal break-words py-3 pl-4 font-medium">
                           {server.name}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {server.listedDomains.toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-muted-foreground text-right tabular-nums">
+                        <TableCell className="text-right text-muted-foreground tabular-nums">
                           {server.allowlistDomains.toLocaleString()}
                         </TableCell>
-                        <TableCell className="text-muted-foreground pr-4 text-right tabular-nums">
+                        <TableCell className="pr-4 text-right text-muted-foreground tabular-nums">
                           {server.denylistGroups}
                         </TableCell>
                       </TableRow>

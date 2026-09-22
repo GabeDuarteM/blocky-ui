@@ -1,10 +1,10 @@
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import { describe, it, expect } from "vitest";
-import { CsvLogProvider } from "~/server/logs/csv/provider";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
-import { formatDate, entryToCsvLine, makeEntry } from "./setup";
+import { CsvLogProvider } from "~/server/logs/csv/provider";
+import { entryToCsvLine, formatDate, makeEntry } from "./setup";
 
 describe("csv provider: file selection", () => {
   it("returns empty results when directory has no log files", async () => {

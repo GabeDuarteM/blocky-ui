@@ -1,4 +1,4 @@
-import { type ComponentProps } from "react";
+import type { ComponentProps } from "react";
 import { Badge } from "~/components/ui/badge";
 import { cn } from "~/lib/utils";
 

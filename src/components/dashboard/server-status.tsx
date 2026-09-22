@@ -1,11 +1,10 @@
 "use client";
 
-import { type ReactNode, useEffect } from "react";
-import { Database, Power, Pause } from "lucide-react";
+import { Database, Pause, Power } from "lucide-react";
+import { type ReactNode, useCallback, useEffect } from "react";
 import { ActionLayout } from "~/components/dashboard/action-layout";
 import { useDashboardServers } from "~/components/dashboard/server-context";
-import { useServerCommand } from "~/hooks/use-server-command";
-import { useCountdown } from "~/hooks/use-countdown";
+import { StatusBadge } from "~/components/dashboard/status-badge";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -15,7 +14,8 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { StatusBadge } from "~/components/dashboard/status-badge";
+import { useCountdown } from "~/hooks/use-countdown";
+import { useServerCommand } from "~/hooks/use-server-command";
 import { api } from "~/trpc/react";
 
 const DURATION_PRESETS = [
@@ -25,6 +25,18 @@ const DURATION_PRESETS = [
   { label: "Disable", value: "0", icon: Power },
 ];
 
+function blockingStatus(mixed: boolean, unavailable: number, enabled: number) {
+  if (mixed) {
+    return { tone: "warning", label: "Mixed" } as const;
+  }
+  if (unavailable > 0) {
+    return { tone: "warning", label: "Unknown" } as const;
+  }
+  if (enabled > 0) {
+    return { tone: "success", label: "Enabled" } as const;
+  }
+  return { tone: "danger", label: "Disabled" } as const;
+}
 export function ServerStatus({ controls }: { controls?: ReactNode }) {
   const dashboard = useDashboardServers();
   const command = useServerCommand("blocking");
@@ -44,12 +56,17 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
   );
   useEffect(() => {
     if (countdown === 0) {
-      void utils.servers.blockingStatus.invalidate();
+      utils.servers.blockingStatus.invalidate();
     }
   }, [countdown, utils]);
 
+  const displayStatus = blockingStatus(mixed, unavailable, enabled);
   const showDisable = enabled > 0 || unavailable > 0;
 
+  const enableBlocking = useCallback(
+    () => command.execute({ action: "enable" }),
+    [command],
+  );
   return (
     <Card role="region" aria-label="Blocking Status" className="min-h-52">
       <CardHeader>
@@ -61,22 +78,8 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
           {dashboard.loading ? (
             <Skeleton className="h-5 w-16" />
           ) : (
-            <StatusBadge
-              tone={
-                mixed || unavailable > 0
-                  ? "warning"
-                  : enabled > 0
-                    ? "success"
-                    : "danger"
-              }
-            >
-              {mixed
-                ? "Mixed"
-                : unavailable > 0
-                  ? "Unknown"
-                  : enabled > 0
-                    ? "Enabled"
-                    : "Disabled"}
+            <StatusBadge tone={displayStatus.tone}>
+              {displayStatus.label}
             </StatusBadge>
           )}
         </CardTitle>
@@ -89,6 +92,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
           {dashboard.loading ? (
             <div
               className="grid grid-cols-2 gap-2"
+              role="status"
               aria-label="Loading blocking status"
             >
               {DURATION_PRESETS.map((preset) => (
@@ -97,54 +101,67 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {disabled > 0 && countdown !== null && countdown > 0 && (
+              {disabled > 0 && countdown !== null && countdown > 0 ? (
                 <p className="text-muted-foreground text-sm tabular-nums">
                   Auto-enables in {Math.floor(countdown / 60)}m{" "}
                   {(countdown % 60).toString().padStart(2, "0")}s
                 </p>
-              )}
-              {(disabled > 0 || unavailable > 0) && (
+              ) : null}
+              {disabled > 0 || unavailable > 0 ? (
                 <Button
                   size="responsive"
                   className="flex w-full items-center gap-2"
                   disabled={command.isPending}
-                  onClick={() => void command.execute({ action: "enable" })}
+                  onClick={enableBlocking}
                 >
                   {!showDisable && <Power className="size-4" />}
                   {targets.length > 1 ? "Enable on selected servers" : "Enable"}
                 </Button>
-              )}
-              {showDisable && (
+              ) : null}
+              {showDisable ? (
                 <div className="grid grid-cols-2 gap-2">
-                  {DURATION_PRESETS.map((preset) => {
-                    const Icon = preset.icon;
-                    return (
-                      <Button
-                        size="responsive"
-                        key={preset.value}
-                        variant={
-                          preset.value === "0" ? "destructive" : "outline"
-                        }
-                        disabled={command.isPending}
-                        className="flex items-center gap-2"
-                        onClick={() =>
-                          void command.execute({
-                            action: "disable",
-                            duration: preset.value,
-                          })
-                        }
-                      >
-                        <Icon className="size-4" />
-                        {preset.label}
-                      </Button>
-                    );
-                  })}
+                  {DURATION_PRESETS.map((preset) => (
+                    <DisableButton
+                      key={preset.value}
+                      preset={preset}
+                      execute={command.execute}
+                      isPending={command.isPending}
+                    />
+                  ))}
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </ActionLayout>
       </CardContent>
     </Card>
+  );
+}
+
+function DisableButton({
+  preset,
+  execute,
+  isPending,
+}: {
+  preset: (typeof DURATION_PRESETS)[number];
+  execute: ReturnType<typeof useServerCommand>["execute"];
+  isPending: boolean;
+}) {
+  const disable = useCallback(
+    () => execute({ action: "disable", duration: preset.value }),
+    [execute, preset.value],
+  );
+  const Icon = preset.icon;
+  return (
+    <Button
+      size="responsive"
+      variant={preset.value === "0" ? "destructive" : "outline"}
+      disabled={isPending}
+      className="flex items-center gap-2"
+      onClick={disable}
+    >
+      <Icon className="size-4" />
+      {preset.label}
+    </Button>
   );
 }

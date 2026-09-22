@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const answerSeparatorPattern = /,\s+(?=[A-Z0-9]+\s+\()/;
+const answerRecordPattern = /^[A-Z0-9]+\s+\((.*)\)$/;
+
 const queryResponseSchema = z.object({
   reason: z.string(),
   response: z.string(),
@@ -21,14 +24,14 @@ function parseAnswers(response: string): string[] {
     return [];
   }
 
-  return response.split(/,\s+(?=[A-Z0-9]+\s+\()/).map((record) => {
-    const match = /^[A-Z0-9]+\s+\((.*)\)$/.exec(record);
+  return response.split(answerSeparatorPattern).map((record) => {
+    const match = record.match(answerRecordPattern);
     return match?.[1] ?? record;
   });
 }
 
 function parseBlockingGroup(reason: string): string | null {
-  const reasonMatch = BLOCKED_REASON_PATTERN.exec(reason.trim());
+  const reasonMatch = reason.trim().match(BLOCKED_REASON_PATTERN);
   const details = reasonMatch?.[1];
   if (!details) {
     return null;

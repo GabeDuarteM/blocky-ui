@@ -1,3 +1,5 @@
+const targetPickerPattern = /^Choose .* targets$/;
+
 import { expect, test } from "@playwright/test";
 import { demoServers } from "~/demo/config";
 import { getQueryLogs } from "./query-logs";
@@ -37,7 +39,7 @@ test("multi-server dashboard and inventory", async ({ page }) => {
   await ready(page);
   await expect(
     page
-      .getByRole("button", { name: /^Choose .* targets$/ })
+      .getByRole("button", { name: targetPickerPattern })
       .filter({ hasText: "All 10 servers" }),
   ).toHaveCount(3);
   await capturePage(page, "multi-server");
@@ -234,6 +236,7 @@ test("empty charts, lists and logs", async ({ page }) => {
 });
 
 test("tablet layout", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: The tablet viewport runs once in the desktop project.
   test.skip(isMobile, "One intermediate viewport is sufficient.");
   await page.setViewportSize({ width: 820, height: 1180 });
   await page.goto("/");

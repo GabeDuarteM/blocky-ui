@@ -1,0 +1,64 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next",
+    "ultracite/biome/vitest",
+  ],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+  },
+  "files": {
+    "includes": ["!**/node_modules", "**", "!!src/components/ui"],
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true,
+    },
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "useSortedAttributes": "off",
+        "useSortedKeys": "off",
+        "useSortedEnumMembers": "off",
+        "useSortedInterfaceMembers": "off",
+        "useSortedProperties": "off",
+        "useSortedTypeFields": "off",
+        "useSortedSelectionSet": "off",
+        "useSortedPackageJson": "off",
+      },
+    },
+  },
+  "javascript": {
+    "formatter": {
+      "trailingCommas": "all",
+    },
+  },
+  "overrides": [
+    {
+      "includes": [
+        "**/*.jsonc",
+        "**/{tsconfig,jsconfig}.json",
+        "**/tsconfig.*.json",
+        ".vscode/*.json",
+      ],
+      "json": {
+        "parser": { "allowComments": true, "allowTrailingCommas": true },
+        "formatter": {
+          "trailingCommas": "all",
+        },
+      },
+    },
+  ],
+  "linter": {
+    "rules": {
+      "nursery": {
+        "useReactCompiler": "error",
+      },
+    },
+  },
+}

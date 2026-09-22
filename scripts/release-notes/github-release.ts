@@ -1,26 +1,21 @@
+import { closesCodeFence, readCodeFence } from "./code-fence";
+
+const releaseHeadingPattern = /^## /;
+const releaseSubheadingPattern = /^( {0,3})(#{3,6})(?=\s|$)/;
+
 export function formatGithubRelease(changelog: string, version: string) {
   const notes: string[] = [];
   let inRelease = false;
   let fence: string | undefined;
 
   for (const line of changelog.split("\n")) {
-    const marker = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-    if (fence) {
-      if (inRelease) {
-        notes.push(line);
-      }
-      if (
-        marker &&
-        marker[0] === fence[0] &&
-        marker.length >= fence.length &&
-        line.trim() === marker
-      ) {
-        fence = undefined;
-      }
-      continue;
+    const marker = readCodeFence(line)?.marker;
+    if (fence && closesCodeFence(line, marker, fence)) {
+      fence = undefined;
+    } else {
+      fence ??= marker;
     }
-    if (marker) {
-      fence = marker;
+    if (fence || marker) {
       if (inRelease) {
         notes.push(line);
       }
@@ -33,13 +28,13 @@ export function formatGithubRelease(changelog: string, version: string) {
     if (!inRelease) {
       continue;
     }
-    if (/^## /.test(line)) {
+    if (releaseHeadingPattern.test(line)) {
       break;
     }
     notes.push(
       line
         .replace(
-          /^( {0,3})(#{3,6})(?=\s|$)/,
+          releaseSubheadingPattern,
           (_match, indent: string, heading: string) =>
             `${indent}${heading.slice(2)}`,
         )

@@ -1,4 +1,4 @@
-import { type RouterOutputs } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
 
 export function blockingStatus(
   enabled: boolean,
@@ -124,20 +124,20 @@ export function serverStatistics(serverId: string, index = 0) {
     success: true,
     data: {
       overview: {
-        totalQueries: 12453,
+        totalQueries: 12_453,
         blocked: 2134,
         dropped: 12,
         errors: 3,
         blockedPercentage: 17.1,
         cacheHitRate: 87,
-        listedDomains: 141531 + index * 15000,
+        listedDomains: 141_531 + index * 15_000,
         avgResponseMs: 12,
         cacheEntries: 4521,
         denylistGroups: 3 + index,
         allowlistDomains: 245 + index * 100,
       },
       summary: {
-        queries: 12453,
+        queries: 12_453,
         cached: 8976,
         forwarded: 1343,
         blocked: 2134,
@@ -146,7 +146,7 @@ export function serverStatistics(serverId: string, index = 0) {
         avgResponseMs: 12,
         cacheHitRate: 0.87,
       },
-      answered: 12453,
+      answered: 12_453,
       queriesOverTime: [],
       topLists: { domains: [], blockedDomains: [], clients: [] },
     },

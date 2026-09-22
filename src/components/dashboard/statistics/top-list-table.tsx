@@ -1,15 +1,15 @@
 "use client";
 
+import { Globe, type LucideIcon, Users } from "lucide-react";
+import { useCallback, useState } from "react";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { useLogTopList } from "~/hooks/use-log-top-list";
-import { useState } from "react";
-import { Globe, Users, type LucideIcon } from "lucide-react";
 
 import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
-import { type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
 import { api } from "~/trpc/react";
 import { PaginatedTopList } from "./paginated-top-list";
-import { type TopListFilter } from "./top-list";
+import type { TopListFilter } from "./top-list";
 
 type TopListType = "domains" | "clients";
 
@@ -62,7 +62,7 @@ export function TopListTable({
     currentPage: page,
     totalPages,
     prefetchPage: (targetPage) => {
-      void utils.logs.topList.prefetch({
+      utils.logs.topList.prefetch({
         type,
         range,
         limit,
@@ -73,10 +73,13 @@ export function TopListTable({
     },
   });
 
-  const handleFilterChange = (nextFilter: TopListFilter) => {
-    setFilter(nextFilter);
-    onPageChange(0);
-  };
+  const handleFilterChange = useCallback(
+    (nextFilter: TopListFilter) => {
+      setFilter(nextFilter);
+      onPageChange(0);
+    },
+    [onPageChange],
+  );
 
   return (
     <PaginatedTopList

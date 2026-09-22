@@ -13,9 +13,9 @@ vi.mock("~/env", () => ({
 }));
 
 import { server } from "~/mocks/server";
-import { getDemoScenario } from "~/server/demo";
-import { createBlockyServers } from "~/server/blocky/servers";
 import { executeCommand, readBlockingStatus } from "~/server/blocky/commands";
+import { createBlockyServers } from "~/server/blocky/servers";
+import { getDemoScenario } from "~/server/demo";
 
 const servers = createBlockyServers(getDemoScenario(2).configuration);
 const ids = ["default", "demo-2"];
@@ -27,7 +27,9 @@ beforeEach(async () => {
   const results = await servers.run(ids, (client) =>
     executeCommand(client, { action: "enable" }),
   );
-  expect(results.every((result) => result.success)).toBe(true);
+  if (results.some((result) => !result.success)) {
+    throw new Error("Cannot enable demo servers for the test");
+  }
 });
 
 it("changes blocking only on the selected demo instance", async () => {
@@ -50,6 +52,7 @@ it("keeps the pause deadline unchanged across status reads", async () => {
 
   for (const elapsed of [10, 20, 60]) {
     now.mockReturnValue(1_000_000 + elapsed * 1000);
+    // biome-ignore lint/performance/noAwaitInLoops: Each read must finish before advancing the shared mock clock.
     expect(await servers.run(["default"], readBlockingStatus)).toMatchObject([
       {
         success: true,
