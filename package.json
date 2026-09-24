@@ -87,7 +87,7 @@
     "better-sqlite3": "13.0.3",
     "drizzle-kit": "0.31.11",
     "jscpd": "5.3.1",
-    "knip": "6.37.0",
+    "knip": "6.38.0",
     "msw": "2.15.0",
     "node-gyp": "13.0.2",
     "postcss": "8.5.28",
