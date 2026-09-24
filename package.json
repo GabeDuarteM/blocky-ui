@@ -86,7 +86,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "better-sqlite3": "13.0.3",
     "drizzle-kit": "0.31.11",
-    "jscpd": "5.3.1",
+    "jscpd": "5.3.2",
     "knip": "6.38.0",
     "msw": "2.15.0",
     "node-gyp": "13.0.2",
