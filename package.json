@@ -53,7 +53,7 @@
     "date-fns": "4.4.0",
     "drizzle-orm": "0.45.2",
     "ky": "2.1.0",
-    "lucide-react": "1.47.0",
+    "lucide-react": "1.48.0",
     "mysql2": "3.24.4",
     "next": "16.3.5",
     "papaparse": "5.7.0",
