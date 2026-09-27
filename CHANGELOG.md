@@ -1,5 +1,122 @@
 # blocky-ui
 
+## 2.2.0
+
+### Highlights
+
+#### More flexible query log searches
+
+Find domains containing text anywhere in their name, such as `ads`, or select a domain from the suggestions for an exact match.
+
+Keyboard navigation, editing an applied filter, and clearing the search now work consistently.
+
+![Search suggestions offer domains containing the entered text or an exact domain match](https://github.com/user-attachments/assets/63a6625d-971d-46b8-a3ed-73ecd111b633)
+
+![Query logs filtered to domain names containing ads](https://github.com/user-attachments/assets/8f3e9d23-190b-4127-99e6-51570b40b39c)
+
+#### Separate database settings and file references
+
+MySQL, PostgreSQL, and Timescale log sources now accept connection settings as an object. You can keep credentials separate from the connection URL and load credentials and TLS certificates from mounted files. Existing connection URLs still work.
+
+##### URL or structured configuration
+
+For example, this MySQL URL includes two driver options in its query string:
+
+````yaml
+logSources:
+  home:
+    type: mysql
+    target: mysql://blocky:change-me@mariadb:3306/blocky?connectionLimit=5&connectTimeout=30000
+````
+
+The same connection can now be written as:
+
+````yaml
+logSources:
+  home:
+    type: mysql
+    target:
+      host: mariadb
+      port: 3306
+      username: blocky
+      password: change-me
+      database: blocky
+      options:
+        connectionLimit: 5
+        connectTimeout: 30000
+````
+
+`options` passes settings directly to the database driver, using its native option names and value types. Explicit connection fields take priority over options. Port and options are optional.
+
+##### Read the password from a secret file
+
+Combined with the settings above, you can now also read the password from a file by configuring it with:
+
+````yaml
+password: file:/run/secrets/db_password
+````
+
+The file should contain only the password. Mount it into the BlockyUI container at that path. This lets you reuse the same password file wherever it's needed, including your database.
+
+Whether you write the password in the structured configuration or read it from a file, characters such as `@` and `#` do not need URL encoding.
+
+##### File references in connection settings
+
+Use `file:` or `file://` to read a complete target, host, username, password, database, or strings inside driver options from files, including strings in arrays.
+
+For example, inside a database target:
+
+````yaml
+options:
+  ssl:
+    ca: file:/run/secrets/db_ca.pem
+    cert: file:/run/secrets/db_cert.pem
+    key: file:/run/secrets/db_key.pem
+````
+
+Use `!raw` when a string should reach the database driver unchanged, such as a SQLite file URI:
+
+````yaml
+logSources:
+  home:
+    type: sqlite
+    target: !raw "file:/logs/blocky.db?mode=ro"
+````
+
+#### CSV history across daily log rotation
+
+Previously, CSV and csv-client only showed the latest day's logs. Query logs and charts reset at midnight, and the 7-day and 30-day views could not show older activity. They now include the full history, including previous days as long as those log files are still available.
+
+We also improved CSV performance on the first load, before any results are cached. Later requests can reuse results from files that haven't changed, reducing repeat reads.
+
+#### Mobile query logs and consistent dashboard controls
+
+The dashboard is easier to read and use on smaller screens, with a compact query-log layout and more consistent controls throughout.
+
+##### Mobile query logs
+
+- Show the domain and client in two-line rows, with the reason badge and time alongside them.
+- Expand a row inline to see its record type, duration, reason details, server when applicable, and full timestamp. Long domain and client names remain available in the expanded view.
+
+##### Pagination
+
+- Use the same grouped pagination controls in Query Logs, Top Clients, and Top Domains.
+- Show `1 / …` while the total page count is loading, keeping the controls steady as the count arrives.
+- Give mobile controls larger touch targets and keep the rows-per-page selector readable at every size.
+
+##### Dashboard controls
+
+- Align the sizing and appearance of fields, filters, buttons, and status badges across the dashboard.
+
+![Mobile query logs with two demo results, inline details, and single-page pagination](https://github.com/user-attachments/assets/44d76e0b-4ee7-4306-abb8-67b2c19919ac)
+
+### Contributions
+
+- Improve query log search with exact and contains filters · [#481](https://github.com/GabeDuarteM/blocky-ui/pull/481) [`2754e25`](https://github.com/GabeDuarteM/blocky-ui/commit/2754e254b5b583648f013a99e81338f92bbf260a) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Support structured database targets and password files · [#464](https://github.com/GabeDuarteM/blocky-ui/pull/464) [`0c7a677`](https://github.com/GabeDuarteM/blocky-ui/commit/0c7a6778a38ebfd6bdb8c57a6094c71e6258187b) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Keep CSV query history across days · [#487](https://github.com/GabeDuarteM/blocky-ui/pull/487) [`966ac28`](https://github.com/GabeDuarteM/blocky-ui/commit/966ac28c24e261188c5525fffe1883d24f609ff6) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Improve mobile query logs and unify dashboard controls · [#482](https://github.com/GabeDuarteM/blocky-ui/pull/482) [`26d3078`](https://github.com/GabeDuarteM/blocky-ui/commit/26d3078978463cc699445f438aeb6f1e1548c3f3) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+
 ## 2.1.1
 
 ### Improvements
