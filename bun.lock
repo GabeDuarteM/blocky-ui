@@ -62,7 +62,7 @@
         "jscpd": "5.4.0",
         "knip": "6.39.0",
         "msw": "2.15.0",
-        "node-gyp": "13.0.2",
+        "node-gyp": "13.1.0",
         "postcss": "8.5.28",
         "tailwindcss": "4.3.3",
         "testcontainers": "12.2.0",
@@ -1162,7 +1162,7 @@
 
     "node-addon-api": ["node-addon-api@8.9.2", "", {}, "sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg=="],
 
-    "node-gyp": ["node-gyp@13.0.2", "", { "dependencies": { "env-paths": "^2.2.0", "exponential-backoff": "^3.1.1", "graceful-fs": "^4.2.6", "nopt": "^10.0.0", "proc-log": "^7.0.0", "semver": "^7.3.5", "tar": "^7.5.4", "tinyglobby": "^0.2.12", "undici": "^8.4.1", "which": "^7.0.0" }, "bin": { "node-gyp": "bin/node-gyp.js" } }, "sha512-SXTvw3PxznpowYhJSOD9mVQBgDaCTWXffX+wQZsQ7PbcTV86TsXCUcSZhHnskFQvrvn/OdSzJPMsptT2pIj9ww=="],
+    "node-gyp": ["node-gyp@13.1.0", "", { "dependencies": { "env-paths": "^2.2.0", "exponential-backoff": "^3.1.1", "graceful-fs": "^4.2.6", "nopt": "^10.0.0", "proc-log": "^7.0.0", "semver": "^7.3.5", "tar": "^7.5.7", "tinyglobby": "^0.2.12", "undici": "^8.4.1", "which": "^7.0.0" }, "bin": { "node-gyp": "bin/node-gyp.js" } }, "sha512-FpNzOLFACKG0oRBYbZ5WOeWD1EqRTIWX90MaRIWTO18lVYPx8fqIjrdS3pihjnCkSmgop6zVGkSqg1vXZLksuw=="],
 
     "nopt": ["nopt@10.0.1", "", { "dependencies": { "abbrev": "^5.0.0" }, "bin": { "nopt": "bin/nopt.js" } }, "sha512-df3sBr/6ax9hSGuC3CspvLlbnX8cP5L5nZwXF8cGN8l0zSWR6BvzmQ6jPUKjvo6+/xdpkNvEcucBNUdBeeV13g=="],
 
