@@ -88,7 +88,7 @@
     "drizzle-kit": "0.31.11",
     "jscpd": "5.4.0",
     "knip": "6.39.0",
-    "msw": "2.15.0",
+    "msw": "3.0.2",
     "node-gyp": "13.1.0",
     "postcss": "8.5.28",
     "tailwindcss": "4.3.3",
