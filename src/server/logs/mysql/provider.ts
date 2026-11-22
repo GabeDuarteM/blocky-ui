@@ -6,7 +6,10 @@ import type { TimeRange } from "~/lib/constants";
 import type { DatabaseTarget } from "~/server/config/schema";
 import { cachedConnection } from "~/server/logs/connection-cache";
 import { logEntries } from "~/server/logs/mysql/schema";
-import { BaseSqlLogProvider } from "~/server/logs/sql/base-provider";
+import {
+  BaseSqlLogProvider,
+  containsIgnoringCase,
+} from "~/server/logs/sql/base-provider";
 import type { QueryLogsOptions } from "~/server/logs/types";
 
 const RECENT_SEARCH_ROWS = 65_536;
@@ -96,7 +99,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     const matches = await this.mysqlDb
       .select({ name: clients.name })
       .from(clients)
-      .where(sql`LOWER(${clients.name}) LIKE LOWER(${`%${client}%`})`)
+      .where(containsIgnoringCase(clients.name, client))
       .limit(1001);
 
     if (matches.length > 1000) {

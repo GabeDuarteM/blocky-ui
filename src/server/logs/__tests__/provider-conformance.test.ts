@@ -209,29 +209,40 @@ function defineProviderTests(providerName: ProviderName) {
         );
       });
 
-      it.each([
-        '"',
-        "\\",
-        "[",
-        "|",
-        "%",
-        "google_com",
-        "google%com",
-        "google\\.com",
-        "goo.le",
-        "!google.com",
-        "E.COM",
-      ])("treats %s as literal search text", async (search) => {
-        const expected = seedData.filter((entry) =>
-          entry.questionName?.toLowerCase().includes(search.toLowerCase()),
-        );
-        const result = await provider.getQueryLogs({
-          limit: 100,
-          offset: 0,
-          search,
+      describe.each([
+        { filter: "search", field: "questionName" },
+        { filter: "client", field: "clientName" },
+      ] as const)("$filter filter", ({ filter, field }) => {
+        const names = (entries: LogEntry[]) =>
+          entries.map((entry) => entry[field]).toSorted();
+
+        it.each([
+          '"',
+          "[",
+          "|",
+          "\\",
+          "%",
+          "_",
+          "my_host",
+          "my_laptop",
+          "google%com",
+          "google\\.com",
+          "goo.le",
+          "!google.com",
+          "E.COM",
+          "LAPTOP",
+        ])("matches %s literally", async (text) => {
+          const expected = seedData.filter((entry) =>
+            entry[field]?.toLowerCase().includes(text.toLowerCase()),
+          );
+          const result = await provider.getQueryLogs({
+            limit: 100,
+            offset: 0,
+            [filter]: text,
+          });
+          expect(names(result.items)).toEqual(names(expected));
+          expect(result.totalCount).toBe(expected.length);
         });
-        expect(result.totalCount).toBe(expected.length);
-        expect(result.items).toHaveLength(expected.length);
       });
 
       it("returns all entries with correct totalCount", async () => {
