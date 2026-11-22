@@ -48,13 +48,11 @@ export function TopListTable({
   const trpc = useTRPC();
   const [filter, setFilter] = useState<TopListFilter>("all");
   const serverIds = useSelectedServers("view");
-  const query = useLogTopList({
-    type,
-    range,
-    limit,
-    offset: page * limit,
-    filter,
-  });
+  const query = useLogTopList(
+    { type, range, limit, offset: page * limit, filter },
+    true,
+    true,
+  );
   const queryClient = useQueryClient();
   const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];

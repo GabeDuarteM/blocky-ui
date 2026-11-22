@@ -10,13 +10,19 @@ import { useTRPC } from "~/trpc/react";
 export function useLogTopList(
   options: Omit<RouterInputs["logs"]["topList"], "serverIds">,
   enabled = true,
+  keepPrevious = false,
 ) {
   const trpc = useTRPC();
   const serverIds = useSelectedServers("view");
   const connected = useQuery(
     trpc.logs.topList.queryOptions(
       { ...options, serverIds },
-      { enabled, placeholderData: keepDataForServers(serverIds) },
+      {
+        enabled,
+        placeholderData: keepPrevious
+          ? keepDataForServers(serverIds)
+          : undefined,
+      },
     ),
   );
   useLogDiagnostics(
