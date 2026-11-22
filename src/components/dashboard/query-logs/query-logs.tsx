@@ -41,6 +41,7 @@ import {
   isDnsRecordType,
   isResponseType,
 } from "~/lib/constants";
+import { keepDataForServers } from "~/lib/keep-server-data";
 import { useTRPC } from "~/trpc/react";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
@@ -51,6 +52,28 @@ const serverColumns: typeof columns = [
   { accessorKey: "hostname", header: "Server" },
   ...columns,
 ];
+
+function logPagination({
+  rowsWithPeek,
+  totalCount,
+  rowsAreFromPreviousKey,
+  pageIndex,
+  pageSize,
+}: {
+  rowsWithPeek: number;
+  totalCount: number | undefined;
+  rowsAreFromPreviousKey: boolean;
+  pageIndex: number;
+  pageSize: number;
+}) {
+  const pageCount =
+    totalCount === undefined ? undefined : Math.ceil(totalCount / pageSize);
+  const hasNextPage = rowsAreFromPreviousKey
+    ? pageCount !== undefined && pageIndex < pageCount - 1
+    : rowsWithPeek > pageSize;
+
+  return { pageCount, hasNextPage };
+}
 
 export function QueryLogs({
   showServerColumn = false,
@@ -120,6 +143,7 @@ export function QueryLogs({
     trpc.logs.rows.queryOptions(
       { ...searchParams, limit: pageSize + 1, serverIds },
       {
+        placeholderData: keepDataForServers(serverIds),
         refetchOnWindowFocus: autoRefresh,
         refetchInterval: autoRefresh ? 30_000 : false,
       },
@@ -129,6 +153,7 @@ export function QueryLogs({
     trpc.logs.count.queryOptions(
       { search, domain, client, responseType, questionType, serverIds },
       {
+        placeholderData: keepDataForServers(serverIds),
         refetchOnWindowFocus: autoRefresh,
         refetchInterval: autoRefresh ? 30_000 : false,
       },
@@ -160,7 +185,6 @@ export function QueryLogs({
     () => Promise.all([rows.refetch(), count.refetch()]),
     [count, rows],
   );
-  const hasNextPage = (rows.data?.items.length ?? 0) > pageSize;
 
   const handleAutoRefreshChange = useCallback(
     (enabled: boolean) => {
@@ -183,10 +207,13 @@ export function QueryLogs({
     }
   }, [error]);
 
-  const pageCount =
-    queryLogsData?.totalCount === undefined
-      ? undefined
-      : Math.ceil(queryLogsData.totalCount / pageSize);
+  const { pageCount, hasNextPage } = logPagination({
+    rowsWithPeek: rows.data?.items.length ?? 0,
+    totalCount: queryLogsData?.totalCount,
+    rowsAreFromPreviousKey: isPlaceholderLogs,
+    pageIndex,
+    pageSize,
+  });
   // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
   const showLogsLoading = isLoadingLogs || isPlaceholderLogs;
   const queryClient = useQueryClient();

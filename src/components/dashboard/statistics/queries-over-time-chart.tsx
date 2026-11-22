@@ -24,6 +24,7 @@ import {
 } from "~/components/ui/chart";
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import type { TimeRange } from "~/lib/constants";
+import { keepDataForServers } from "~/lib/keep-server-data";
 import { cn } from "~/lib/utils";
 import { useTRPC } from "~/trpc/react";
 import type { ChartFilter } from "./chart-filter-combobox";
@@ -226,10 +227,10 @@ export function QueriesOverTimeChart({
     client: filter?.type === "client" ? filter.value : undefined,
   };
   const connected = useQuery(
-    trpc.logs.queriesOverTime.queryOptions({
-      ...options,
-      serverIds,
-    }),
+    trpc.logs.queriesOverTime.queryOptions(
+      { ...options, serverIds },
+      { placeholderData: keepDataForServers(serverIds) },
+    ),
   );
   const { isLoading, isPlaceholderData } = connected;
   const data = connected.data?.items;
