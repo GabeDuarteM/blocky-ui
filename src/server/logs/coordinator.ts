@@ -39,11 +39,10 @@ function rank(groups: RankedEntry[][]) {
     }));
 }
 
-// The password as written in a URL target: after the first ":" of the userinfo,
-// which runs up to the last "@" before the path. Errors can echo the target as
-// written, while URL parsing re-encodes the password, strips tabs and line breaks,
-// and rejects targets drivers accept, like postgres.js multi-host URLs. So both
-// forms are redacted.
+// Errors can echo a target as written (fetch does for VictoriaLogs), while URL
+// parsing re-encodes the password, strips tabs and line breaks, and rejects
+// targets drivers accept, like postgres.js multi-host URLs. So both forms are
+// redacted.
 const urlPasswordPattern =
   /^[a-z][a-z\d+.-]*:[/\\]*[^:/?#\\]*:(?<password>[^/?#\\]*)@/iu;
 
