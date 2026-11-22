@@ -244,6 +244,15 @@ describe("release notes", () => {
     );
   });
 
+  it("rejects a changeset that starts with a section instead of a title", async () => {
+    const input = document(
+      await release("## Upgrade notes\n\nSwitch to YAML."),
+    );
+    expect(() => formatChangelog(input, "2.0.0")).toThrow(
+      "Start the changeset with a title",
+    );
+  });
+
   it("places first-time contributors before contributions and omits empty sections", async () => {
     const input = document(await release("Fix query filtering."));
     const newContributors =
