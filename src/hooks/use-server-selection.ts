@@ -11,7 +11,7 @@ const selectionSchema = z.object({
   maintenance: z.array(z.string()).default([]),
   query: z.array(z.string()).default([]),
 });
-type Scope = keyof z.infer<typeof selectionSchema>;
+export type Scope = keyof z.infer<typeof selectionSchema>;
 let fallback: string | null = null;
 
 function subscribe(listener: () => void) {

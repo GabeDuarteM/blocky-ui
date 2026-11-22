@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { Database, Pause, Power } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect } from "react";
@@ -17,7 +18,7 @@ import {
 import { Skeleton } from "~/components/ui/skeleton";
 import { useCountdown } from "~/hooks/use-countdown";
 import { useServerCommand } from "~/hooks/use-server-command";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 const DURATION_PRESETS = [
   { label: "5 minutes", value: "5m", icon: Pause },
@@ -39,9 +40,10 @@ function blockingStatus(mixed: boolean, unavailable: number, enabled: number) {
   return { tone: "danger", label: "Disabled" } as const;
 }
 export function ServerStatus({ controls }: { controls?: ReactNode }) {
+  const trpc = useTRPC();
   const dashboard = useDashboardServers();
   const command = useServerCommand("blocking");
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const targets = dashboard.selection.selected("blocking");
   const known =
     dashboard.statuses?.flatMap((result) =>
@@ -57,9 +59,9 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
   );
   useEffect(() => {
     if (countdown === 0) {
-      utils.servers.blockingStatus.invalidate();
+      queryClient.invalidateQueries(trpc.servers.blockingStatus.pathFilter());
     }
-  }, [countdown, utils]);
+  }, [trpc, countdown, queryClient]);
 
   const displayStatus = blockingStatus(mixed, unavailable, enabled);
   const showDisable = enabled > 0 || unavailable > 0;

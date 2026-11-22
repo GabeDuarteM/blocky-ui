@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/knip/schema.json",
-  "entry": ["drizzle.config.*.ts", "src/trpc/server.ts"],
+  "entry": ["drizzle.config.*.ts"],
   "ignoreBinaries": ["podman"],
   "ignoreExportsUsedInFile": {
     "interface": true,

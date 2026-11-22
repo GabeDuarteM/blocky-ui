@@ -1,14 +1,14 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import type { LucideIcon } from "lucide-react";
 import { Globe, Users } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useSelectedServers } from "~/components/dashboard/server-context";
 import { useLogTopList } from "~/hooks/use-log-top-list";
-
 import { usePrefetchAdjacentPages } from "~/hooks/use-prefetch-adjacent-pages";
 import type { TimeRange } from "~/lib/constants";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 import { PaginatedTopList } from "./paginated-top-list";
 import type { TopListFilter } from "./top-list";
 
@@ -45,8 +45,9 @@ export function TopListTable({
   page,
   onPageChange,
 }: TopListTableProps) {
+  const trpc = useTRPC();
   const [filter, setFilter] = useState<TopListFilter>("all");
-  const dashboard = useDashboardServers();
+  const serverIds = useSelectedServers("view");
   const query = useLogTopList({
     type,
     range,
@@ -54,7 +55,7 @@ export function TopListTable({
     offset: page * limit,
     filter,
   });
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
   const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];
 
@@ -63,14 +64,16 @@ export function TopListTable({
     currentPage: page,
     totalPages,
     prefetchPage: (targetPage) => {
-      utils.logs.topList.prefetch({
-        type,
-        range,
-        limit,
-        offset: targetPage * limit,
-        filter,
-        serverIds: dashboard.selection.selected("view"),
-      });
+      queryClient.prefetchQuery(
+        trpc.logs.topList.queryOptions({
+          type,
+          range,
+          limit,
+          offset: targetPage * limit,
+          filter,
+          serverIds,
+        }),
+      );
     },
   });
 
@@ -89,6 +92,7 @@ export function TopListTable({
       icon={config.icon}
       items={query.data?.items ?? []}
       totalCount={query.data?.totalCount ?? 0}
+      // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
       isLoading={query.isLoading || query.isPlaceholderData}
       filter={filter}
       onFilterChange={handleFilterChange}

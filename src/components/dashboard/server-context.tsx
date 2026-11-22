@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { useServerSelection } from "~/hooks/use-server-selection";
+import type { Scope, useServerSelection } from "~/hooks/use-server-selection";
 import type { RouterOutputs } from "~/trpc/react";
 
 export interface DashboardServers {
@@ -26,4 +26,8 @@ export function useDashboardServers() {
     throw new Error("Dashboard components require a server context.");
   }
   return context;
+}
+
+export function useSelectedServers(scope: Scope) {
+  return useDashboardServers().selection.selected(scope);
 }

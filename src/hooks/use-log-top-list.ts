@@ -1,19 +1,19 @@
 "use client";
 
-import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useQuery } from "@tanstack/react-query";
+import { useSelectedServers } from "~/components/dashboard/server-context";
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import type { RouterInputs } from "~/trpc/react";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 export function useLogTopList(
   options: Omit<RouterInputs["logs"]["topList"], "serverIds">,
   enabled = true,
 ) {
-  const dashboard = useDashboardServers();
-  const serverIds = dashboard.selection.selected("view");
-  const connected = api.logs.topList.useQuery(
-    { ...options, serverIds },
-    { enabled },
+  const trpc = useTRPC();
+  const serverIds = useSelectedServers("view");
+  const connected = useQuery(
+    trpc.logs.topList.queryOptions({ ...options, serverIds }, { enabled }),
   );
   useLogDiagnostics(
     `top-${options.type}`,

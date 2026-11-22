@@ -51,13 +51,6 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
   },
 });
 
-/**
- * Create a server-side caller.
- *
- * @see https://trpc.io/docs/server/server-side-calls
- */
-export const { createCallerFactory } = t;
-
 export const createTRPCRouter = t.router;
 
 /**
