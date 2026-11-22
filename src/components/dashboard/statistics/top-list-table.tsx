@@ -48,11 +48,13 @@ export function TopListTable({
   const trpc = useTRPC();
   const [filter, setFilter] = useState<TopListFilter>("all");
   const serverIds = useSelectedServers("view");
-  const query = useLogTopList(
-    { type, range, limit, offset: page * limit, filter },
-    true,
-    true,
-  );
+  const query = useLogTopList({
+    type,
+    range,
+    limit,
+    offset: page * limit,
+    filter,
+  });
   const queryClient = useQueryClient();
   const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];
@@ -89,7 +91,7 @@ export function TopListTable({
       description={config.description}
       icon={config.icon}
       items={query.data?.items ?? []}
-      totalCount={query.data?.totalCount ?? 0}
+      totalCount={query.data?.totalCount ?? (query.isError ? 0 : undefined)}
       // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
       isLoading={query.isLoading || query.isPlaceholderData}
       filter={filter}

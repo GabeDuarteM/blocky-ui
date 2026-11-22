@@ -19,7 +19,7 @@ interface PaginatedTopListProps {
   description: string;
   icon: LucideIcon;
   items: PaginatedTopListItem[];
-  totalCount: number;
+  totalCount: number | undefined;
   isLoading: boolean;
   filter: TopListFilter;
   onFilterChange: (filter: TopListFilter) => void;
@@ -129,23 +129,26 @@ function TopListPagination({
   PaginatedTopListProps,
   "title" | "page" | "limit" | "totalCount" | "onPageChange"
 >) {
-  const totalPages = Math.ceil(totalCount / limit);
-  if (totalPages <= 1) {
+  const totalPages =
+    totalCount === undefined ? undefined : Math.ceil(totalCount / limit);
+  if (totalPages !== undefined && totalPages <= 1) {
     return null;
   }
 
   return (
     <CardFooter className="flex-wrap justify-between gap-3 border-t pt-4">
-      <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
-        {(page * limit + 1).toLocaleString()}-
-        {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
-        {totalCount.toLocaleString()}
-      </span>
+      {totalCount === undefined ? null : (
+        <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+          {(page * limit + 1).toLocaleString()}-
+          {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
+          {totalCount.toLocaleString()}
+        </span>
+      )}
       <PaginationControls
         label={`${title} pagination`}
         pageIndex={page}
         pageCount={totalPages}
-        hasNextPage={page < totalPages - 1}
+        hasNextPage={totalPages !== undefined && page < totalPages - 1}
         onPageChange={onPageChange}
       />
     </CardFooter>

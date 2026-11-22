@@ -24,7 +24,6 @@ import {
 } from "~/components/ui/chart";
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import type { TimeRange } from "~/lib/constants";
-import { keepDataForServers } from "~/lib/keep-server-data";
 import { cn } from "~/lib/utils";
 import { useTRPC } from "~/trpc/react";
 import type { ChartFilter } from "./chart-filter-combobox";
@@ -227,23 +226,21 @@ export function QueriesOverTimeChart({
     client: filter?.type === "client" ? filter.value : undefined,
   };
   const connected = useQuery(
-    trpc.logs.queriesOverTime.queryOptions(
-      { ...options, serverIds },
-      { placeholderData: keepDataForServers(serverIds) },
-    ),
+    trpc.logs.queriesOverTime.queryOptions({
+      ...options,
+      serverIds,
+    }),
   );
-  const { isLoading, isPlaceholderData } = connected;
+  const { isLoading } = connected;
   const data = connected.data?.items;
   useLogDiagnostics("chart", connected.data?.diagnostics);
-  // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
-  const showLoading = isLoading || isPlaceholderData;
 
   const clearFilter = useCallback(() => setFilter(null), []);
   return (
     <TrafficChart
       range={range}
       data={data}
-      isLoading={showLoading}
+      isLoading={isLoading}
       controls={
         <>
           <ChartFilterCombobox
