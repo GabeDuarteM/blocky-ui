@@ -520,6 +520,7 @@ describe("multi-source query logs", () => {
     });
 
     const line = String(log.mock.calls[0]?.[0]);
+    expect(line).toContain("credentials:");
     expect(line).toContain("127.0.0.1:9428");
     expect(line).not.toContain("hunter");
   });
@@ -538,6 +539,33 @@ describe("multi-source query logs", () => {
 
     expect(String(log.mock.calls[0]?.[0])).toContain(
       "no such file or directory, scandir '/missing/logs@nas'",
+    );
+  });
+
+  it("hides the password of a structured target when an error repeats it", async () => {
+    const configuration = parseConfiguration({
+      servers: { a: { url: "http://a", logs: { source: "a" } } },
+      logSources: {
+        a: {
+          type: "mysql",
+          target: {
+            host: "db",
+            username: "blocky",
+            password: "hunter2",
+            database: "blocky",
+          },
+        },
+      },
+    });
+    const logs = createLogCoordinator(configuration, () =>
+      Promise.reject(new Error("Bad option password=hunter2 for blocky@db")),
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await logs.rows(["a"], { limit: 10, offset: 0 });
+
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "Bad option password=<hidden> for blocky@db",
     );
   });
 });

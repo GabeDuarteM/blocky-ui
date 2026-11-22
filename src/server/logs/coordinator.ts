@@ -39,32 +39,16 @@ function rank(groups: RankedEntry[][]) {
     }));
 }
 
-// Fetch errors have no code and echo a configured URL verbatim, and URL parsing
-// accepts credentials with any number of slashes, backslashes or line breaks. So
-// in errors without a code, everything from the first "word:" to the last @ is
-// hidden, even if that hides more.
-const urlCredentialsPattern = /[a-z][a-z\d+.-]*:.*@/gisu;
-
-// Drizzle wraps driver errors in a "Failed query" error carrying the SQL and its
-// params, so the reason a source failed is the innermost cause.
-function sourceFailure(sourceId: string, error: unknown) {
-  let reason = error;
-  while (reason instanceof Error && reason.cause instanceof Error) {
-    reason = reason.cause;
+function secretsOf(target: Configuration["logSources"][string]["target"]) {
+  if (typeof target !== "string") {
+    return [target.password];
   }
-  const code =
-    reason instanceof Error &&
-    "code" in reason &&
-    typeof reason.code === "string"
-      ? reason.code
-      : undefined;
-  const raw = reason instanceof Error ? reason.message : String(reason);
-  const message = code ? raw : raw.replace(urlCredentialsPattern, "<hidden>@");
-  console.error(
-    `[logs] Log source "${sourceId}" failed: ${[message, code && `(${code})`].filter(Boolean).join(" ")}`,
-  );
-
-  return { sourceId, message: "Unable to read this log source." };
+  const password = URL.parse(target)?.password ?? "";
+  try {
+    return [password, decodeURIComponent(password)];
+  } catch {
+    return [password];
+  }
 }
 
 export function createLogCoordinator(
@@ -72,6 +56,34 @@ export function createLogCoordinator(
   initialize?: Parameters<typeof createLogSources>[1],
 ) {
   const sources = createLogSources(configuration, initialize);
+
+  // Drizzle wraps driver errors in a "Failed query" error carrying the SQL and its
+  // params, so the reason a source failed is the innermost cause.
+  function sourceFailure(sourceId: string, error: unknown) {
+    let reason = error;
+    while (reason instanceof Error && reason.cause instanceof Error) {
+      reason = reason.cause;
+    }
+    const target = configuration.logSources[sourceId]?.target;
+    const message = (target ? secretsOf(target) : [])
+      .filter(Boolean)
+      .reduce(
+        (text, secret) => text.replaceAll(secret, "<hidden>"),
+        reason instanceof Error ? reason.message : String(reason),
+      );
+    const code =
+      reason instanceof Error &&
+      "code" in reason &&
+      typeof reason.code === "string"
+        ? reason.code
+        : undefined;
+    console.error(
+      `[logs] Log source "${sourceId}" failed: ${[message, code && `(${code})`].filter(Boolean).join(" ")}`,
+    );
+
+    return { sourceId, message: "Unable to read this log source." };
+  }
+
   const counts = createResultCache<number>({ ttlMs: 30_000, maxEntries: 100 });
   const rankings = createResultCache<{
     results: Awaited<ReturnType<typeof createRankedResults>>;
