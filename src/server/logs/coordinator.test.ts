@@ -591,4 +591,23 @@ describe("multi-source query logs", () => {
       "Rejected <hidden> (sent as <hidden>)",
     );
   });
+
+  it("hides the password URL parsing reads from a target with a tab in it", async () => {
+    const configuration = parseConfiguration({
+      servers: { a: { url: "http://a", logs: { source: "a" } } },
+      logSources: {
+        a: { type: "mysql", target: "mysql://blocky:hunt\ter2@db/blocky" },
+      },
+    });
+    const logs = createLogCoordinator(configuration, () =>
+      Promise.reject(new Error("Rejected password hunter2")),
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await logs.rows(["a"], { limit: 10, offset: 0 });
+
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "Rejected password <hidden>",
+    );
+  });
 });
