@@ -1,9 +1,10 @@
-import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useQuery } from "@tanstack/react-query";
+import { useSelectedServers } from "~/components/dashboard/server-context";
 import { useDebounce } from "~/hooks/use-debounce";
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import { useLogTopList } from "~/hooks/use-log-top-list";
 import type { TimeRange } from "~/lib/constants";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 export type FilterValue =
   | { type: "domain"; value: string }
@@ -30,8 +31,8 @@ export function useFilterSuggestions(
   search: string,
   range: TimeRange = "24h",
 ): FilterSuggestions {
-  const dashboard = useDashboardServers();
-  const serverIds = dashboard.selection.selected("view");
+  const trpc = useTRPC();
+  const serverIds = useSelectedServers("view");
   const debouncedSearch = useDebounce(search, 300);
   const hasSearch = debouncedSearch.length > 0;
 
@@ -45,13 +46,17 @@ export function useFilterSuggestions(
     !hasSearch,
   );
 
-  const searched = api.logs.search.useQuery(
-    { serverIds, type: "domains", range, query: debouncedSearch, limit: 10 },
-    { enabled: hasSearch },
+  const searched = useQuery(
+    trpc.logs.search.queryOptions(
+      { serverIds, type: "domains", range, query: debouncedSearch, limit: 10 },
+      { enabled: hasSearch },
+    ),
   );
-  const searchedClient = api.logs.search.useQuery(
-    { serverIds, type: "clients", range, query: debouncedSearch, limit: 10 },
-    { enabled: hasSearch },
+  const searchedClient = useQuery(
+    trpc.logs.search.queryOptions(
+      { serverIds, type: "clients", range, query: debouncedSearch, limit: 10 },
+      { enabled: hasSearch },
+    ),
   );
 
   useLogDiagnostics(
@@ -85,8 +90,10 @@ export function useFilterSuggestions(
   const isLoading =
     search !== debouncedSearch ||
     (hasSearch
-      ? searched.isLoading || searchedClient.isLoading
-      : loadingTopDomains || loadingTopClients);
+      ? // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
+        searched.isLoading || searchedClient.isLoading
+      : // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
+        loadingTopDomains || loadingTopClients);
 
   return { domains, clients, isLoading };
 }

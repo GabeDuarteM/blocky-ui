@@ -1,16 +1,18 @@
 "use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import type { RouterInputs } from "~/trpc/react";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 type Command = RouterInputs["servers"]["command"]["command"];
 
 export function useServerCommand(scope: "blocking" | "maintenance") {
+  const trpc = useTRPC();
   const dashboard = useDashboardServers();
-  const utils = api.useUtils();
-  const mutation = api.servers.command.useMutation();
+  const queryClient = useQueryClient();
+  const mutation = useMutation(trpc.servers.command.mutationOptions());
 
   async function execute(command: Command, targets?: string[]) {
     const serverIds = targets ?? dashboard.selection.selected(scope);
@@ -30,8 +32,8 @@ export function useServerCommand(scope: "blocking" | "maintenance") {
       });
     } finally {
       await Promise.all([
-        utils.servers.blockingStatus.invalidate(),
-        utils.servers.statistics.invalidate(),
+        queryClient.invalidateQueries(trpc.servers.blockingStatus.pathFilter()),
+        queryClient.invalidateQueries(trpc.servers.statistics.pathFilter()),
       ]);
     }
   }
@@ -81,9 +83,11 @@ export function useServerCommand(scope: "blocking" | "maintenance") {
   async function retry(command: Command, targets: string[]) {
     if (command.action === "enable" || command.action === "disable") {
       try {
-        const statuses = await utils.servers.blockingStatus.fetch(
-          { serverIds: targets },
-          { staleTime: 0 },
+        const statuses = await queryClient.fetchQuery(
+          trpc.servers.blockingStatus.queryOptions(
+            { serverIds: targets },
+            { staleTime: 0 },
+          ),
         );
         const pending = statuses
           .filter((result) => {

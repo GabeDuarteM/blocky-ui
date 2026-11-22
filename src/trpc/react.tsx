@@ -1,11 +1,14 @@
 "use client";
 
-import type { QueryClient } from "@tanstack/react-query";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { httpBatchStreamLink, loggerLink } from "@trpc/client";
-import { createTRPCReact } from "@trpc/react-query";
+import {
+  createTRPCClient,
+  httpBatchStreamLink,
+  loggerLink,
+} from "@trpc/client";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
+import { createTRPCContext } from "@trpc/tanstack-react-query";
 import { useMemo } from "react";
 import SuperJSON from "superjson";
 import type { DemoServerCount } from "~/demo/config";
@@ -14,7 +17,9 @@ import {
   DEMO_SERVER_COUNT_HEADER,
 } from "~/demo/config";
 import type { AppRouter } from "./app-router";
-import { createQueryClient } from "./query-client";
+
+const createQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { staleTime: 30 * 1000 } } });
 
 let clientQueryClientSingleton: QueryClient | undefined;
 const getQueryClient = () => {
@@ -28,20 +33,12 @@ const getQueryClient = () => {
   return clientQueryClientSingleton;
 };
 
-export const api = createTRPCReact<AppRouter>();
+const { TRPCProvider, useTRPC } = createTRPCContext<AppRouter>();
 
-/**
- * Inference helper for inputs.
- *
- * @example type HelloInput = RouterInputs['example']['hello']
- */
+export { useTRPC };
+
 export type RouterInputs = inferRouterInputs<AppRouter>;
 
-/**
- * Inference helper for outputs.
- *
- * @example type HelloOutput = RouterOutputs['example']['hello']
- */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 
 export function TRPCReactProvider({
@@ -57,7 +54,7 @@ export function TRPCReactProvider({
 
   const trpcClient = useMemo(
     () =>
-      api.createClient({
+      createTRPCClient<AppRouter>({
         links: [
           loggerLink({
             enabled: (op) =>
@@ -69,7 +66,6 @@ export function TRPCReactProvider({
             url: `${getBaseUrl()}/api/trpc`,
             headers: () => {
               const headers = new Headers();
-              headers.set("x-trpc-source", "nextjs-react");
               if (demoConfiguration) {
                 headers.set(DEMO_CONFIGURATION_HEADER, demoConfiguration);
               }
@@ -86,9 +82,9 @@ export function TRPCReactProvider({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
         {children}
-      </api.Provider>
+      </TRPCProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

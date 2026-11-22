@@ -1,12 +1,16 @@
 "use client";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { History, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
 import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
 import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
-import { useDashboardServers } from "~/components/dashboard/server-context";
+import {
+  useDashboardServers,
+  useSelectedServers,
+} from "~/components/dashboard/server-context";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -37,7 +41,7 @@ import {
   isDnsRecordType,
   isResponseType,
 } from "~/lib/constants";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import type { QueryLogFilter } from "./query-log-filter-combobox";
@@ -53,8 +57,9 @@ export function QueryLogs({
 }: {
   showServerColumn?: boolean;
 }) {
+  const trpc = useTRPC();
   const dashboard = useDashboardServers();
-  const serverIds = dashboard.selection.selected("view");
+  const serverIds = useSelectedServers("view");
   const scopeKey = serverIds.join(",");
   const [pageState, setPageState] = useState({ scopeKey, page: 0 });
   const pageIndex = pageState.scopeKey === scopeKey ? pageState.page : 0;
@@ -111,19 +116,23 @@ export function QueryLogs({
     questionType,
   };
 
-  const rows = api.logs.rows.useQuery(
-    { ...searchParams, limit: pageSize + 1, serverIds },
-    {
-      refetchOnWindowFocus: autoRefresh,
-      refetchInterval: autoRefresh ? 30_000 : false,
-    },
+  const rows = useQuery(
+    trpc.logs.rows.queryOptions(
+      { ...searchParams, limit: pageSize + 1, serverIds },
+      {
+        refetchOnWindowFocus: autoRefresh,
+        refetchInterval: autoRefresh ? 30_000 : false,
+      },
+    ),
   );
-  const count = api.logs.count.useQuery(
-    { search, domain, client, responseType, questionType, serverIds },
-    {
-      refetchOnWindowFocus: autoRefresh,
-      refetchInterval: autoRefresh ? 30_000 : false,
-    },
+  const count = useQuery(
+    trpc.logs.count.queryOptions(
+      { search, domain, client, responseType, questionType, serverIds },
+      {
+        refetchOnWindowFocus: autoRefresh,
+        refetchInterval: autoRefresh ? 30_000 : false,
+      },
+    ),
   );
   useLogDiagnostics("rows", rows.data?.diagnostics);
   useLogDiagnostics("count", count.data?.diagnostics);
@@ -178,20 +187,23 @@ export function QueryLogs({
     queryLogsData?.totalCount === undefined
       ? undefined
       : Math.ceil(queryLogsData.totalCount / pageSize);
+  // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
   const showLogsLoading = isLoadingLogs || isPlaceholderLogs;
-  const utils = api.useUtils();
+  const queryClient = useQueryClient();
 
   usePrefetchAdjacentPages({
     enabled: !isFetchingLogs && queryLogsData !== undefined,
     currentPage: pageIndex,
     totalPages: pageCount ?? 0,
     prefetchPage: (targetPage) => {
-      utils.logs.rows.prefetch({
-        ...searchParams,
-        serverIds,
-        limit: pageSize + 1,
-        offset: targetPage * pageSize,
-      });
+      queryClient.prefetchQuery(
+        trpc.logs.rows.queryOptions({
+          ...searchParams,
+          serverIds,
+          limit: pageSize + 1,
+          offset: targetPage * pageSize,
+        }),
+      );
     },
   });
 
@@ -206,6 +218,7 @@ export function QueryLogs({
   const table = (
     <DataTable
       columns={showServerColumn ? serverColumns : columns}
+      // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
       data={queryLogsData?.items ?? []}
       pageCount={pageCount}
       hasNextPage={hasNextPage}

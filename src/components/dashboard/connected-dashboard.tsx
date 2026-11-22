@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 import { Dashboard } from "~/components/dashboard/dashboard";
 import { ServerContext } from "~/components/dashboard/server-context";
@@ -11,7 +12,7 @@ import { demoServers } from "~/demo/config";
 import { useDemoConfiguration } from "~/demo/context";
 import { useServerSelection } from "~/hooks/use-server-selection";
 import type { RouterOutputs } from "~/trpc/react";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 export function ConnectedDashboard({
   servers: initialServers,
@@ -20,12 +21,15 @@ export function ConnectedDashboard({
   servers: RouterOutputs["servers"]["list"];
   demoMode?: boolean;
 }) {
+  const trpc = useTRPC();
   const demo = useDemoConfiguration();
-  const { data: configuredServers } = api.servers.list.useQuery(undefined, {
-    initialData: initialServers,
-    enabled: !demoMode,
-    refetchInterval: 30_000,
-  });
+  const { data: configuredServers } = useQuery(
+    trpc.servers.list.queryOptions(undefined, {
+      initialData: initialServers,
+      enabled: !demoMode,
+      refetchInterval: 30_000,
+    }),
+  );
   const servers = demoMode ? demoServers(demo.serverCount) : configuredServers;
   const [logDiagnostics, setLogDiagnostics] = useState<
     Record<string, { sourceId: string; message: string }[]>
@@ -53,13 +57,17 @@ export function ConnectedDashboard({
       view: toggle("view"),
     };
   }, [selection]);
-  const status = api.servers.blockingStatus.useQuery(
-    { serverIds: ids },
-    { refetchInterval: 30_000 },
+  const status = useQuery(
+    trpc.servers.blockingStatus.queryOptions(
+      { serverIds: ids },
+      { refetchInterval: 30_000 },
+    ),
   );
-  const statistics = api.servers.statistics.useQuery(
-    { serverIds: selection.selected("view") },
-    { refetchInterval: 30_000 },
+  const statistics = useQuery(
+    trpc.servers.statistics.queryOptions(
+      { serverIds: selection.selected("view") },
+      { refetchInterval: 30_000 },
+    ),
   );
   const statuses = status.isError ? undefined : status.data;
   const pickerServers = servers.map((server) => {

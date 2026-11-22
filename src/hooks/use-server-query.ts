@@ -1,17 +1,19 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import type { RouterInputs, RouterOutputs } from "~/trpc/react";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 
 type Query = RouterInputs["servers"]["query"];
 type Results = RouterOutputs["servers"]["query"];
 
 export function useServerQuery() {
+  const trpc = useTRPC();
   const dashboard = useDashboardServers();
-  const mutation = api.servers.query.useMutation();
+  const mutation = useMutation(trpc.servers.query.mutationOptions());
   const notificationId = useId();
   const generation = useRef(0);
   const pending = useRef<boolean>(false);

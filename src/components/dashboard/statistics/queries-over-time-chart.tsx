@@ -1,11 +1,12 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { BarChart3 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useId, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { useDashboardServers } from "~/components/dashboard/server-context";
+import { useSelectedServers } from "~/components/dashboard/server-context";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -24,7 +25,7 @@ import {
 import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import type { TimeRange } from "~/lib/constants";
 import { cn } from "~/lib/utils";
-import { api } from "~/trpc/react";
+import { useTRPC } from "~/trpc/react";
 import type { ChartFilter } from "./chart-filter-combobox";
 import { ActiveFilterChip, ChartFilterCombobox } from "./chart-filter-combobox";
 import { TimeRangeSelector } from "./time-range-selector";
@@ -215,21 +216,25 @@ export function QueriesOverTimeChart({
   range,
   onRangeChange,
 }: QueriesOverTimeChartProps) {
+  const trpc = useTRPC();
   const [filter, setFilter] = useState<ChartFilter>(null);
 
-  const dashboard = useDashboardServers();
+  const serverIds = useSelectedServers("view");
   const options = {
     range,
     domain: filter?.type === "domain" ? filter.value : undefined,
     client: filter?.type === "client" ? filter.value : undefined,
   };
-  const connected = api.logs.queriesOverTime.useQuery({
-    ...options,
-    serverIds: dashboard.selection.selected("view"),
-  });
+  const connected = useQuery(
+    trpc.logs.queriesOverTime.queryOptions({
+      ...options,
+      serverIds,
+    }),
+  );
   const { isLoading, isPlaceholderData } = connected;
   const data = connected.data?.items;
   useLogDiagnostics("chart", connected.data?.diagnostics);
+  // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
   const showLoading = isLoading || isPlaceholderData;
 
   const clearFilter = useCallback(() => setFilter(null), []);

@@ -3,20 +3,34 @@ import { expect, it, vi } from "vitest";
 import { useServerCommand } from "~/hooks/use-server-command";
 
 const mocks = vi.hoisted(() => ({
-  useUtils: vi.fn(),
+  statusKey: ["blockingStatus", "home"],
+  useQueryClient: vi.fn(),
+  currentStatus: vi.fn(),
   mutateAsync: vi.fn(),
   error: vi.fn(),
 }));
 
+vi.mock("@tanstack/react-query", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@tanstack/react-query")>()),
+  useQueryClient: mocks.useQueryClient,
+  useMutation: () => ({ mutateAsync: mocks.mutateAsync }),
+}));
+
 vi.mock("~/trpc/react", () => ({
-  api: {
-    useUtils: mocks.useUtils,
+  useTRPC: () => ({
     servers: {
-      command: {
-        useMutation: () => ({ mutateAsync: mocks.mutateAsync }),
+      command: { mutationOptions: () => ({}) },
+      blockingStatus: {
+        pathFilter: () => ({ queryKey: ["blockingStatus"] }),
+        queryOptions: (_input: unknown, options?: { staleTime?: number }) => ({
+          queryKey: mocks.statusKey,
+          queryFn: mocks.currentStatus,
+          ...options,
+        }),
       },
+      statistics: { pathFilter: () => ({ queryKey: ["statistics"] }) },
     },
-  },
+  }),
 }));
 
 vi.mock("~/components/dashboard/server-context", () => ({
@@ -34,10 +48,6 @@ it("checks current blocking state before retrying despite a fresh cached status"
   const client = new QueryClient({
     defaultOptions: { queries: { staleTime: 30_000 } },
   });
-  const queryKey = ["blockingStatus", "home"];
-  const currentStatus = vi.fn(async () => [
-    { serverId: "home", success: true, data: { enabled: false } },
-  ]);
   let retry: (() => void) | undefined;
 
   mocks.error.mockImplementation(
@@ -45,16 +55,10 @@ it("checks current blocking state before retrying despite a fresh cached status"
       retry = options.action?.onClick;
     },
   );
-  mocks.useUtils.mockReturnValue({
-    servers: {
-      blockingStatus: {
-        invalidate: vi.fn(),
-        fetch: (_input: unknown, options?: { staleTime?: number }) =>
-          client.fetchQuery({ queryKey, queryFn: currentStatus, ...options }),
-      },
-      statistics: { invalidate: vi.fn() },
-    },
-  });
+  mocks.useQueryClient.mockReturnValue(client);
+  mocks.currentStatus.mockResolvedValue([
+    { serverId: "home", success: true, data: { enabled: false } },
+  ]);
   mocks.mutateAsync
     .mockResolvedValueOnce([
       { serverId: "home", success: false, error: { kind: "timeout" } },
@@ -65,7 +69,7 @@ it("checks current blocking state before retrying despite a fresh cached status"
 
   await command.execute({ action: "enable" });
 
-  client.setQueryData(queryKey, [
+  client.setQueryData(mocks.statusKey, [
     { serverId: "home", success: true, data: { enabled: true } },
   ]);
 
@@ -73,7 +77,7 @@ it("checks current blocking state before retrying despite a fresh cached status"
   retry?.();
 
   await vi.waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(2));
-  expect(currentStatus).toHaveBeenCalledOnce();
+  expect(mocks.currentStatus).toHaveBeenCalledOnce();
   expect(mocks.mutateAsync).toHaveBeenLastCalledWith({
     serverIds: ["home"],
     command: { action: "enable" },
