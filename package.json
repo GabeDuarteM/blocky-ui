@@ -99,9 +99,6 @@
     "ultracite": "8.3.1",
     "vitest": "5.1.1"
   },
-  "ct3aMetadata": {
-    "initVersion": "7.39.3"
-  },
   "packageManager": "bun@1.4.2",
   "engines": {
     "node": ">=24.15.0"
