@@ -209,18 +209,30 @@ function defineProviderTests(providerName: ProviderName) {
         );
       });
 
-      it.each(['"', "\\", "[", "|"])(
-        "treats %s as literal search text",
-        async (search) => {
-          const result = await provider.getQueryLogs({
-            limit: 10,
-            offset: 0,
-            search,
-          });
-          expect(result.totalCount).toBe(0);
-          expect(result.items).toEqual([]);
-        },
-      );
+      it.each([
+        '"',
+        "\\",
+        "[",
+        "|",
+        "%",
+        "google_com",
+        "google%com",
+        "google\\.com",
+        "goo.le",
+        "!google.com",
+        "E.COM",
+      ])("treats %s as literal search text", async (search) => {
+        const expected = seedData.filter((entry) =>
+          entry.questionName?.toLowerCase().includes(search.toLowerCase()),
+        );
+        const result = await provider.getQueryLogs({
+          limit: 100,
+          offset: 0,
+          search,
+        });
+        expect(result.totalCount).toBe(expected.length);
+        expect(result.items).toHaveLength(expected.length);
+      });
 
       it("returns all entries with correct totalCount", async () => {
         const result = await provider.getQueryLogs({ limit: 100, offset: 0 });

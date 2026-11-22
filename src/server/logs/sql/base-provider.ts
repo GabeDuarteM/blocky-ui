@@ -73,6 +73,16 @@ export interface BaseSqlLogProviderConfig {
   ) => SqlQuery;
 }
 
+const likeWildcards = /[!%_]/gu;
+
+// MySQL and Postgres treat backslash as LIKE's default escape while SQLite has
+// none, so an explicit ESCAPE with a character no dialect quotes specially keeps
+// the pattern literal everywhere.
+function containsIgnoringCase(column: Column, text: string): SQL {
+  const pattern = `%${text.replace(likeWildcards, "!$&")}%`;
+  return sql`LOWER(${column}) LIKE LOWER(${pattern}) ESCAPE '!'`;
+}
+
 function getUtcDateParts(date: Date) {
   return {
     year: date.getUTCFullYear(),
@@ -222,7 +232,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
 
     if (options.search) {
       filters.push(
-        sql`LOWER(${this.columns.questionName}) LIKE LOWER(${`%${options.search}%`})`,
+        containsIgnoringCase(this.columns.questionName, options.search),
       );
     }
 
