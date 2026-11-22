@@ -145,22 +145,16 @@ export function QueryLogs({
             ?.name ?? "Unknown",
       }),
     ),
-    totalCount:
-      rows.data.diagnostics.length || count.data?.diagnostics.length
-        ? undefined
-        : count.data?.totalCount,
   };
-  const {
-    isFetching: isFetchingLogs,
-    isLoading: isLoadingLogs,
-    isPlaceholderData: isPlaceholderLogs,
-    error,
-  } = rows;
+  const totalCount =
+    rows.data?.diagnostics.length || count.data?.diagnostics.length
+      ? undefined
+      : count.data?.totalCount;
+  const { isFetching: isFetchingLogs, isLoading: isLoadingLogs, error } = rows;
   const refetch = useCallback(
     () => Promise.all([rows.refetch(), count.refetch()]),
     [count, rows],
   );
-  const hasNextPage = (rows.data?.items.length ?? 0) > pageSize;
 
   const handleAutoRefreshChange = useCallback(
     (enabled: boolean) => {
@@ -184,11 +178,10 @@ export function QueryLogs({
   }, [error]);
 
   const pageCount =
-    queryLogsData?.totalCount === undefined
-      ? undefined
-      : Math.ceil(queryLogsData.totalCount / pageSize);
-  // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
-  const showLogsLoading = isLoadingLogs || isPlaceholderLogs;
+    totalCount === undefined ? undefined : Math.ceil(totalCount / pageSize);
+  const hasNextPage = rows.data
+    ? rows.data.items.length > pageSize
+    : pageCount !== undefined && pageIndex < pageCount - 1;
   const queryClient = useQueryClient();
 
   usePrefetchAdjacentPages({
@@ -226,7 +219,7 @@ export function QueryLogs({
       onPageChange={setPageIndex}
       pageSize={pageSize}
       onPageSizeChange={setPageSize}
-      isLoading={showLogsLoading}
+      isLoading={isLoadingLogs}
       getRowId={getRowId}
       renderMobileRow={renderMobileRow}
     />

@@ -231,18 +231,16 @@ export function QueriesOverTimeChart({
       serverIds,
     }),
   );
-  const { isLoading, isPlaceholderData } = connected;
+  const { isLoading } = connected;
   const data = connected.data?.items;
   useLogDiagnostics("chart", connected.data?.diagnostics);
-  // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
-  const showLoading = isLoading || isPlaceholderData;
 
   const clearFilter = useCallback(() => setFilter(null), []);
   return (
     <TrafficChart
       range={range}
       data={data}
-      isLoading={showLoading}
+      isLoading={isLoading}
       controls={
         <>
           <ChartFilterCombobox
