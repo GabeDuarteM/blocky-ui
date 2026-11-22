@@ -9,6 +9,9 @@ import { formatGithubRelease } from "../github-release";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const version = "0.0.0";
+// changelog-github resolves these directives through the GitHub API. They only change the credit line, which this test doesn't check.
+const pullDirective = /^\s*(?:pr|pull|pull\s+request):\s*#?\d+/imu;
+const commitDirective = /^\s*commit:\s*\S+/imu;
 
 it("renders every pending changeset into release notes", async () => {
   const releases = (await readChangesets(root)).flatMap((changeset) =>
@@ -21,7 +24,12 @@ it("renders every pending changeset into release notes", async () => {
     releases.map(async ({ changeset, type }) => {
       const render = async () => {
         const entry = await changelog.getReleaseLine(
-          changeset,
+          {
+            ...changeset,
+            summary: changeset.summary
+              .replace(pullDirective, "")
+              .replace(commitDirective, ""),
+          },
           type,
           config.changelog.find((option) => typeof option === "object") ?? null,
         );
