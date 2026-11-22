@@ -5,11 +5,12 @@ import { createLogCoordinator } from "~/server/logs/coordinator";
 import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import type { LogEntry, LogProvider } from "~/server/logs/types";
 import { countEntriesInRange } from "./seed-data";
+import type { ProviderName } from "./setup";
 import { setupProviders } from "./setup";
 
 const timezoneHourPattern = /[+-]\d{2}$/u;
 
-let getProvider: (name: string) => LogProvider;
+let getProvider: (name: ProviderName) => Promise<LogProvider>;
 let cleanup: () => Promise<void> = () => Promise.resolve();
 let seedData: LogEntry[];
 
@@ -48,12 +49,12 @@ function entriesInRange(range: "1h" | "24h" | "7d" | "30d"): LogEntry[] {
   );
 }
 
-function defineProviderTests(providerName: string) {
+function defineProviderTests(providerName: ProviderName) {
   describe(providerName, () => {
     let provider: LogProvider;
 
-    beforeAll(() => {
-      provider = getProvider(providerName);
+    beforeAll(async () => {
+      provider = await getProvider(providerName);
     });
 
     it("searches provider rankings through the coordinator", async () => {
@@ -847,12 +848,14 @@ describe("cross-provider consistency", () => {
     "csv",
     "csv-client",
     "victorialogs",
-  ] as const;
+  ] as const satisfies readonly ProviderName[];
 
   let allProviders: LogProvider[];
 
-  beforeAll(() => {
-    allProviders = providerNames.map((name) => getProvider(name));
+  beforeAll(async () => {
+    allProviders = await Promise.all(
+      providerNames.map((name) => getProvider(name)),
+    );
   });
 
   it("aligns chart buckets and counts across database, file, and console sources", async () => {

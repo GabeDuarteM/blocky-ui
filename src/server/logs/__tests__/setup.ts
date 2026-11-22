@@ -264,6 +264,7 @@ export async function setupPostgres(
 export function setupSqlite(entries: LogEntry[]): {
   provider: SQLiteLogProvider;
   filePath: string;
+  directory: string;
 } {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "sqlite-test-"));
   const filePath = path.join(directory, "query-log.db");
@@ -311,7 +312,7 @@ export function setupSqlite(entries: LogEntry[]): {
   }
 
   const provider = new SQLiteLogProvider({ filePath });
-  return { provider, filePath };
+  return { provider, filePath, directory };
 }
 
 export function setupCsv(entries: LogEntry[]): {
@@ -440,94 +441,49 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
 
 interface ProviderFixture {
   provider: LogProvider;
-  cleanup: () => Promise<void> | void;
+  container?: StartedTestContainer;
+  directory?: string;
 }
 
-type FixtureSetup = (
-  entries: LogEntry[],
-) => ProviderFixture | Promise<ProviderFixture>;
-
-function containerFixture(
-  setup: (entries: LogEntry[]) => Promise<{
-    provider: LogProvider;
-    container: StartedTestContainer;
-  }>,
-): FixtureSetup {
-  return async (entries) => {
-    const { provider, container } = await setup(entries);
-    return {
-      provider,
-      async cleanup() {
-        await provider.close?.();
-        await container.stop();
-      },
-    };
-  };
-}
-
-function directoryFixture(
-  setup: (entries: LogEntry[]) => { provider: LogProvider; directory: string },
-): FixtureSetup {
-  return (entries) => {
-    const { provider, directory } = setup(entries);
-    return {
-      provider,
-      cleanup: () => fs.rmSync(directory, { recursive: true, force: true }),
-    };
-  };
-}
-
-const providerFixtures = {
-  mysql: containerFixture(setupMysql),
-  postgres: containerFixture(setupPostgres),
-  sqlite: (entries) => {
-    const { provider, filePath } = setupSqlite(entries);
-    return {
-      provider,
-      async cleanup() {
-        await provider.close();
-        fs.rmSync(path.dirname(filePath), { recursive: true, force: true });
-      },
-    };
-  },
-  csv: directoryFixture(setupCsv),
-  "csv-client": directoryFixture(setupCsvClient),
-  victorialogs: containerFixture(setupVictoriaLogs),
-} satisfies Record<string, FixtureSetup>;
-
-async function settle(setup: FixtureSetup, entries: LogEntry[]) {
-  try {
-    return { ok: true, fixture: await setup(entries) } as const;
-  } catch (error) {
-    return { ok: false, error } as const;
+async function cleanupFixture({
+  provider,
+  container,
+  directory,
+}: ProviderFixture) {
+  await provider.close?.();
+  await container?.stop();
+  if (directory) {
+    fs.rmSync(directory, { recursive: true, force: true });
   }
 }
 
+function startProviderFixtures(entries: LogEntry[]) {
+  return {
+    mysql: setupMysql(entries),
+    postgres: setupPostgres(entries),
+    sqlite: Promise.resolve(entries).then(setupSqlite),
+    csv: Promise.resolve(entries).then(setupCsv),
+    "csv-client": Promise.resolve(entries).then(setupCsvClient),
+    victorialogs: setupVictoriaLogs(entries),
+  } satisfies Record<string, Promise<ProviderFixture>>;
+}
+
+export type ProviderName = keyof ReturnType<typeof startProviderFixtures>;
+
 export async function setupProviders() {
   const seedData = createSeedData();
-  const results = new Map(
-    await Promise.all(
-      Object.entries(providerFixtures).map(
-        async ([name, setup]) => [name, await settle(setup, seedData)] as const,
-      ),
-    ),
-  );
+  const fixtures = startProviderFixtures(seedData);
+  const settled = await Promise.allSettled(Object.values(fixtures));
 
-  const getProvider = (name: string) => {
-    const result = results.get(name);
-    if (!result) {
-      throw new Error(`Provider ${name} not found`);
-    }
-    if (!result.ok) {
-      throw result.error;
-    }
-    return result.fixture.provider;
-  };
+  const getProvider = async (name: ProviderName) =>
+    (await fixtures[name]).provider;
 
   const cleanup = async () => {
     await Promise.all(
-      Array.from(results.values(), (result) =>
-        result.ok ? result.fixture.cleanup() : undefined,
+      settled.map((result) =>
+        result.status === "fulfilled"
+          ? cleanupFixture(result.value)
+          : undefined,
       ),
     );
   };
