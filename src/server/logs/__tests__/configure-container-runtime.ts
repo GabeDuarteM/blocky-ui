@@ -1,5 +1,7 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
+import type { ContainerRuntimeClient } from "testcontainers";
+import { getContainerRuntimeClient } from "testcontainers";
 
 const DOCKER_SOCKET = "/var/run/docker.sock";
 const TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE = "/var/run/docker.sock";
@@ -111,4 +113,18 @@ function configureContainerRuntime() {
   }
 }
 
-configureContainerRuntime();
+let containerRuntime: Promise<ContainerRuntimeClient> | undefined;
+
+export function ensureContainerRuntime() {
+  if (!containerRuntime) {
+    configureContainerRuntime();
+    containerRuntime = getContainerRuntimeClient().catch((cause: unknown) => {
+      throw new Error(
+        "No container runtime found. These integration tests start containers and need Docker or Podman running.",
+        { cause },
+      );
+    });
+  }
+
+  return containerRuntime;
+}

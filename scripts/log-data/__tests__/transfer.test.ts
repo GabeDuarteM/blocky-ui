@@ -15,6 +15,7 @@ import type { StartedNetwork, StartedTestContainer } from "testcontainers";
 import { GenericContainer, Network, Wait } from "testcontainers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { stringify } from "yaml";
+import { ensureContainerRuntime } from "~/server/logs/__tests__/configure-container-runtime";
 import { streamAndParseEntries } from "~/server/logs/csv/utils";
 import { logEntries } from "~/server/logs/mysql/schema";
 import { exportMysql } from "../export-mysql";
@@ -85,6 +86,7 @@ async function blocky(type: string, target: string, output?: string) {
 }
 
 beforeAll(async () => {
+  await ensureContainerRuntime();
   directory = await mkdtemp(join(tmpdir(), "blocky-transfer-"));
   cleanup.push(() => rm(directory, { recursive: true, force: true }));
   network = await new Network().start();

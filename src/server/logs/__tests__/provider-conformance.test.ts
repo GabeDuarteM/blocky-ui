@@ -5,17 +5,17 @@ import { createLogCoordinator } from "~/server/logs/coordinator";
 import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import type { LogEntry, LogProvider } from "~/server/logs/types";
 import { countEntriesInRange } from "./seed-data";
+import type { ProviderName } from "./setup";
 import { setupProviders } from "./setup";
 
 const timezoneHourPattern = /[+-]\d{2}$/u;
 
-let providers: Map<string, LogProvider>;
+let getProvider: (name: ProviderName) => Promise<LogProvider>;
 let cleanup: () => Promise<void> = () => Promise.resolve();
 let seedData: LogEntry[];
 
 beforeAll(async () => {
-  const result = await setupProviders();
-  ({ providers, cleanup, seedData } = result);
+  ({ getProvider, cleanup, seedData } = await setupProviders());
 }, 300_000);
 
 afterAll(async () => {
@@ -49,16 +49,12 @@ function entriesInRange(range: "1h" | "24h" | "7d" | "30d"): LogEntry[] {
   );
 }
 
-function defineProviderTests(providerName: string) {
+function defineProviderTests(providerName: ProviderName) {
   describe(providerName, () => {
     let provider: LogProvider;
 
-    beforeAll(() => {
-      const p = providers.get(providerName);
-      if (!p) {
-        throw new Error(`Provider ${providerName} not found`);
-      }
-      provider = p;
+    beforeAll(async () => {
+      provider = await getProvider(providerName);
     });
 
     it("searches provider rankings through the coordinator", async () => {
@@ -845,13 +841,28 @@ defineProviderTests("csv-client");
 defineProviderTests("victorialogs");
 
 describe("cross-provider consistency", () => {
+  const providerNames = [
+    "mysql",
+    "postgres",
+    "sqlite",
+    "csv",
+    "csv-client",
+    "victorialogs",
+  ] as const satisfies readonly ProviderName[];
+
+  let allProviders: LogProvider[];
+
+  beforeAll(async () => {
+    allProviders = await Promise.all(
+      providerNames.map((name) => getProvider(name)),
+    );
+  });
+
   it("aligns chart buckets and counts across database, file, and console sources", async () => {
     const clock = vi.spyOn(Date, "now").mockReturnValue(Date.now());
     try {
-      const charts = await Promise.all(
-        [...providers.values()].map((provider) =>
-          provider.getQueriesOverTime({ range: "24h" }),
-        ),
+      const charts = await queryAllProviders((provider) =>
+        provider.getQueriesOverTime({ range: "24h" }),
       );
       const [baseline] = charts;
       for (const chart of charts.slice(1)) {
@@ -862,27 +873,10 @@ describe("cross-provider consistency", () => {
     }
   });
 
-  const providerNames = [
-    "mysql",
-    "postgres",
-    "sqlite",
-    "csv",
-    "csv-client",
-    "victorialogs",
-  ] as const;
-
   function queryAllProviders<T>(
     fn: (provider: LogProvider) => Promise<T>,
   ): Promise<T[]> {
-    return Promise.all(
-      providerNames.map((name) => {
-        const provider = providers.get(name);
-        if (!provider) {
-          return Promise.reject(new Error(`Provider ${name} not found`));
-        }
-        return Promise.resolve(fn(provider));
-      }),
-    );
+    return Promise.all(allProviders.map(fn));
   }
 
   function compareAcrossProviders<T>(

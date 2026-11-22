@@ -13,6 +13,7 @@ import { createConnection } from "mysql2/promise";
 import postgres from "postgres";
 import type { StartedTestContainer } from "testcontainers";
 import { GenericContainer, Wait } from "testcontainers";
+import { ensureContainerRuntime } from "~/server/logs/__tests__/configure-container-runtime";
 import { createSeedData } from "~/server/logs/__tests__/seed-data";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
@@ -164,6 +165,8 @@ export async function setupMysql(
   provider: MySQLLogProvider;
   container: StartedMySqlContainer;
 }> {
+  await ensureContainerRuntime();
+
   const container = await new MySqlContainer("mysql:8.0")
     .withDatabase("test_db")
     .withUserPassword(password)
@@ -203,6 +206,8 @@ export async function setupPostgres(
   provider: PostgreSQLLogProvider;
   container: StartedPostgreSqlContainer;
 }> {
+  await ensureContainerRuntime();
+
   const container = await new PostgreSqlContainer("postgres:16")
     .withDatabase("test_db")
     .withPassword(password)
@@ -259,6 +264,7 @@ export async function setupPostgres(
 export function setupSqlite(entries: LogEntry[]): {
   provider: SQLiteLogProvider;
   filePath: string;
+  directory: string;
 } {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "sqlite-test-"));
   const filePath = path.join(directory, "query-log.db");
@@ -306,7 +312,7 @@ export function setupSqlite(entries: LogEntry[]): {
   }
 
   const provider = new SQLiteLogProvider({ filePath });
-  return { provider, filePath };
+  return { provider, filePath, directory };
 }
 
 export function setupCsv(entries: LogEntry[]): {
@@ -351,6 +357,8 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   provider: VictoriaLogsProvider;
   container: StartedTestContainer;
 }> {
+  await ensureContainerRuntime();
+
   const container = await new GenericContainer(
     "victoriametrics/victoria-logs:v1.48.0",
   )
@@ -431,52 +439,54 @@ async function setupVictoriaLogs(entries: LogEntry[]): Promise<{
   }
 }
 
-export async function setupProviders(): Promise<{
-  providers: Map<string, LogProvider>;
-  seedData: LogEntry[];
-  cleanup: () => Promise<void>;
-}> {
+interface ProviderFixture {
+  provider: LogProvider;
+  container?: StartedTestContainer;
+  directory?: string;
+}
+
+async function cleanupFixture({
+  provider,
+  container,
+  directory,
+}: ProviderFixture) {
+  await provider.close?.();
+  await container?.stop();
+  if (directory) {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+function startProviderFixtures(entries: LogEntry[]) {
+  return {
+    mysql: setupMysql(entries),
+    postgres: setupPostgres(entries),
+    sqlite: Promise.resolve(entries).then(setupSqlite),
+    csv: Promise.resolve(entries).then(setupCsv),
+    "csv-client": Promise.resolve(entries).then(setupCsvClient),
+    victorialogs: setupVictoriaLogs(entries),
+  } satisfies Record<string, Promise<ProviderFixture>>;
+}
+
+export type ProviderName = keyof ReturnType<typeof startProviderFixtures>;
+
+export async function setupProviders() {
   const seedData = createSeedData();
+  const fixtures = startProviderFixtures(seedData);
+  const settled = await Promise.allSettled(Object.values(fixtures));
 
-  const [
-    mysqlResult,
-    postgresResult,
-    sqliteResult,
-    csvResult,
-    csvClientResult,
-    vlResult,
-  ] = await Promise.all([
-    setupMysql(seedData),
-    setupPostgres(seedData),
-    Promise.resolve(setupSqlite(seedData)),
-    Promise.resolve(setupCsv(seedData)),
-    Promise.resolve(setupCsvClient(seedData)),
-    setupVictoriaLogs(seedData),
-  ]);
-
-  const providers = new Map<string, LogProvider>([
-    ["mysql", mysqlResult.provider],
-    ["postgres", postgresResult.provider],
-    ["sqlite", sqliteResult.provider],
-    ["csv", csvResult.provider],
-    ["csv-client", csvClientResult.provider],
-    ["victorialogs", vlResult.provider],
-  ]);
+  const getProvider = async (name: ProviderName) =>
+    (await fixtures[name]).provider;
 
   const cleanup = async () => {
-    await mysqlResult.provider.close?.();
-    await mysqlResult.container.stop();
-    await postgresResult.provider.close?.();
-    await postgresResult.container.stop();
-    await sqliteResult.provider.close?.();
-    fs.rmSync(path.dirname(sqliteResult.filePath), {
-      recursive: true,
-      force: true,
-    });
-    fs.rmSync(csvResult.directory, { recursive: true, force: true });
-    fs.rmSync(csvClientResult.directory, { recursive: true, force: true });
-    await vlResult.container.stop();
+    await Promise.all(
+      settled.map((result) =>
+        result.status === "fulfilled"
+          ? cleanupFixture(result.value)
+          : undefined,
+      ),
+    );
   };
 
-  return { providers, seedData, cleanup };
+  return { seedData, getProvider, cleanup };
 }
