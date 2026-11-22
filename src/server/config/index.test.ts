@@ -7,6 +7,8 @@ import type { Configuration } from "~/server/config/schema";
 
 const missingTargetPattern =
   /^Cannot read the file configured by logSources.home.target$/u;
+const missingHeaderPattern =
+  /^Cannot read the file configured by servers.nas.headers.Authorization$/u;
 const invalidTargetPattern =
   /^Invalid Blocky UI configuration at: logSources.home.target$/u;
 const missingPasswordPattern =
@@ -257,6 +259,41 @@ describe("YAML log target secrets", () => {
       await expect(getConfiguration()).rejects.toThrow(invalidTargetPattern);
     },
   );
+});
+
+describe("YAML server header secrets", () => {
+  it("reads a header from a file and keeps raw and inline headers literal", async () => {
+    const path = join(directory, "token");
+    await writeFile(path, "Bearer secret\n");
+    await writeYamlConfiguration(`
+servers:
+  nas:
+    url: http://blocky:4000
+    headers:
+      Authorization: file://${path}
+      X-Literal: !raw file:/not/read
+      X-Inline: inline
+`);
+
+    const { getConfiguration } = await import("~/server/config");
+    expect((await getConfiguration()).servers.nas?.headers).toEqual({
+      Authorization: "Bearer secret",
+      "X-Literal": "file:/not/read",
+      "X-Inline": "inline",
+    });
+  });
+
+  it("rejects an unreadable header file without exposing its path", async () => {
+    await writeYamlConfiguration(`
+servers:
+  nas:
+    url: http://blocky:4000
+    headers: {Authorization: "file:${join(directory, "missing")}"}
+`);
+
+    const { getConfiguration } = await import("~/server/config");
+    await expect(getConfiguration()).rejects.toThrow(missingHeaderPattern);
+  });
 });
 
 describe("separate database connection fields", () => {
