@@ -69,23 +69,35 @@ async function loadConfiguration(): Promise<Configuration> {
     );
     const { config, isRaw } = parseConfigurationYaml(contents);
 
-    const logSources = Object.fromEntries(
-      await Promise.all(
-        Object.entries(config.logSources).map(async ([id, source]) => [
-          id,
-          {
-            ...source,
-            target: await resolveFileValues(
-              source.target,
-              ["logSources", id, "target"],
-              isRaw,
-            ),
-          },
-        ]),
-      ),
-    );
+    const resolveFieldFiles = async <
+      Section extends "servers" | "logSources",
+      Field extends keyof Configuration[Section][string] & string,
+    >(
+      section: Section,
+      field: Field,
+    ) =>
+      Object.fromEntries(
+        await Promise.all(
+          Object.entries(config[section]).map(async ([id, entry]) => [
+            id,
+            {
+              ...entry,
+              [field]: await resolveFileValues(
+                entry[field],
+                [section, id, field],
+                isRaw,
+              ),
+            },
+          ]),
+        ),
+      );
 
-    return parseConfiguration({ ...config, logSources });
+    const [servers, logSources] = await Promise.all([
+      resolveFieldFiles("servers", "headers"),
+      resolveFieldFiles("logSources", "target"),
+    ]);
+
+    return parseConfiguration({ ...config, servers, logSources });
   }
 
   const configuredSource = env.QUERY_LOG_TYPE

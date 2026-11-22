@@ -17,6 +17,10 @@ servers:
     # Optional headers for the Blocky API, for example authentication.
     # headers:
     #   Authorization: Bearer your-token-here
+    # Header values accept file: or file:// references, for example to read the
+    # whole value from a Docker secret. Add !raw when a value must start with file:.
+    # headers:
+    #   Authorization: file:/run/secrets/blocky_token
 
     # Optional connection to this server's stored query logs.
     # Enables query history, longer chart ranges and filters.
