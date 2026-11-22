@@ -39,6 +39,34 @@ function rank(groups: RankedEntry[][]) {
     }));
 }
 
+// Fetch errors have no code and echo a configured URL verbatim, and URL parsing
+// accepts credentials with any number of slashes, backslashes or line breaks. So
+// in errors without a code, everything from the first "word:" to the last @ is
+// hidden, even if that hides more.
+const urlCredentialsPattern = /[a-z][a-z\d+.-]*:.*@/gisu;
+
+// Drizzle wraps driver errors in a "Failed query" error carrying the SQL and its
+// params, so the reason a source failed is the innermost cause.
+function sourceFailure(sourceId: string, error: unknown) {
+  let reason = error;
+  while (reason instanceof Error && reason.cause instanceof Error) {
+    reason = reason.cause;
+  }
+  const code =
+    reason instanceof Error &&
+    "code" in reason &&
+    typeof reason.code === "string"
+      ? reason.code
+      : undefined;
+  const raw = reason instanceof Error ? reason.message : String(reason);
+  const message = code ? raw : raw.replace(urlCredentialsPattern, "<hidden>@");
+  console.error(
+    `[logs] Log source "${sourceId}" failed: ${[message, code && `(${code})`].filter(Boolean).join(" ")}`,
+  );
+
+  return { sourceId, message: "Unable to read this log source." };
+}
+
 export function createLogCoordinator(
   configuration: Configuration,
   initialize?: Parameters<typeof createLogSources>[1],
@@ -78,11 +106,10 @@ export function createLogCoordinator(
             success: true,
             value: await read(source, await source.provider()),
           } as const;
-        } catch {
+        } catch (error) {
           return {
             success: false,
-            sourceId: source.id,
-            message: "Unable to read this log source.",
+            diagnostic: sourceFailure(source.id, error),
           } as const;
         }
       },
@@ -92,14 +119,7 @@ export function createLogCoordinator(
         result.success ? [result.value] : [],
       ),
       diagnostics: results.flatMap((result) =>
-        result.success
-          ? []
-          : [
-              {
-                sourceId: result.sourceId,
-                message: result.message,
-              },
-            ],
+        result.success ? [] : [result.diagnostic],
       ),
     };
   }
@@ -179,13 +199,10 @@ export function createLogCoordinator(
 
               try {
                 return await operation();
-              } catch {
+              } catch (error) {
                 if (!failed.has(source.id)) {
                   failed.add(source.id);
-                  result.diagnostics.push({
-                    sourceId: source.id,
-                    message: "Unable to read this log source.",
-                  });
+                  result.diagnostics.push(sourceFailure(source.id, error));
                 }
 
                 return fallback;

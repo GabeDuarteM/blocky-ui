@@ -1,5 +1,5 @@
 // biome-ignore-all lint/style/noExcessiveClassesPerFile: Test doubles for the coordinator.
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Configuration } from "~/server/config/schema";
 import { parseConfiguration } from "~/server/config/schema";
 import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
@@ -50,6 +50,8 @@ class MemorySource extends BaseMemoryLogProvider {
     return Promise.resolve(this.entries);
   }
 }
+
+afterEach(() => vi.restoreAllMocks());
 
 describe("multi-source query logs", () => {
   it("keeps a deep page stable when new rows arrive during the seek", async () => {
@@ -448,5 +450,94 @@ describe("multi-source query logs", () => {
       (await logs.rows(["a", "b"], { limit: 10, offset: 0 })).diagnostics,
     ).toEqual([]);
     expect(initialize).toHaveBeenCalledTimes(4);
+  });
+
+  it.each([
+    ["initializing", "initialize"],
+    ["reading", "read"],
+  ] as const)(
+    "logs why a source failed while %s, once per request and without its target",
+    async (_, stage) => {
+      const target = "mysql://blocky:hunter2@db.internal:3306/blocky";
+      const configuration = parseConfiguration({
+        servers: {
+          a: { url: "http://a", logs: { source: "a" } },
+          b: { url: "http://b", logs: { source: "b" } },
+        },
+        logSources: {
+          a: { type: "csv", target: "a" },
+          b: { type: "mysql", target },
+        },
+      });
+      const failure = new Error("Failed query: select 1\nparams: hunter2", {
+        cause: Object.assign(
+          new Error("Access denied for user 'blocky'@'10.0.0.2'"),
+          { code: "ER_ACCESS_DENIED_ERROR" },
+        ),
+      });
+      const failing = new MemorySource([entry("b", null, 2)]);
+      vi.spyOn(failing, "getQueryLogRows").mockRejectedValue(failure);
+      const logs = createLogCoordinator(configuration, (source) => {
+        if (source.target === "a") {
+          return Promise.resolve(new MemorySource([entry("a", null, 1)]));
+        }
+        return stage === "initialize"
+          ? Promise.reject(failure)
+          : Promise.resolve(failing);
+      });
+      const log = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      await logs.rows(["a", "b"], { limit: 10, offset: 0 });
+
+      expect(log).toHaveBeenCalledOnce();
+      const line = String(log.mock.calls[0]?.[0]);
+      expect(line).toContain('"b"');
+      expect(line).toContain("Access denied for user 'blocky'@'10.0.0.2'");
+      expect(line).toContain("ER_ACCESS_DENIED_ERROR");
+      expect(line).not.toContain("hunter2");
+      expect(line).not.toContain("db.internal");
+    },
+  );
+
+  it.each([
+    "http://blocky:hunter 2\n@b/c@127.0.0.1:9428",
+    "http:/blocky:hunter2@127.0.0.1:9428",
+    "HTTP:\\\\blocky:hunter2@127.0.0.1:9428",
+  ])("hides the credentials VictoriaLogs echoes from %j", async (target) => {
+    const configuration = parseConfiguration({
+      servers: { a: { url: "http://a", logs: { source: "a" } } },
+      logSources: {
+        a: { type: "console", consoleProvider: "victorialogs", target },
+      },
+    });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await createLogCoordinator(configuration).rows(["a"], {
+      limit: 10,
+      offset: 0,
+    });
+
+    const line = String(log.mock.calls[0]?.[0]);
+    expect(line).toContain("127.0.0.1:9428");
+    expect(line).not.toContain("hunter");
+  });
+
+  it("keeps the reason when a CSV path contains @", async () => {
+    const configuration = parseConfiguration({
+      servers: { a: { url: "http://a", logs: { source: "a" } } },
+      logSources: { a: { type: "csv", target: "/missing/logs@nas" } },
+    });
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await createLogCoordinator(configuration).rows(["a"], {
+      limit: 10,
+      offset: 0,
+    });
+
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "no such file or directory, scandir '/missing/logs@nas'",
+    );
   });
 });
