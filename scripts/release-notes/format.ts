@@ -77,6 +77,9 @@ function parseEntry(entry: string) {
   if (!(title && fields)) {
     throw new Error(`Cannot read Changesets entry: ${title}`);
   }
+  if (headingPattern.test(title)) {
+    throw new Error(`Start the changeset with a title before "${title}".`);
+  }
   const { pull, commit, authors } = fields.groups ?? {};
   const credit = [pull, commit, authors ? `by ${authors}` : ""]
     .filter(Boolean)

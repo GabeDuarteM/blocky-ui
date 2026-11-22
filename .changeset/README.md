@@ -58,10 +58,7 @@ follows this order:
 The output calls the section "Improvements" when there are no highlights, and
 "Other improvements" when there are. Keep using `## Other improvements` in changesets.
 
-Upgrade notes and Deprecations omit the changeset title. Add a specific `###`
-notice heading when useful. Within descriptions, use `###` or `####` headings;
-images, tables, lists, and fenced code blocks are supported. Use separate
-changesets for features that need separate highlight titles.
+Every changeset starts with a title line, even when it only has Upgrade notes or Deprecations. Those sections don't show the title, but the release script needs it, and `bun run test` fails on a changeset without one. Add a specific `###` notice heading when useful. Within descriptions, use `###` or `####` headings; images, tables, lists, and fenced code blocks are supported. Use separate changesets for features that need separate highlight titles.
 
 First-time contributors and Contributions are added automatically after these
 sections. Contributions use the PR title, or the commit's first line when there

@@ -14,7 +14,8 @@ description: Changesets for blocky-ui. Use when the user requests a changeset or
    the README's format. Multiple changesets per PR are valid: split independent
    user-facing changes or different bump types; keep related implementation details
    together.
-4. Check the completed entries against the requested changes and README. Report
+4. Run `bun run test scripts/release-notes/__tests__/pending-changesets.test.ts`, which renders every pending changeset through the release formatter. Fix any failure before reporting.
+5. Check the completed entries against the requested changes and README. Report
    the files and their bumps, or existing coverage if no new entry was needed.
 
 ## Bump policy
