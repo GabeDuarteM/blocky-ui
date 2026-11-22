@@ -6,8 +6,8 @@ Keep the query log and top list pagers in place while the next page, page size, 
 
 **Before**
 
-https://github.com/user-attachments/assets/a8cd8d3e-fea8-477c-a536-26be985bd404
+https://github.com/user-attachments/assets/5a5c365d-fbc7-4943-a0a2-46c69e7bff50
 
 **After**
 
-https://github.com/user-attachments/assets/23c28db3-c57c-4ea8-b680-0f8b02118516
+https://github.com/user-attachments/assets/01773d8c-b276-4953-aa7c-571e18801cc8
