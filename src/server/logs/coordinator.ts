@@ -39,11 +39,66 @@ function rank(groups: RankedEntry[][]) {
     }));
 }
 
+// Errors can echo a target as written (fetch does for VictoriaLogs), while URL
+// parsing re-encodes the password, strips tabs and line breaks, and rejects
+// targets drivers accept, like postgres.js multi-host URLs. So both forms are
+// redacted.
+const urlPasswordPattern =
+  /^[a-z][a-z\d+.-]*:[/\\]*[^:/?#\\]*:(?<password>[^/?#\\]*)@/iu;
+
+function secretsOf(target: Configuration["logSources"][string]["target"]) {
+  if (typeof target !== "string") {
+    return [target.password];
+  }
+
+  return [
+    urlPasswordPattern.exec(target)?.groups?.password,
+    URL.parse(target)?.password,
+  ].flatMap((password) => {
+    if (!password) {
+      return [];
+    }
+    try {
+      return [password, decodeURIComponent(password)];
+    } catch {
+      return [password];
+    }
+  });
+}
+
 export function createLogCoordinator(
   configuration: Configuration,
   initialize?: Parameters<typeof createLogSources>[1],
 ) {
   const sources = createLogSources(configuration, initialize);
+
+  // Drizzle wraps driver errors in a "Failed query" error carrying the SQL and its
+  // params, so the reason a source failed is the innermost cause.
+  function sourceFailure(sourceId: string, error: unknown) {
+    let reason = error;
+    while (reason instanceof Error && reason.cause instanceof Error) {
+      reason = reason.cause;
+    }
+    const target = configuration.logSources[sourceId]?.target;
+    const message = (target ? secretsOf(target) : [])
+      .filter(Boolean)
+      .reduce(
+        (text, secret) => text.replaceAll(secret, "<hidden>"),
+        reason instanceof Error ? reason.message : String(reason),
+      );
+    const code =
+      reason instanceof Error &&
+      "code" in reason &&
+      typeof reason.code === "string"
+        ? reason.code
+        : undefined;
+    console.error(
+      `[logs] Log source "${sourceId}" failed: ${[message, code && `(${code})`].filter(Boolean).join(" ")}`,
+    );
+
+    return { sourceId, message: "Unable to read this log source." };
+  }
+
   const counts = createResultCache<number>({ ttlMs: 30_000, maxEntries: 100 });
   const rankings = createResultCache<{
     results: Awaited<ReturnType<typeof createRankedResults>>;
@@ -78,11 +133,10 @@ export function createLogCoordinator(
             success: true,
             value: await read(source, await source.provider()),
           } as const;
-        } catch {
+        } catch (error) {
           return {
             success: false,
-            sourceId: source.id,
-            message: "Unable to read this log source.",
+            diagnostic: sourceFailure(source.id, error),
           } as const;
         }
       },
@@ -92,14 +146,7 @@ export function createLogCoordinator(
         result.success ? [result.value] : [],
       ),
       diagnostics: results.flatMap((result) =>
-        result.success
-          ? []
-          : [
-              {
-                sourceId: result.sourceId,
-                message: result.message,
-              },
-            ],
+        result.success ? [] : [result.diagnostic],
       ),
     };
   }
@@ -179,13 +226,10 @@ export function createLogCoordinator(
 
               try {
                 return await operation();
-              } catch {
+              } catch (error) {
                 if (!failed.has(source.id)) {
                   failed.add(source.id);
-                  result.diagnostics.push({
-                    sourceId: source.id,
-                    message: "Unable to read this log source.",
-                  });
+                  result.diagnostics.push(sourceFailure(source.id, error));
                 }
 
                 return fallback;
