@@ -505,6 +505,7 @@ describe("multi-source query logs", () => {
     "http://blocky:hunter 2\n@b/c@127.0.0.1:9428",
     "http:/blocky:hunter2@127.0.0.1:9428",
     "HTTP:\\\\blocky:hunter2@127.0.0.1:9428",
+    "http://blocky:hunter%40:2@127.0.0.1:9428",
   ])("hides the credentials VictoriaLogs echoes from %j", async (target) => {
     const configuration = parseConfiguration({
       servers: { a: { url: "http://a", logs: { source: "a" } } },
@@ -566,6 +567,28 @@ describe("multi-source query logs", () => {
 
     expect(String(log.mock.calls[0]?.[0])).toContain(
       "Bad option password=<hidden> for blocky@db",
+    );
+  });
+
+  it("hides the password of a multi-host PostgreSQL URL", async () => {
+    const configuration = parseConfiguration({
+      servers: { a: { url: "http://a", logs: { source: "a" } } },
+      logSources: {
+        a: {
+          type: "postgresql",
+          target: "postgres://blocky:hunter%402@db1:5432,db2:5432/logs",
+        },
+      },
+    });
+    const logs = createLogCoordinator(configuration, () =>
+      Promise.reject(new Error("Rejected hunter@2 (sent as hunter%402)")),
+    );
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await logs.rows(["a"], { limit: 10, offset: 0 });
+
+    expect(String(log.mock.calls[0]?.[0])).toContain(
+      "Rejected <hidden> (sent as <hidden>)",
     );
   });
 });

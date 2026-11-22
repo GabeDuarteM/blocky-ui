@@ -39,11 +39,18 @@ function rank(groups: RankedEntry[][]) {
     }));
 }
 
+// The password as written in a URL target: after the first ":" of the userinfo,
+// which runs up to the last "@" before the path. URL parsing can't be used, since
+// it re-encodes the password and rejects targets drivers accept, like
+// postgres.js multi-host URLs, while errors echo the target as written.
+const urlPasswordPattern =
+  /^[a-z][a-z\d+.-]*:[/\\]*[^:/?#\\]*:(?<password>[^/?#\\]*)@/iu;
+
 function secretsOf(target: Configuration["logSources"][string]["target"]) {
   if (typeof target !== "string") {
     return [target.password];
   }
-  const password = URL.parse(target)?.password ?? "";
+  const password = urlPasswordPattern.exec(target)?.groups?.password ?? "";
   try {
     return [password, decodeURIComponent(password)];
   } catch {
