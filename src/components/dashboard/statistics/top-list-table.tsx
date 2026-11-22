@@ -56,11 +56,10 @@ export function TopListTable({
     filter,
   });
   const knownTotal = query.data?.totalCount;
-  const [lastKnownTotal, setLastKnownTotal] = useState(knownTotal);
-  if (knownTotal !== undefined && knownTotal !== lastKnownTotal) {
-    setLastKnownTotal(knownTotal);
+  const [wasPaged, setWasPaged] = useState(false);
+  if (knownTotal !== undefined && knownTotal > limit !== wasPaged) {
+    setWasPaged(knownTotal > limit);
   }
-  const wasPaged = lastKnownTotal !== undefined && lastKnownTotal > limit;
   const queryClient = useQueryClient();
   const totalPages = Math.ceil((knownTotal ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];
