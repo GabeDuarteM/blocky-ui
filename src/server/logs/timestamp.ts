@@ -1,5 +1,5 @@
-const timezoneHourPattern = /[+-]\d{2}$/;
-const timezonePattern = /(Z|[+-]\d{2}:?\d{2})$/i;
+const timezoneHourPattern = /[+-]\d{2}$/u;
+const timezonePattern = /(?:Z|[+-]\d{2}:?\d{2})$/iu;
 
 export function normalizeLogTimestamp(
   value: string | null,

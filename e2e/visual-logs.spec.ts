@@ -1,5 +1,4 @@
-const resolvedReasonPattern = /RESOLVED: Resolved by:/;
-
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
 import { logEntries, longDomain } from "./visual-data";
@@ -12,6 +11,8 @@ import {
   ready,
   tooltip,
 } from "./visual-support";
+
+const resolvedReasonPattern = /RESOLVED: Resolved by:/u;
 
 test.use({ reducedMotion: "reduce", deviceScaleFactor: 1 });
 
@@ -99,48 +100,55 @@ test("short and long select menus", async ({ page }) => {
   await capture(page.getByRole("listbox"), "page-size-menu");
 });
 
-test("log edge cases and expanded mobile details", async ({
-  page,
-  isMobile,
-}) => {
+async function showLogEdgeCases(page: Page) {
   await overrideRpc(page, {
     "logs.rows": { data: { items: logEntries, diagnostics: [] } },
     "logs.count": { data: { totalCount: logEntries.length, diagnostics: [] } },
   });
-  const viewport = page.viewportSize();
-  if (isMobile && viewport) {
-    // Keep the expanded list inside the viewport to avoid Chromium's beyond-viewport capture.
-    await page.setViewportSize({ ...viewport, height: 1200 });
-  }
   await page.goto("/");
   await configureDemo(page);
   const logs = getQueryLogs(page);
   await expect(logs.rows).toHaveCount(3);
   await expect(logs.entries).toHaveAttribute("aria-busy", "false");
-  if (isMobile) {
-    const entries = logs.region.locator("details");
-    for (const entry of await entries.all()) {
-      // biome-ignore lint/performance/noAwaitInLoops: Browser clicks must complete before moving the pointer again.
-      await entry.locator("summary").click();
-    }
-    await expect(
-      logs.region.getByText("Unknown time", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      entries.first().getByText(longDomain, { exact: true }),
-    ).toHaveCount(2);
-    await page.mouse.move(0, 0);
-    await capture(logs.entries, "mobile-log-details");
-  } else {
-    await capture(logs.entries.locator(".."), "log-edge-cases");
-    await logs.entries.getByText(longDomain, { exact: true }).hover();
-    await capture(tooltip(page), "log-domain-tooltip");
-    await page.mouse.move(0, 0);
-    await logs.entries
-      .getByRole("button", { name: resolvedReasonPattern })
-      .hover();
-    await capture(tooltip(page), "log-reason-tooltip");
+  return logs;
+}
+
+test("log edge cases and tooltips", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: Touch devices do not have a hover state.
+  test.skip(isMobile, "Mobile shows expanded details instead.");
+  const logs = await showLogEdgeCases(page);
+  await capture(logs.entries.locator(".."), "log-edge-cases");
+  await logs.entries.getByText(longDomain, { exact: true }).hover();
+  await capture(tooltip(page), "log-domain-tooltip");
+  await page.mouse.move(0, 0);
+  await logs.entries
+    .getByRole("button", { name: resolvedReasonPattern })
+    .hover();
+  await capture(tooltip(page), "log-reason-tooltip");
+});
+
+test("expanded mobile log details", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: Expanded details are the mobile layout.
+  test.skip(!isMobile, "Desktop shows tooltips instead.");
+  const viewport = page.viewportSize();
+  if (viewport) {
+    // Keep the expanded list inside the viewport to avoid Chromium's beyond-viewport capture.
+    await page.setViewportSize({ ...viewport, height: 1200 });
   }
+  const logs = await showLogEdgeCases(page);
+  const entries = logs.region.locator("details");
+  for (const entry of await entries.all()) {
+    // biome-ignore lint/performance/noAwaitInLoops: Browser clicks must complete before moving the pointer again.
+    await entry.locator("summary").click();
+  }
+  await expect(
+    logs.region.getByText("Unknown time", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    entries.first().getByText(longDomain, { exact: true }),
+  ).toHaveCount(2);
+  await page.mouse.move(0, 0);
+  await capture(logs.entries, "mobile-log-details");
 });
 
 test("editable and unknown-total pagination", async ({ page }) => {

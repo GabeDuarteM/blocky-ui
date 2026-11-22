@@ -1,7 +1,7 @@
 import { parseDocument } from "yaml";
 import { z } from "zod";
 
-const idSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/);
+const idSchema = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/u);
 const headersSchema = z.record(z.string(), z.string());
 const databaseTargetSchema = z.strictObject({
   host: z.string().min(1),
@@ -66,7 +66,7 @@ const configurationSchema = z
         idSchema,
         z.strictObject({
           name: z.string().min(1).optional(),
-          url: z.url({ protocol: /^https?$/ }),
+          url: z.url({ protocol: /^https?$/u }),
           headers: headersSchema.default({}),
           logs: z
             .strictObject({

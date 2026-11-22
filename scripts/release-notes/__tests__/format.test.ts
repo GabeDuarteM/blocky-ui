@@ -6,9 +6,9 @@ import config from "../../../.changeset/config.json";
 import { formatChangelog } from "../format";
 import { formatGithubRelease } from "../github-release";
 
-const emptySectionPattern = /^### (Highlights|Other improvements)$/m;
-const improvementsHeadingPattern = /^# Improvements\n/;
-const optionalSectionPattern = /^### (Upgrade notes|Deprecations)$/m;
+const emptySectionPattern = /^### (?:Highlights|Other improvements)$/mu;
+const improvementsHeadingPattern = /^# Improvements\n/u;
+const optionalSectionPattern = /^### (?:Upgrade notes|Deprecations)$/mu;
 
 vi.mock("../contribution-title", () => ({
   getContributionTitle: vi.fn(() => "feat: support multiple servers"),
@@ -39,7 +39,7 @@ const server = setupServer(
 );
 beforeAll(() => {
   vi.stubEnv("GITHUB_TOKEN", "test-token");
-  server.listen({ onUnhandledRequest: "error" });
+  server.listen({ onUnhandledFrame: "error" });
 });
 afterAll(() => {
   server.close();
@@ -145,7 +145,7 @@ describe("release notes", () => {
       "2.0.0",
       "* @new-user made their first contribution in https://github.com/org/repo/pull/40",
     );
-    expect(result.match(/^### .+$/gm)).toEqual([
+    expect(result.match(/^### .+$/gmu)).toEqual([
       "### Upgrade notes",
       "### Highlights",
       "### Other improvements",
@@ -160,7 +160,7 @@ describe("release notes", () => {
     expect(result).toContain(
       "### Deprecations\n\n#### Environment variables\n\nEnvironment variables still work but will be removed later.",
     );
-    expect(result.match(/^#### Multiple servers$/gm)).toHaveLength(1);
+    expect(result.match(/^#### Multiple servers$/gmu)).toHaveLength(1);
     const simple = formatChangelog(document(improvement), "2.0.0");
     expect(simple).not.toMatch(optionalSectionPattern);
   });

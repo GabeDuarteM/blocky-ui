@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Badge, type BadgeVariants } from "~/components/ui/badge";
+import type { BadgeVariants } from "~/components/ui/badge";
+import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import {
@@ -61,7 +62,7 @@ export function StatCard({
   }
 
   const titleElement = (
-    <CardTitle className="cursor-default font-medium text-muted-foreground text-sm">
+    <CardTitle className="cursor-default text-sm font-medium text-muted-foreground">
       {title}
     </CardTitle>
   );
@@ -83,9 +84,9 @@ export function StatCard({
         {children ?? (
           <>
             <div className="mb-2 flex items-baseline gap-2">
-              <span className="font-bold text-3xl">{formatValue(value)}</span>
+              <span className="text-3xl font-bold">{formatValue(value)}</span>
               {valueLabel ? (
-                <span className="font-medium text-foreground text-sm">
+                <span className="text-sm font-medium text-foreground">
                   {valueLabel}
                 </span>
               ) : null}
@@ -96,7 +97,7 @@ export function StatCard({
               ) : null}
             </div>
             {detail ? (
-              <p className="mt-2 text-muted-foreground text-xs tabular-nums">
+              <p className="mt-2 text-xs text-muted-foreground tabular-nums">
                 {detail}
               </p>
             ) : null}

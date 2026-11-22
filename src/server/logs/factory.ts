@@ -11,6 +11,7 @@ import type { LogProvider } from "~/server/logs/types";
 import { VictoriaLogsProvider } from "~/server/logs/victorialogs/provider";
 
 declare global {
+  // biome-ignore lint/style/useVarsOnTop: An ambient global declaration, not a runtime var.
   var blockyLogConnections:
     | {
         mysql: Map<string, ReturnType<typeof createPool>>;

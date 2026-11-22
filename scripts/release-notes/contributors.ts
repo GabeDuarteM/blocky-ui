@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 
-const contributorsHeadingPattern = /^## New Contributors\n/m;
-const contributorsEndPattern = /^## |^\*\*Full Changelog\*\*:/m;
+const contributorsHeadingPattern = /^## New Contributors\n/mu;
+const contributorsEndPattern = /^## |^\*\*Full Changelog\*\*:/mu;
 
 export function getFirstTimeContributors({
   repo,

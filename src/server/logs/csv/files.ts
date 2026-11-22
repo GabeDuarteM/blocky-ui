@@ -6,16 +6,17 @@ export function isMissingFile(error: unknown) {
   return error instanceof Error && "code" in error && error.code === "ENOENT";
 }
 
-const fileDatePattern = /^(\d{4})-(\d{2})-(\d{2})_.+\.log$/;
+const fileDatePattern =
+  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})_.+\.log$/u;
 
 function fileDay(name: string) {
   const date = name.match(fileDatePattern);
   if (!date) {
     return;
   }
-  const year = Number(date[1]);
-  const month = Number(date[2]) - 1;
-  const day = Number(date[3]);
+  const year = Number(date.groups?.year);
+  const month = Number(date.groups?.month) - 1;
+  const day = Number(date.groups?.day);
   const start = new Date(year, month, day);
   if (
     start.getFullYear() !== year ||

@@ -2,14 +2,8 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, ChevronUp, FlaskConical, Server } from "lucide-react";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Popover,
@@ -140,7 +134,7 @@ function DemoDevtoolsBar({
           <span className="flex size-6 items-center justify-center rounded-full bg-amber-400 text-zinc-950">
             <FlaskConical className="size-3.5" />
           </span>
-          <span className="font-semibold text-[10px] text-amber-300 uppercase tracking-[0.16em]">
+          <span className="text-[10px] font-semibold tracking-[0.16em] text-amber-300 uppercase">
             Demo
           </span>
           <span className="h-4 w-px bg-white/10" />
@@ -163,7 +157,7 @@ function DemoDevtoolsBar({
           <FlaskConical className="size-4" />
         </span>
         <div className="leading-tight">
-          <p className="font-semibold text-[10px] text-amber-300 uppercase tracking-[0.18em]">
+          <p className="text-[10px] font-semibold tracking-[0.18em] text-amber-300 uppercase">
             Demo mode
           </p>
           <p className="hidden text-xs text-zinc-400 sm:block">
@@ -191,7 +185,7 @@ function DemoDevtoolsBar({
           side="top"
           className="w-72 border-white/10 bg-zinc-950 p-1 text-zinc-100"
         >
-          <div className="flex items-center justify-between gap-3 border-white/10 border-b px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
             <label htmlFor="demo-server-count" className="text-sm">
               Servers
             </label>

@@ -1,7 +1,8 @@
 "use client";
 
 import { Database, Pause, Power } from "lucide-react";
-import { type ReactNode, useCallback, useEffect } from "react";
+import type { ReactNode } from "react";
+import { useCallback, useEffect } from "react";
 import { ActionLayout } from "~/components/dashboard/action-layout";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { StatusBadge } from "~/components/dashboard/status-badge";
@@ -102,7 +103,7 @@ export function ServerStatus({ controls }: { controls?: ReactNode }) {
           ) : (
             <div className="space-y-4">
               {disabled > 0 && countdown !== null && countdown > 0 ? (
-                <p className="text-muted-foreground text-sm tabular-nums">
+                <p className="text-sm text-muted-foreground tabular-nums">
                   Auto-enables in {Math.floor(countdown / 60)}m{" "}
                   {(countdown % 60).toString().padStart(2, "0")}s
                 </p>

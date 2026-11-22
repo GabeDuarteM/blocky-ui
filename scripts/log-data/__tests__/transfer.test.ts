@@ -11,13 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createConnection } from "mysql2/promise";
-import {
-  GenericContainer,
-  Network,
-  type StartedNetwork,
-  type StartedTestContainer,
-  Wait,
-} from "testcontainers";
+import type { StartedNetwork, StartedTestContainer } from "testcontainers";
+import { GenericContainer, Network, Wait } from "testcontainers";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { stringify } from "yaml";
 import { streamAndParseEntries } from "~/server/logs/csv/utils";
@@ -29,8 +24,8 @@ import { importVictoriaLogs } from "../import-victorialogs";
 import type { RecordEntry } from "../record";
 import { readSnapshot, verifySnapshot, writeSnapshot } from "../snapshot";
 
-const mysqlReadyPattern = /ready for connections/;
-const postgresReadyPattern = /database system is ready to accept connections/;
+const mysqlReadyPattern = /ready for connections/u;
+const postgresReadyPattern = /database system is ready to accept connections/u;
 
 const cleanup: Array<() => Promise<unknown>> = [];
 let directory: string;

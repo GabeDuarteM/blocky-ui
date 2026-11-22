@@ -3,7 +3,8 @@
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useDashboardServers } from "~/components/dashboard/server-context";
-import { api, type RouterInputs, type RouterOutputs } from "~/trpc/react";
+import type { RouterInputs, RouterOutputs } from "~/trpc/react";
+import { api } from "~/trpc/react";
 
 type Query = RouterInputs["servers"]["query"];
 type Results = RouterOutputs["servers"]["query"];

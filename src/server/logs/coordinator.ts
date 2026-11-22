@@ -163,7 +163,8 @@ export function createLogCoordinator(
       }));
       const failed = new Set<string>();
 
-      for (;;) {
+      // biome-ignore lint/suspicious/noUnnecessaryConditions: useWhile rejects for (;;) and this rule has no option to allow while (true). https://github.com/biomejs/biome/discussions/11233
+      while (true) {
         const previousFailures = failed.size;
         const readers = result.values
           .filter(({ source }) => !failed.has(source.id))

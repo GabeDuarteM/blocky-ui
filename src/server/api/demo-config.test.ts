@@ -5,6 +5,10 @@ import {
   DEMO_SERVER_COUNTS,
 } from "~/demo/config";
 
+import { logsRouter } from "~/server/api/routers/logs";
+import { serversRouter } from "~/server/api/routers/servers";
+import { createTRPCContext } from "~/server/api/trpc";
+
 vi.mock("~/env", () => ({
   env: {
     BLOCKY_API_URL: "http://localhost:4000",
@@ -20,10 +24,6 @@ vi.mock("~/server/config", () => ({
     logSources: {},
   }),
 }));
-
-import { logsRouter } from "~/server/api/routers/logs";
-import { serversRouter } from "~/server/api/routers/servers";
-import { createTRPCContext } from "~/server/api/trpc";
 
 function createHeaders(enabledServices?: string): Headers {
   const headers = new Headers();

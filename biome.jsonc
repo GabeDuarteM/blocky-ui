@@ -12,7 +12,15 @@
     "useIgnoreFile": true,
   },
   "files": {
-    "includes": ["!**/node_modules", "**", "!!src/components/ui"],
+    "includes": [
+      "!**/node_modules",
+      "**",
+      "!!src/components/ui",
+      "!!CHANGELOG.md",
+    ],
+  },
+  "tailwind": {
+    "stylesheet": "./src/styles/globals.css",
   },
   "css": {
     "parser": {
@@ -53,11 +61,44 @@
         },
       },
     },
+    {
+      "includes": ["e2e/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConsistentTestIt": {
+              "level": "error",
+              "options": { "function": "test", "withinDescribe": "test" },
+            },
+          },
+        },
+      },
+    },
+    {
+      "includes": ["e2e/visual-*.spec.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useExpect": "off",
+          },
+        },
+      },
+    },
   ],
   "linter": {
     "rules": {
       "nursery": {
         "useReactCompiler": "error",
+      },
+      "style": {
+        "useConsistentTestIt": {
+          "level": "error",
+          "options": { "function": "it", "withinDescribe": "it" },
+        },
+        "useThisInClassMethods": {
+          "level": "error",
+          "options": { "ignoreOverrideMethods": true },
+        },
       },
     },
   },

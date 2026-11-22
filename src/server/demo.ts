@@ -1,8 +1,5 @@
-import {
-  DEMO_SERVER_ID_HEADER,
-  type DemoServerCount,
-  demoServers,
-} from "~/demo/config";
+import type { DemoServerCount } from "~/demo/config";
+import { DEMO_SERVER_ID_HEADER, demoServers } from "~/demo/config";
 import { env } from "~/env";
 import type { Configuration } from "~/server/config/schema";
 import { createLogCoordinator } from "~/server/logs/coordinator";

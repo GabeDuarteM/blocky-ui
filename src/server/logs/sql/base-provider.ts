@@ -1,11 +1,4 @@
-import { readQueryLogPage } from "~/server/logs/query-page";
-/**
- * Base class for SQL database log providers (MySQL, PostgreSQL, etc.)
- *
- * Subclasses must implement:
- * - getBucketExpression(range): Returns SQL expression for time bucketing
- */
-
+import type { SQL } from "drizzle-orm";
 import {
   and,
   asc,
@@ -19,11 +12,11 @@ import {
   lte,
   notInArray,
   or,
-  type SQL,
   sql,
 } from "drizzle-orm";
 import type { TimeRange } from "~/lib/constants";
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
+import { readQueryLogPage } from "~/server/logs/query-page";
 import type {
   LogEntry,
   LogProvider,
@@ -123,6 +116,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
    */
   protected abstract getBucketExpression(range: TimeRange): SQL;
 
+  // biome-ignore lint/style/useThisInClassMethods: Default hook that subclasses override.
   protected formatDateTimeForFilter(date: Date): string {
     const { year, month, day, hours } = getUtcDateParts(date);
     const minutes = String(date.getUTCMinutes()).padStart(2, "0");
@@ -132,6 +126,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
   }
 
+  // biome-ignore lint/style/useThisInClassMethods: Default hook that subclasses override.
   protected getTextSortExpression(column: Column): Column | SQL {
     return column;
   }
@@ -189,39 +184,6 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     });
   }
 
-  /**
-   * Maps a database row to a LogEntry object.
-   * Handles nullable fields and optional id.
-   */
-  protected mapRowToLogEntry(row: Record<string, unknown>): LogEntry {
-    const toNullableString = (value: unknown): string | null =>
-      typeof value === "string" ? value : null;
-
-    const toNullableNumber = (value: unknown): number | null => {
-      if (value === null || value === undefined) {
-        return null;
-      }
-      const num = typeof value === "number" ? value : Number(value);
-      return Number.isFinite(num) ? num : null;
-    };
-
-    return {
-      id: row.id === null || row.id === undefined ? undefined : Number(row.id),
-      requestTs: toNullableString(row.requestTs),
-      clientIp: toNullableString(row.clientIp),
-      clientName: toNullableString(row.clientName),
-      durationMs: toNullableNumber(row.durationMs),
-      reason: toNullableString(row.reason),
-      questionName: toNullableString(row.questionName),
-      answer: toNullableString(row.answer),
-      responseCode: toNullableString(row.responseCode),
-      responseType: toNullableString(row.responseType),
-      questionType: toNullableString(row.questionType),
-      hostname: toNullableString(row.hostname),
-      effectiveTldp: toNullableString(row.effectiveTldp),
-    };
-  }
-
   protected hostnameExpression(): SQL {
     return sql`${this.columns.hostname}`;
   }
@@ -243,6 +205,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
     );
   }
 
+  // biome-ignore lint/style/useThisInClassMethods: Default hook that subclasses override.
   protected getClientRankingIndexHints(
     _range: TimeRange,
     _filter: "all" | "blocked",
@@ -394,9 +357,7 @@ export abstract class BaseSqlLogProvider implements LogProvider {
         )
         .orderBy(...order);
     }
-    return rows.map((row: Record<string, unknown>) =>
-      this.mapRowToLogEntry(row),
-    );
+    return rows.map(mapRowToLogEntry);
   }
 
   getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
@@ -645,4 +606,37 @@ function formatDateForRange(date: Date, range: TimeRange): string {
     default:
       throw new Error(`Unexpected value: ${range satisfies never}`);
   }
+}
+
+/**
+ * Maps a database row to a LogEntry object.
+ * Handles nullable fields and optional id.
+ */
+function mapRowToLogEntry(row: Record<string, unknown>): LogEntry {
+  const toNullableString = (value: unknown): string | null =>
+    typeof value === "string" ? value : null;
+
+  const toNullableNumber = (value: unknown): number | null => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    const num = typeof value === "number" ? value : Number(value);
+    return Number.isFinite(num) ? num : null;
+  };
+
+  return {
+    id: row.id === null || row.id === undefined ? undefined : Number(row.id),
+    requestTs: toNullableString(row.requestTs),
+    clientIp: toNullableString(row.clientIp),
+    clientName: toNullableString(row.clientName),
+    durationMs: toNullableNumber(row.durationMs),
+    reason: toNullableString(row.reason),
+    questionName: toNullableString(row.questionName),
+    answer: toNullableString(row.answer),
+    responseCode: toNullableString(row.responseCode),
+    responseType: toNullableString(row.responseType),
+    questionType: toNullableString(row.questionType),
+    hostname: toNullableString(row.hostname),
+    effectiveTldp: toNullableString(row.effectiveTldp),
+  };
 }

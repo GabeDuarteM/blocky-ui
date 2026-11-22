@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, type LucideIcon, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Globe, Users } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { useLogTopList } from "~/hooks/use-log-top-list";

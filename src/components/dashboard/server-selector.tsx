@@ -74,7 +74,7 @@ function BlockingLabel({ server }: { server: PickerServer }) {
   return (
     <StatusBadge
       tone={server.blocking ? "success" : "danger"}
-      className="max-w-32 whitespace-normal break-words"
+      className="max-w-32 break-words whitespace-normal"
       title={
         [
           server.disabledGroups?.length
@@ -158,7 +158,7 @@ function ServerList({ label, selected, servers, onToggle }: SelectionProps) {
             />
           ))}
           {matches.length ? null : (
-            <p className="px-3 py-5 text-muted-foreground text-sm">
+            <p className="px-3 py-5 text-sm text-muted-foreground">
               No matching servers
             </p>
           )}
@@ -221,7 +221,7 @@ export function ServerSelector({
         align="start"
         className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden bg-popover p-0 dark:bg-popover"
       >
-        <p className="border-b px-3 py-3 text-muted-foreground text-xs">
+        <p className="border-b px-3 py-3 text-xs text-muted-foreground">
           {description}
         </p>
         <ServerList {...props} />
@@ -252,13 +252,13 @@ export function ActionTargets({
         >
           <ServerIcon className="size-5 shrink-0 text-muted-foreground" />
           <span className="min-w-0 flex-1 text-left">
-            <span className="block font-medium text-sm">
+            <span className="block text-sm font-medium">
               <span className="font-normal text-muted-foreground">
                 {actionLabel}:{" "}
               </span>
               {summary}
             </span>
-            <span className="block truncate font-normal text-muted-foreground text-xs">
+            <span className="block truncate text-xs font-normal text-muted-foreground">
               {selectedNames.join(", ")}
             </span>
           </span>
@@ -266,7 +266,7 @@ export function ActionTargets({
             (server) =>
               props.selected.includes(server.id) && server.online === false,
           ) ? (
-            <span className="text-amber-400 text-xs">
+            <span className="text-xs text-amber-400">
               {
                 props.servers.filter(
                   (server) =>

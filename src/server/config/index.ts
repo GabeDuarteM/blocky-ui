@@ -1,14 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { env } from "~/env";
+import type { Configuration, DatabaseTarget } from "~/server/config/schema";
 import {
-  type Configuration,
-  type DatabaseTarget,
   parseConfiguration,
   parseConfigurationYaml,
 } from "~/server/config/schema";
 
-const filePrefixPattern = /^file:(?:\/\/)?/;
-const trailingNewlinePattern = /\r?\n$/;
+const filePrefixPattern = /^file:(?:\/\/)?/u;
+const trailingNewlinePattern = /\r?\n$/u;
 
 let configuration: Promise<Configuration> | undefined;
 

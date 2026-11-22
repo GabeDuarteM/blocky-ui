@@ -3,7 +3,7 @@ import { z } from "zod";
 import { normalizeLogTimestamp } from "~/server/logs/timestamp";
 import { TransferError } from "./errors";
 
-const timezonePattern = /(?:Z|[+-]\d\d(?::?\d\d)?)$/;
+const timezonePattern = /(?:Z|[+-]\d\d(?::?\d\d)?)$/u;
 
 const columns = {
   requestTs: "request_ts",

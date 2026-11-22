@@ -9,9 +9,9 @@
 import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError, z } from "zod";
+import type { DemoService } from "~/demo/config";
 import {
   DEFAULT_DEMO_CONFIGURATION,
-  type DemoService,
   getDemoConfigurationFromHeaders,
 } from "~/demo/config";
 import { createBlockyServers } from "~/server/blocky/servers";

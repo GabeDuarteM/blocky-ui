@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { DemoConfiguration } from "~/demo/config";
 import {
   DEFAULT_DEMO_CONFIGURATION,
   DEMO_CONFIGURATION_HEADER,
   DEMO_SERVER_COUNT_HEADER,
   DEMO_SERVER_COUNTS,
-  type DemoConfiguration,
   getDemoConfiguration,
   getDemoConfigurationFromHeaders,
   serializeDemoConfiguration,

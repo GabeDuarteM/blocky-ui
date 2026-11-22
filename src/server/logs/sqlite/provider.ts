@@ -1,5 +1,7 @@
-import { DatabaseSync, type SQLInputValue } from "node:sqlite";
-import { type Column, type SQL, sql } from "drizzle-orm";
+import type { SQLInputValue } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
+import type { Column, SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import type { TimeRange } from "~/lib/constants";
 import { cachedConnection } from "~/server/logs/connection-cache";
@@ -55,11 +57,11 @@ export class SQLiteLogProvider extends BaseSqlLogProvider {
     return Promise.resolve();
   }
 
-  protected getTextSortExpression(column: Column): SQL {
+  protected override getTextSortExpression(column: Column): SQL {
     return sql`lower(${column})`;
   }
 
-  protected getBucketExpression(range: TimeRange): SQL {
+  protected override getBucketExpression(range: TimeRange): SQL {
     const col = logEntries.requestTs.name;
 
     switch (range) {

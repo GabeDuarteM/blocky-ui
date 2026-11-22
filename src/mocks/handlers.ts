@@ -2,7 +2,7 @@ import { HttpResponse, http } from "msw";
 import { DEMO_SERVER_ID_HEADER } from "~/demo/config";
 import { env } from "~/env";
 
-const durationPattern = /(\d+)([smh])/;
+const durationPattern = /(?<value>\d+)(?<unit>[smh])/u;
 
 interface BlockingStatus {
   enabled: boolean;
@@ -95,7 +95,7 @@ export const handlers = [
     if (duration && duration !== "0") {
       const match = duration.match(durationPattern);
       if (match) {
-        const [, value, unit] = match;
+        const { value, unit } = match.groups ?? {};
         const numValue = Number.parseInt(value ?? "0", 10);
         switch (unit) {
           case "s":

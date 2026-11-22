@@ -1,9 +1,6 @@
 import { getTimeRangeConfig } from "~/server/logs/aggregation-utils";
-import {
-  type CsvFile,
-  isMissingFile,
-  withCsvScan,
-} from "~/server/logs/csv/files";
+import type { CsvFile } from "~/server/logs/csv/files";
+import { isMissingFile, withCsvScan } from "~/server/logs/csv/files";
 import { createLogPage } from "~/server/logs/csv/page";
 import { createFilterFn, scanEntries } from "~/server/logs/csv/utils";
 import { createResultCache } from "~/server/logs/result-cache";

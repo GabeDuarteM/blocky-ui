@@ -12,13 +12,8 @@ import { logEntries as sqliteTable } from "~/server/logs/sqlite/schema";
 import { TransferError } from "./errors";
 import { mysqlPages } from "./mysql-pages";
 import { requireTransactionalTable } from "./mysql-storage";
-import {
-  databaseRecord,
-  fingerprint,
-  type RecordEntry,
-  recordSchema,
-  timestamp,
-} from "./record";
+import type { RecordEntry } from "./record";
+import { databaseRecord, fingerprint, recordSchema, timestamp } from "./record";
 
 export type SqlDestination = "mysql" | "postgresql" | "timescale" | "sqlite";
 

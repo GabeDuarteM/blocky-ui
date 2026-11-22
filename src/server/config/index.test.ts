@@ -6,13 +6,13 @@ import { stringify } from "yaml";
 import type { Configuration } from "~/server/config/schema";
 
 const missingTargetPattern =
-  /^Cannot read the file configured by logSources.home.target$/;
+  /^Cannot read the file configured by logSources.home.target$/u;
 const invalidTargetPattern =
-  /^Invalid Blocky UI configuration at: logSources.home.target$/;
+  /^Invalid Blocky UI configuration at: logSources.home.target$/u;
 const missingPasswordPattern =
-  /^Cannot read the file configured by logSources.home.target.password$/;
+  /^Cannot read the file configured by logSources.home.target.password$/u;
 const missingCertificatePattern =
-  /^Cannot read the file configured by logSources.home.target.options.ssl.ca.0$/;
+  /^Cannot read the file configured by logSources.home.target.options.ssl.ca.0$/u;
 
 let directory: string;
 beforeEach(async () => {

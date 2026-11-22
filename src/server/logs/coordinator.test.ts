@@ -1,5 +1,7 @@
+// biome-ignore-all lint/style/noExcessiveClassesPerFile: Test doubles for the coordinator.
 import { describe, expect, it, vi } from "vitest";
-import { type Configuration, parseConfiguration } from "~/server/config/schema";
+import type { Configuration } from "~/server/config/schema";
+import { parseConfiguration } from "~/server/config/schema";
 import { BaseMemoryLogProvider } from "~/server/logs/base-provider";
 import { createLogCoordinator } from "~/server/logs/coordinator";
 import { createFilterFn } from "~/server/logs/csv/utils";
@@ -81,7 +83,7 @@ describe("multi-source query logs", () => {
         );
       }
 
-      getQueryLogRows(options: QueryLogsOptions) {
+      override getQueryLogRows(options: QueryLogsOptions) {
         return Promise.resolve(
           this.visible(options).slice(
             options.offset,

@@ -1,12 +1,12 @@
-const summaryPattern = /<summary[\s\S]*?<\/summary>/;
-const clientAddressPattern = /192\.168\.1\.25/g;
-
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
 import { getMockLogEntries } from "~/mocks/log-entry-mock";
 import type { LogEntry } from "~/server/logs/types";
+
+const summaryPattern = /<summary[\s\S]*?<\/summary>/u;
+const clientAddressPattern = /192\.168\.1\.25/gu;
 
 function renderLog(overrides: Partial<LogEntry>, showServer = false) {
   const [sample] = getMockLogEntries();

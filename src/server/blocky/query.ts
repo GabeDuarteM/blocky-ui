@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const answerSeparatorPattern = /,\s+(?=[A-Z0-9]+\s+\()/;
-const answerRecordPattern = /^[A-Z0-9]+\s+\((.*)\)$/;
+const answerSeparatorPattern = /,\s+(?=[A-Z0-9]+\s+\()/u;
+const answerRecordPattern = /^[A-Z0-9]+\s+\((?<value>.*)\)$/u;
 
 const queryResponseSchema = z.object({
   reason: z.string(),
@@ -10,7 +10,7 @@ const queryResponseSchema = z.object({
   returnCode: z.string(),
 });
 
-const BLOCKED_REASON_PATTERN = /^BLOCKED(?: [^(]+)? \((.*)\)$/i;
+const BLOCKED_REASON_PATTERN = /^BLOCKED(?: [^(]+)? \((?<details>.*)\)$/iu;
 
 interface BlockyQueryResult {
   responseType: string;
@@ -26,13 +26,13 @@ function parseAnswers(response: string): string[] {
 
   return response.split(answerSeparatorPattern).map((record) => {
     const match = record.match(answerRecordPattern);
-    return match?.[1] ?? record;
+    return match?.groups?.value ?? record;
   });
 }
 
 function parseBlockingGroup(reason: string): string | null {
   const reasonMatch = reason.trim().match(BLOCKED_REASON_PATTERN);
-  const details = reasonMatch?.[1];
+  const details = reasonMatch?.groups?.details;
   if (!details) {
     return null;
   }

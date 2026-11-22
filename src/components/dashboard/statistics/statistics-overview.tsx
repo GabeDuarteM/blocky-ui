@@ -109,12 +109,12 @@ export function StatisticsOverview() {
                 className="-mx-2 -my-1 h-17 w-[calc(100%+1rem)] flex-col items-start gap-2 px-2 py-1 text-left hover:bg-accent"
               >
                 <span className="flex w-full items-center justify-between gap-2">
-                  <span className="font-bold text-xl tabular-nums">
+                  <span className="text-xl font-bold tabular-nums">
                     {domainRange}
                   </span>
                   <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
                 </span>
-                <span className="font-normal text-muted-foreground text-xs">
+                <span className="text-xs font-normal text-muted-foreground">
                   {minimum === maximum ? "Per server" : "Range per server"}
                 </span>
               </Button>
@@ -125,7 +125,7 @@ export function StatisticsOverview() {
               className="w-132 max-w-[calc(100vw-2rem)] bg-popover p-0 dark:bg-popover"
               aria-label="Listed domains by server"
             >
-              <div className="max-h-[min(32rem,60vh,var(--radix-popover-content-available-height))] overflow-y-auto overscroll-contain rounded-md [color-scheme:dark] [scrollbar-gutter:stable] [&>[data-slot=table-container]]:overflow-visible">
+              <div className="max-h-[min(32rem,60vh,var(--radix-popover-content-available-height))] [scrollbar-gutter:stable] overflow-y-auto overscroll-contain rounded-md [color-scheme:dark] [&>[data-slot=table-container]]:overflow-visible">
                 <Table className="table-fixed text-xs sm:text-sm">
                   <TableHeader className="sticky top-0 z-10 bg-popover">
                     <TableRow className="hover:bg-transparent [&>th]:h-auto [&>th]:py-3 [&>th]:leading-5">
@@ -136,7 +136,7 @@ export function StatisticsOverview() {
                       <TableHead className="w-[24%] text-right">
                         Allowlisted
                       </TableHead>
-                      <TableHead className="w-[24%] whitespace-normal pr-4 text-right">
+                      <TableHead className="w-[24%] pr-4 text-right whitespace-normal">
                         Deny groups
                       </TableHead>
                     </TableRow>
@@ -144,7 +144,7 @@ export function StatisticsOverview() {
                   <TableBody>
                     {inventories.map((server) => (
                       <TableRow key={server.id}>
-                        <TableCell className="whitespace-normal break-words py-3 pl-4 font-medium">
+                        <TableCell className="py-3 pl-4 font-medium break-words whitespace-normal">
                           {server.name}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">

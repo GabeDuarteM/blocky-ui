@@ -1,4 +1,5 @@
-import ky, { HTTPError, type KyInstance, TimeoutError } from "ky";
+import type { KyInstance } from "ky";
+import ky, { HTTPError, TimeoutError } from "ky";
 import { ZodError } from "zod";
 import type { Configuration } from "~/server/config/schema";
 import { serverSummaries } from "~/server/config/servers";

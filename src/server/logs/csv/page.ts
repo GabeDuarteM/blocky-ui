@@ -48,8 +48,8 @@ export function createLogPage(limit: number) {
         return;
       }
       let index = 0;
-      for (;;) {
-        let childIndex = index * 2 + 1;
+      let childIndex = 1;
+      while (childIndex < heap.length) {
         let child = heap[childIndex];
         const right = heap[childIndex + 1];
         if (right && child && compare(right, child) > 0) {
@@ -61,6 +61,7 @@ export function createLogPage(limit: number) {
         }
         heap[index] = child;
         index = childIndex;
+        childIndex = index * 2 + 1;
       }
       heap[index] = candidate;
     },

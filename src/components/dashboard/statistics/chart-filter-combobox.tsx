@@ -14,10 +14,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "~/components/ui/tooltip";
-import {
-  type FilterValue,
-  useFilterSuggestions,
-} from "~/hooks/use-filter-suggestions";
+import type { FilterValue } from "~/hooks/use-filter-suggestions";
+import { useFilterSuggestions } from "~/hooks/use-filter-suggestions";
 import type { TimeRange } from "~/lib/constants";
 import { FilterSelect } from "../filter-select";
 
@@ -116,7 +114,7 @@ export function ActiveFilterChip({ filter, onClear }: ActiveFilterChipProps) {
   const typeLabel = filter.type === "domain" ? "Domain" : "Client";
 
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 py-0.5 pr-1 pl-2.5 font-medium text-primary text-xs">
+    <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 py-0.5 pr-1 pl-2.5 text-xs font-medium text-primary">
       <span className="max-w-[150px] truncate">
         {typeLabel}: {filter.value}
       </span>

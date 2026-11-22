@@ -1,6 +1,7 @@
 "use client";
 
-import { Globe, ListOrdered, type LucideIcon, Users } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { Globe, ListOrdered, Users } from "lucide-react";
 import { useState } from "react";
 
 import { useDashboardServers } from "~/components/dashboard/server-context";
@@ -11,13 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import {
-  TopListCard,
-  TopListEntry,
-  type TopListFilter,
-  type TopListFilterControls,
-  TopListsSection,
-} from "./top-list";
+import type { TopListFilter, TopListFilterControls } from "./top-list";
+import { TopListCard, TopListEntry, TopListsSection } from "./top-list";
 
 const DISPLAYED_ENTRIES = 5;
 

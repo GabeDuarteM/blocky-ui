@@ -7,7 +7,8 @@ import { pipeline } from "node:stream/promises";
 import { createGunzip, createGzip } from "node:zlib";
 import { z } from "zod";
 import { TransferError } from "./errors";
-import { fingerprint, type RecordEntry, recordSchema } from "./record";
+import type { RecordEntry } from "./record";
+import { fingerprint, recordSchema } from "./record";
 
 const manifestSchema = z.object({
   version: z.literal(1),
@@ -15,7 +16,7 @@ const manifestSchema = z.object({
   sourceOffset: z.string(),
   createdAt: z.iso.datetime(),
   count: z.number().int().nonnegative(),
-  fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+  fingerprint: z.string().regex(/^[a-f0-9]{64}$/u),
   firstTimestamp: z.iso.datetime().nullable(),
   lastTimestamp: z.iso.datetime().nullable(),
 });

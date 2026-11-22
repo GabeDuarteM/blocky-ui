@@ -1,4 +1,5 @@
-import { desc, gte, inArray, type SQL, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { desc, gte, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2/promise";
 import type { TimeRange } from "~/lib/constants";
@@ -46,7 +47,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     this.mysqlDb = db;
   }
 
-  async getQueryLogRows(options: QueryLogsOptions) {
+  override async getQueryLogRows(options: QueryLogsOptions) {
     if (
       !options.search ||
       options.client ||
@@ -83,11 +84,11 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     return this.readQueryLogRows(options, [], { useIndex: ["PRIMARY"] });
   }
 
-  protected hostnameExpression(): SQL {
+  protected override hostnameExpression(): SQL {
     return sql`CAST(${logEntries.hostname} AS BINARY)`;
   }
 
-  protected async clientFilter(client: string): Promise<SQL> {
+  protected override async clientFilter(client: string): Promise<SQL> {
     const clients = this.mysqlDb
       .selectDistinct({ name: logEntries.clientName })
       .from(logEntries)
@@ -107,7 +108,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     return names.length ? inArray(logEntries.clientName, names) : sql`false`;
   }
 
-  protected getClientRankingIndexHints(
+  protected override getClientRankingIndexHints(
     range: TimeRange,
     filter: "all" | "blocked",
   ) {
@@ -123,7 +124,7 @@ export class MySQLLogProvider extends BaseSqlLogProvider {
     }
   }
 
-  protected getBucketExpression(range: TimeRange): SQL {
+  protected override getBucketExpression(range: TimeRange): SQL {
     const col = logEntries.requestTs.name;
 
     switch (range) {
