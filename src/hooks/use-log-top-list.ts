@@ -17,7 +17,7 @@ export function useLogTopList(
   const connected = useQuery(
     trpc.logs.topList.queryOptions(input, {
       enabled,
-      placeholderData: keepDataWhenOnlyChanged(input, ["offset"]),
+      placeholderData: keepDataWhenOnlyChanged(input, ["offset", "limit"]),
     }),
   );
   useLogDiagnostics(

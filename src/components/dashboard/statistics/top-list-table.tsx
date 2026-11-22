@@ -55,8 +55,14 @@ export function TopListTable({
     offset: page * limit,
     filter,
   });
+  const knownTotal = query.data?.totalCount;
+  const [lastKnownTotal, setLastKnownTotal] = useState(knownTotal);
+  if (knownTotal !== undefined && knownTotal !== lastKnownTotal) {
+    setLastKnownTotal(knownTotal);
+  }
+  const wasPaged = lastKnownTotal !== undefined && lastKnownTotal > limit;
   const queryClient = useQueryClient();
-  const totalPages = Math.ceil((query.data?.totalCount ?? 0) / limit);
+  const totalPages = Math.ceil((knownTotal ?? 0) / limit);
   const config = TOP_LIST_CONFIG[type];
 
   usePrefetchAdjacentPages({
@@ -91,7 +97,7 @@ export function TopListTable({
       description={config.description}
       icon={config.icon}
       items={query.data?.items ?? []}
-      totalCount={query.data?.totalCount ?? (query.isError ? 0 : undefined)}
+      totalCount={knownTotal ?? (wasPaged && !query.isError ? undefined : 0)}
       // biome-ignore lint/suspicious/noUnnecessaryConditions: Biome resolves useQuery to its initialData overload. https://github.com/biomejs/biome/issues/12345
       isLoading={query.isLoading || query.isPlaceholderData}
       filter={filter}
