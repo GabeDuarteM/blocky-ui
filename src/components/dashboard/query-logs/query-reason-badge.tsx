@@ -27,7 +27,7 @@ export function QueryReasonBadge({
   const badge = (
     <Badge
       variant={variant}
-      className="max-w-full whitespace-normal py-1 text-center"
+      className="max-w-full py-1 text-center whitespace-normal"
     >
       <span className="min-w-0 break-words capitalize">
         {label.toLowerCase()}

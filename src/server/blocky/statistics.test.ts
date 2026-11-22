@@ -1,8 +1,7 @@
 import ky from "ky";
 import { describe, expect, it } from "vitest";
-
+import type { BlockyStatistics } from "~/server/blocky/statistics";
 import {
-  type BlockyStatistics,
   createStatisticsSnapshot,
   readBlockyStatistics,
 } from "~/server/blocky/statistics";

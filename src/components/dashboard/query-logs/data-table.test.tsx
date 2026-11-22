@@ -1,11 +1,11 @@
-const nextPageButtonPattern = /<button[^>]*aria-label="Next page"[^>]*>/;
-const currentPagePattern =
-  /<button[^>]*aria-current="page"[^>]*>1 \/ 2<\/button>/;
-
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DataTable } from "~/components/dashboard/query-logs/data-table";
+
+const nextPageButtonPattern = /<button[^>]*aria-label="Next page"[^>]*>/u;
+const currentPagePattern =
+  /<button[^>]*aria-current="page"[^>]*>1 \/ 2<\/button>/u;
 
 function renderTable(
   pageCount: number | undefined,

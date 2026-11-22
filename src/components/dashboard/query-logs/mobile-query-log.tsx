@@ -41,11 +41,11 @@ export function MobileQueryLog({
         ref={observeSummary}
         className="grid cursor-pointer list-none grid-cols-[6rem_minmax(0,1fr)_0.875rem] grid-rows-[auto_auto] items-center gap-x-3 gap-y-1 px-3 py-3.5 outline-offset-[-2px] hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring motion-safe:transition-colors [&::-webkit-details-marker]:hidden"
       >
-        <span className="row-span-2 grid h-full grid-rows-subgrid items-center justify-items-center border-border/60 border-r pr-3">
+        <span className="row-span-2 grid h-full grid-rows-subgrid items-center justify-items-center border-r border-border/60 pr-3">
           <QueryReasonBadge entry={entry} />
           <time
             dateTime={entry.requestTs ?? undefined}
-            className="text-muted-foreground text-xs tabular-nums"
+            className="text-xs text-muted-foreground tabular-nums"
           >
             {timestamp?.toLocaleTimeString([], {
               hour: "2-digit",
@@ -63,45 +63,45 @@ export function MobileQueryLog({
         />
         <span
           data-query-name
-          className="col-start-2 min-w-0 truncate text-muted-foreground text-xs"
+          className="col-start-2 min-w-0 truncate text-xs text-muted-foreground"
         >
           {client}
         </span>
       </summary>
-      <div className="space-y-4 border-border/60 border-t px-6 py-4">
+      <div className="space-y-4 border-t border-border/60 px-6 py-4">
         {hasTruncatedName ? (
           <dl className="space-y-3">
             <div>
-              <dt className="text-muted-foreground text-xs">Domain</dt>
-              <dd className="mt-1 break-all text-sm">
+              <dt className="text-xs text-muted-foreground">Domain</dt>
+              <dd className="mt-1 text-sm break-all">
                 {entry.questionName || "Unknown domain"}
               </dd>
             </div>
             <div>
-              <dt className="text-muted-foreground text-xs">Client</dt>
-              <dd className="mt-1 break-words text-sm">{client}</dd>
+              <dt className="text-xs text-muted-foreground">Client</dt>
+              <dd className="mt-1 text-sm break-words">{client}</dd>
             </div>
           </dl>
         ) : null}
         <dl className="grid grid-cols-2 gap-4">
           <div>
-            <dt className="text-muted-foreground text-xs">Record type</dt>
-            <dd className="mt-1 break-words text-sm">
+            <dt className="text-xs text-muted-foreground">Record type</dt>
+            <dd className="mt-1 text-sm break-words">
               {entry.questionType || "Unknown"}
             </dd>
           </div>
           <div>
-            <dt className="text-muted-foreground text-xs">Duration</dt>
+            <dt className="text-xs text-muted-foreground">Duration</dt>
             <dd className="mt-1 text-sm">{formatQueryDuration(entry)}</dd>
           </div>
         </dl>
         {detail ? (
           <div>
-            <p className="text-muted-foreground text-xs">Reason</p>
-            <p className="mt-1 break-words text-sm leading-relaxed">{detail}</p>
+            <p className="text-xs text-muted-foreground">Reason</p>
+            <p className="mt-1 text-sm leading-relaxed break-words">{detail}</p>
           </div>
         ) : null}
-        <div className="space-y-2 text-muted-foreground text-xs">
+        <div className="space-y-2 text-xs text-muted-foreground">
           {entry.clientIp && entry.clientIp !== client ? (
             <p className="break-all">
               Client IP{" "}

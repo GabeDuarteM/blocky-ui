@@ -2,7 +2,8 @@
 
 import { useCallback } from "react";
 import { Button } from "~/components/ui/button";
-import { TIME_RANGES, type TimeRange } from "~/lib/constants";
+import type { TimeRange } from "~/lib/constants";
+import { TIME_RANGES } from "~/lib/constants";
 
 interface TimeRangeSelectorProps {
   value: TimeRange;

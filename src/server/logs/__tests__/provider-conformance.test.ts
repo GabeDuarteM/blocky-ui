@@ -7,7 +7,7 @@ import type { LogEntry, LogProvider } from "~/server/logs/types";
 import { countEntriesInRange } from "./seed-data";
 import { setupProviders } from "./setup";
 
-const timezoneHourPattern = /[+-]\d{2}$/;
+const timezoneHourPattern = /[+-]\d{2}$/u;
 
 let providers: Map<string, LogProvider>;
 let cleanup: () => Promise<void> = () => Promise.resolve();
@@ -452,15 +452,15 @@ function defineProviderTests(providerName: string) {
         expect(totalSum).toBe(expected);
       });
 
-      for (const range of ["1h", "7d", "30d"] as const) {
-        it(`sum of totals matches entries in ${range} range`, async () => {
+      describe.each(["1h", "7d", "30d"] as const)("%s range", (range) => {
+        it("sum of totals matches entries", async () => {
           const result = await provider.getQueriesOverTime({ range });
           const totalSum = result.reduce((sum, entry) => sum + entry.total, 0);
           const expected = countEntriesInRange(seedData, range);
           expect(totalSum).toBe(expected.total);
         });
 
-        it(`sum of blocked matches in ${range} range`, async () => {
+        it("sum of blocked matches", async () => {
           const result = await provider.getQueriesOverTime({ range });
           const blockedSum = result.reduce(
             (sum, entry) => sum + entry.blocked,
@@ -470,7 +470,7 @@ function defineProviderTests(providerName: string) {
           expect(blockedSum).toBe(expected.blocked);
         });
 
-        it(`sum of cached matches in ${range} range`, async () => {
+        it("sum of cached matches", async () => {
           const result = await provider.getQueriesOverTime({ range });
           const cachedSum = result.reduce(
             (sum, entry) => sum + entry.cached,
@@ -480,7 +480,7 @@ function defineProviderTests(providerName: string) {
           expect(cachedSum).toBe(expected.cached);
         });
 
-        it(`filtering by domain works in ${range} range`, async () => {
+        it("filtering by domain works", async () => {
           const result = await provider.getQueriesOverTime({
             range,
             domain: "google",
@@ -492,7 +492,7 @@ function defineProviderTests(providerName: string) {
           expect(totalSum).toBe(expected);
         });
 
-        it(`filtering by client works in ${range} range`, async () => {
+        it("filtering by client works", async () => {
           const result = await provider.getQueriesOverTime({
             range,
             client: "laptop",
@@ -503,7 +503,7 @@ function defineProviderTests(providerName: string) {
           ).length;
           expect(totalSum).toBe(expected);
         });
-      }
+      });
     });
 
     describe("getTopDomains", () => {

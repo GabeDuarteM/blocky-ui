@@ -4,10 +4,8 @@ import { History, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { MobileQueryLog } from "~/components/dashboard/query-logs/mobile-query-log";
-import {
-  identifyQueryLogRows,
-  type QueryLogRow,
-} from "~/components/dashboard/query-logs/query-log-identity";
+import type { QueryLogRow } from "~/components/dashboard/query-logs/query-log-identity";
+import { identifyQueryLogRows } from "~/components/dashboard/query-logs/query-log-identity";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { Button } from "~/components/ui/button";
 import {
@@ -42,10 +40,8 @@ import {
 import { api } from "~/trpc/react";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
-import {
-  type QueryLogFilter,
-  QueryLogFilterCombobox,
-} from "./query-log-filter-combobox";
+import type { QueryLogFilter } from "./query-log-filter-combobox";
+import { QueryLogFilterCombobox } from "./query-log-filter-combobox";
 
 const serverColumns: typeof columns = [
   { accessorKey: "hostname", header: "Server" },
@@ -240,7 +236,7 @@ export function QueryLogs({
             <div className="flex items-center gap-2">
               <Label
                 htmlFor="auto-refresh"
-                className="text-muted-foreground text-sm"
+                className="text-sm text-muted-foreground"
               >
                 Auto
               </Label>

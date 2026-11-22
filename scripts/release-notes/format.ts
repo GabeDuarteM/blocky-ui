@@ -1,13 +1,13 @@
 import { closesCodeFence, readCodeFence } from "./code-fence";
 import { getContributionTitle } from "./contribution-title";
 
-const headingPattern = /^#{1,6} /;
+const headingPattern = /^#{1,6} /u;
 const creditPattern =
-  /^ {2}<!-- changeset-credit: ([^|]*)\|([^|]*)\|([^|]*) -->$/;
-const entryIndentPattern = /^ {2}/;
-const changeTypeHeadingPattern = /^### (Major|Minor|Patch) Changes$/;
-const releaseHeadingPattern = /^## /m;
-const rawChangesetPattern = /^\s*### (Major|Minor|Patch) Changes\n/;
+  /^ {2}<!-- changeset-credit: (?<pull>[^|]*)\|(?<commit>[^|]*)\|(?<authors>[^|]*) -->$/u;
+const entryIndentPattern = /^ {2}/u;
+const changeTypeHeadingPattern = /^### (?:Major|Minor|Patch) Changes$/u;
+const releaseHeadingPattern = /^## /mu;
+const rawChangesetPattern = /^\s*### (?:Major|Minor|Patch) Changes\n/u;
 
 const SECTIONS = [
   "Upgrade notes",
@@ -24,7 +24,7 @@ function splitSections(markdown: string) {
   const outputFence = "`".repeat(
     Math.max(
       3,
-      ...Array.from(markdown.matchAll(/`+/g), (match) => match[0].length + 1),
+      ...Array.from(markdown.matchAll(/`+/gu), (match) => match[0].length + 1),
     ),
   );
 
@@ -39,7 +39,7 @@ function splitSections(markdown: string) {
       } else {
         output =
           " ".repeat(fence.indent) +
-          line.replace(new RegExp(`^ {0,${fence.indent}}`), "");
+          line.replace(new RegExp(`^ {0,${fence.indent}}`, "u"), "");
       }
     } else if (marker) {
       fence = { marker, indent: opening?.indent ?? 0 };
@@ -77,7 +77,7 @@ function parseEntry(entry: string) {
   if (!(title && fields)) {
     throw new Error(`Cannot read Changesets entry: ${title}`);
   }
-  const [, pull, commit, authors] = fields;
+  const { pull, commit, authors } = fields.groups ?? {};
   const credit = [pull, commit, authors ? `by ${authors}` : ""]
     .filter(Boolean)
     .join(" ");
@@ -193,7 +193,7 @@ function sectionHeading(line: string, section: Section) {
 
 function sectionContent(body: string, title: string, section: Section) {
   if (section === "Other improvements") {
-    return `- ${title}\n\n${body.replace(/^(?=.)/gm, "  ")}`;
+    return `- ${title}\n\n${body.replace(/^(?=.)/gmu, "  ")}`;
   }
   if (section === "Highlights") {
     return `#### ${title}\n\n${body}`;

@@ -2,7 +2,8 @@
 
 import { format } from "date-fns";
 import { BarChart3 } from "lucide-react";
-import { type ReactNode, useCallback, useId, useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { useCallback, useId, useMemo, useState } from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useDashboardServers } from "~/components/dashboard/server-context";
 import { Button } from "~/components/ui/button";
@@ -13,8 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import type { ChartConfig } from "~/components/ui/chart";
 import {
-  type ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartTooltip,
@@ -24,11 +25,8 @@ import { useLogDiagnostics } from "~/hooks/use-log-diagnostics";
 import type { TimeRange } from "~/lib/constants";
 import { cn } from "~/lib/utils";
 import { api } from "~/trpc/react";
-import {
-  ActiveFilterChip,
-  type ChartFilter,
-  ChartFilterCombobox,
-} from "./chart-filter-combobox";
+import type { ChartFilter } from "./chart-filter-combobox";
+import { ActiveFilterChip, ChartFilterCombobox } from "./chart-filter-combobox";
 import { TimeRangeSelector } from "./time-range-selector";
 
 const timeRangeConfig: Record<
@@ -253,7 +251,7 @@ export function QueriesOverTimeChart({
       activeFilter={
         filter ? (
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs">Showing:</span>
+            <span className="text-xs text-muted-foreground">Showing:</span>
             <ActiveFilterChip filter={filter} onClear={clearFilter} />
           </div>
         ) : undefined
@@ -329,7 +327,7 @@ export function TrafficChart({
     }
     if (data?.length === 0) {
       return (
-        <div className="flex h-[220px] items-center justify-center text-muted-foreground text-sm sm:h-[250px]">
+        <div className="flex h-[220px] items-center justify-center text-sm text-muted-foreground sm:h-[250px]">
           No queries recorded yet.
         </div>
       );
@@ -401,7 +399,7 @@ export function TrafficChart({
         <div className="flex w-full flex-col gap-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <CardTitle className="flex items-center gap-2 font-medium text-base">
+              <CardTitle className="flex items-center gap-2 text-base font-medium">
                 <BarChart3 className="h-5 w-5" />
                 Queries over time
               </CardTitle>

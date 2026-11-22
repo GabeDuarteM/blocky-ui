@@ -10,7 +10,8 @@ import {
 import { demoServers } from "~/demo/config";
 import { useDemoConfiguration } from "~/demo/context";
 import { useServerSelection } from "~/hooks/use-server-selection";
-import { api, type RouterOutputs } from "~/trpc/react";
+import type { RouterOutputs } from "~/trpc/react";
+import { api } from "~/trpc/react";
 
 export function ConnectedDashboard({
   servers: initialServers,
@@ -170,7 +171,7 @@ export function ConnectedDashboard({
                   Log queries failed: {failedSources.join(", ")}
                 </p>
               )}
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-muted-foreground">
                 Showing available data. Stored logs do not require a live server
                 connection.
               </p>

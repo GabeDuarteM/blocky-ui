@@ -1,16 +1,17 @@
 "use client";
 
-import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { httpBatchStreamLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { useMemo } from "react";
 import SuperJSON from "superjson";
+import type { DemoServerCount } from "~/demo/config";
 import {
   DEMO_CONFIGURATION_HEADER,
   DEMO_SERVER_COUNT_HEADER,
-  type DemoServerCount,
 } from "~/demo/config";
 import type { AppRouter } from "./app-router";
 import { createQueryClient } from "./query-client";

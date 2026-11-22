@@ -2,7 +2,8 @@
 
 import { toast } from "sonner";
 import { useDashboardServers } from "~/components/dashboard/server-context";
-import { api, type RouterInputs } from "~/trpc/react";
+import type { RouterInputs } from "~/trpc/react";
+import { api } from "~/trpc/react";
 
 type Command = RouterInputs["servers"]["command"]["command"];
 

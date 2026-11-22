@@ -12,6 +12,7 @@
     /* Strictness */
     "strict": true,
     "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
     "checkJs": true,
     /* Bundled projects */
     "lib": ["dom", "dom.iterable", "ES2024"],

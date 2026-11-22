@@ -15,7 +15,6 @@ import {
 } from "~/server/logs/aggregation-utils";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { CsvLogProvider } from "~/server/logs/csv/provider";
-// biome-ignore lint/performance/noNamespaceImport: Spy on the module export used by the CSV reader.
 import * as csvUtils from "~/server/logs/csv/utils";
 import type { LogEntry } from "~/server/logs/types";
 

@@ -1,5 +1,4 @@
-const lineThroughPattern = /line-through/;
-
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import {
   capture,
@@ -9,6 +8,8 @@ import {
   popover,
   ready,
 } from "./visual-support";
+
+const lineThroughPattern = /line-through/u;
 
 test.use({ reducedMotion: "reduce", deviceScaleFactor: 1 });
 test.beforeEach(async ({ page }) => {
@@ -69,7 +70,7 @@ test("chart hover tooltip", async ({ page, isMobile }) => {
   await capture(chart.locator(".recharts-tooltip-wrapper"), "chart-tooltip");
 });
 
-test("blocked top list and details", async ({ page, isMobile }) => {
+async function showBlockedTopDomains(page: Page) {
   const domains = card(page, "Top Domains");
   await domains.getByRole("button", { name: "Blocked", exact: true }).click();
   await expect(
@@ -77,21 +78,30 @@ test("blocked top list and details", async ({ page, isMobile }) => {
   ).toHaveAttribute("aria-pressed", "true");
   await expect(domains.locator('[data-slot="skeleton"]')).toHaveCount(0);
   await page.mouse.move(0, 0);
+  return domains;
+}
+
+test("blocked top list", async ({ page }) => {
+  const domains = await showBlockedTopDomains(page);
   await capture(domains, "top-list-blocked");
-  if (!isMobile) {
-    await domains.getByText("ads.facebook.com", { exact: true }).hover();
-    const details = page.locator(
-      "body > div.fixed.pointer-events-none.bg-popover",
-    );
-    await expect(details).toBeVisible();
-    await capture(details, "top-list-blocked-details");
-    await page.mouse.move(0, 0);
-    await card(page, "Top Clients")
-      .getByText("192.168.1.101", { exact: true })
-      .hover();
-    await expect(details).toBeVisible();
-    await capture(details, "top-list-details");
-  }
+});
+
+test("top list hover details", async ({ page, isMobile }) => {
+  // biome-ignore lint/suspicious/noSkippedTests: Touch devices do not have a hover state.
+  test.skip(isMobile, "Hover details are desktop only.");
+  const domains = await showBlockedTopDomains(page);
+  await domains.getByText("ads.facebook.com", { exact: true }).hover();
+  const details = page.locator(
+    "body > div.fixed.pointer-events-none.bg-popover",
+  );
+  await expect(details).toBeVisible();
+  await capture(details, "top-list-blocked-details");
+  await page.mouse.move(0, 0);
+  await card(page, "Top Clients")
+    .getByText("192.168.1.101", { exact: true })
+    .hover();
+  await expect(details).toBeVisible();
+  await capture(details, "top-list-details");
 });
 
 test("top list with no pagination", async ({ page }) => {

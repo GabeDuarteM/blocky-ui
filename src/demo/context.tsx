@@ -1,19 +1,19 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   createContext,
-  type ReactNode,
   useCallback,
   useContext,
   useMemo,
   useState,
 } from "react";
-import {
-  DEFAULT_DEMO_CONFIGURATION,
-  type DemoConfiguration,
-  type DemoServerCount,
-  type DemoService,
+import type {
+  DemoConfiguration,
+  DemoServerCount,
+  DemoService,
 } from "~/demo/config";
+import { DEFAULT_DEMO_CONFIGURATION } from "~/demo/config";
 
 interface DemoConfigurationContextValue {
   configuration: DemoConfiguration;

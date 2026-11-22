@@ -8,21 +8,19 @@ import {
   vi,
 } from "vitest";
 
-vi.mock("~/env", () => ({
-  env: { BLOCKY_API_URL: "http://blocky-demo.test" },
-}));
-
 import { server } from "~/mocks/server";
 import { executeCommand, readBlockingStatus } from "~/server/blocky/commands";
 import { createBlockyServers } from "~/server/blocky/servers";
 import { getDemoScenario } from "~/server/demo";
 
+vi.mock("~/env", () => ({
+  env: { BLOCKY_API_URL: "http://blocky-demo.test" },
+}));
+
 const servers = createBlockyServers(getDemoScenario(2).configuration);
 const ids = ["default", "demo-2"];
 
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterAll(() => server.close());
-afterEach(() => vi.restoreAllMocks());
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 beforeEach(async () => {
   const results = await servers.run(ids, (client) =>
     executeCommand(client, { action: "enable" }),
@@ -31,6 +29,8 @@ beforeEach(async () => {
     throw new Error("Cannot enable demo servers for the test");
   }
 });
+afterEach(() => vi.restoreAllMocks());
+afterAll(() => server.close());
 
 it("changes blocking only on the selected demo instance", async () => {
   await servers.run(["default"], (client) =>

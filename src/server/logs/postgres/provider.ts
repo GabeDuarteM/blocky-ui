@@ -1,4 +1,5 @@
-import { type SQL, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { TimeRange } from "~/lib/constants";
@@ -59,11 +60,11 @@ export class PostgreSQLLogProvider extends BaseSqlLogProvider {
     }
   }
 
-  protected formatDateTimeForFilter(date: Date): string {
+  protected override formatDateTimeForFilter(date: Date): string {
     return date.toISOString();
   }
 
-  protected getBucketExpression(range: TimeRange): SQL {
+  protected override getBucketExpression(range: TimeRange): SQL {
     const col = logEntries.requestTs.name;
 
     switch (range) {

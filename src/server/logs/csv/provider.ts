@@ -5,12 +5,8 @@ import {
 } from "~/server/logs/aggregation-utils";
 import { listCsvFiles } from "~/server/logs/csv/files";
 import { createLogPage } from "~/server/logs/csv/page";
-import {
-  addCounts,
-  type Counts,
-  createCsvReader,
-  type Group,
-} from "~/server/logs/csv/reader";
+import type { Counts, Group } from "~/server/logs/csv/reader";
+import { addCounts, createCsvReader } from "~/server/logs/csv/reader";
 import { readQueryLogPage } from "~/server/logs/query-page";
 import type {
   LogProvider,

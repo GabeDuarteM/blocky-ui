@@ -8,11 +8,11 @@ import {
   CommandItem,
   CommandList,
 } from "~/components/ui/command";
-import {
-  type FilterSuggestions,
-  type FilterValue,
-  formatCount,
+import type {
+  FilterSuggestions,
+  FilterValue,
 } from "~/hooks/use-filter-suggestions";
+import { formatCount } from "~/hooks/use-filter-suggestions";
 import { cn } from "~/lib/utils";
 
 interface FilterSelectProps {
@@ -56,7 +56,7 @@ export function FilterSelect({
                 )}
               />
               <span className="flex-1 truncate">{domain.domain}</span>
-              <span className="ml-2 text-muted-foreground text-xs">
+              <span className="ml-2 text-xs text-muted-foreground">
                 {formatCount(domain.count)}
               </span>
             </CommandItem>
@@ -80,7 +80,7 @@ export function FilterSelect({
                 )}
               />
               <span className="flex-1 truncate">{client.client}</span>
-              <span className="ml-2 text-muted-foreground text-xs">
+              <span className="ml-2 text-xs text-muted-foreground">
                 {formatCount(client.count)}
               </span>
             </CommandItem>

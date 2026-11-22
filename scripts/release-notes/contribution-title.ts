@@ -1,9 +1,9 @@
 import { execFileSync } from "node:child_process";
 
 const pullRequestPattern =
-  /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)\)/;
+  /\]\(https:\/\/github\.com\/(?<repo>[^/]+\/[^/]+)\/pull\/(?<id>\d+)\)/u;
 const commitPattern =
-  /\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/commit\/([a-f0-9]+)\)/;
+  /\]\(https:\/\/github\.com\/(?<repo>[^/]+\/[^/]+)\/commit\/(?<id>[a-f0-9]+)\)/u;
 
 export function getContributionTitle(credit: string) {
   const pull = credit.match(pullRequestPattern);
@@ -16,7 +16,7 @@ export function getContributionTitle(credit: string) {
     "gh",
     [
       "api",
-      `repos/${source[1]}/${pull ? "pulls" : "commits"}/${source[2]}`,
+      `repos/${source.groups?.repo}/${pull ? "pulls" : "commits"}/${source.groups?.id}`,
       "--jq",
       pull ? ".title" : '.commit.message | split("\\n")[0]',
     ],
@@ -25,5 +25,5 @@ export function getContributionTitle(credit: string) {
   if (!title) {
     throw new Error(`Missing contribution title for ${source[0]}`);
   }
-  return title.replace(/\r?\n/g, " ").replace(/[\\`*_[\]<>]/g, "\\$&");
+  return title.replace(/\r?\n/gu, " ").replace(/[\\`*_[\]<>]/gu, "\\$&");
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { Radio, Search, Server } from "lucide-react";
-import type { ChangeEvent } from "react";
-import { type ReactNode, useCallback, useState } from "react";
+import type { ChangeEvent, ReactNode } from "react";
+import { useCallback, useState } from "react";
 import { ActionLayout } from "~/components/dashboard/action-layout";
 import { Button } from "~/components/ui/button";
 import {
@@ -44,7 +44,7 @@ function QueryResultCard({
       aria-label={`Query result for ${name}`}
       className="overflow-hidden rounded-lg border bg-card"
     >
-      <div className="flex items-center gap-2 border-b px-5 py-3 font-medium text-sm">
+      <div className="flex items-center gap-2 border-b px-5 py-3 text-sm font-medium">
         <Server className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 break-words">{name}</span>
       </div>
@@ -94,19 +94,19 @@ function QueryResultPane({
               : "border-l-primary bg-primary/5",
           )}
         >
-          <div className="flex items-center gap-2 text-xs uppercase tracking-widest">
+          <div className="flex items-center gap-2 text-xs tracking-widest uppercase">
             <Radio className="h-3.5 w-3.5" /> Query outcome
           </div>
           <div className="mt-8 min-w-0">
-            <p className="break-all font-black text-3xl tracking-tight">
+            <p className="text-3xl font-black tracking-tight break-all">
               {responseType}
             </p>
-            <p className="mt-1 font-mono text-muted-foreground text-xs">
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
               {returnCode} / {answers.length} {answerLabel}
             </p>
             {detail ? (
               <p
-                className="mt-2 truncate text-muted-foreground text-xs"
+                className="mt-2 truncate text-xs text-muted-foreground"
                 title={detail}
               >
                 {detail}
@@ -117,19 +117,19 @@ function QueryResultPane({
       }
       answers={
         <div className="flex max-h-64 min-h-0 min-w-0 flex-col gap-3 px-5 py-5 sm:border-l">
-          <p className="text-muted-foreground text-xs uppercase tracking-wide">
+          <p className="text-xs tracking-wide text-muted-foreground uppercase">
             DNS answers
           </p>
           {answers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No answer returned</p>
+            <p className="text-sm text-muted-foreground">No answer returned</p>
           ) : (
             <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain pr-2">
               {keyedAnswers.map(({ answer, key }, index) => (
                 <div key={key} className="flex items-baseline gap-3">
-                  <span className="font-mono text-muted-foreground text-xs">
+                  <span className="font-mono text-xs text-muted-foreground">
                     {String(index + 1).padStart(2, "0")}
                   </span>
-                  <span className="min-w-0 select-text break-all font-mono text-lg">
+                  <span className="min-w-0 font-mono text-lg break-all select-text">
                     {answer}
                   </span>
                 </div>
@@ -240,7 +240,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                       >
                         <QueryResultColumns
                           outcome={
-                            <div className="space-y-8 border-muted border-l-4 px-5 py-5">
+                            <div className="space-y-8 border-l-4 border-muted px-5 py-5">
                               <Skeleton className="h-4 w-28" />
                               <div className="space-y-2">
                                 <Skeleton className="h-9 w-36" />
@@ -267,7 +267,7 @@ export function QueryTool({ controls }: { controls?: ReactNode }) {
                       {result.success ? (
                         <QueryResultPane {...result.data} />
                       ) : (
-                        <p className="px-5 py-5 text-destructive text-sm">
+                        <p className="px-5 py-5 text-sm text-destructive">
                           {result.error.message}
                         </p>
                       )}

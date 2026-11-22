@@ -15,7 +15,9 @@ import type {
  * Used when DEMO_MODE is enabled
  */
 export class DemoLogProvider extends BaseMemoryLogProvider {
-  async getQueryLogs(options: QueryLogsOptions): Promise<QueryLogsResult> {
+  override async getQueryLogs(
+    options: QueryLogsOptions,
+  ): Promise<QueryLogsResult> {
     const { getMockLogEntries } = await import("~/mocks/log-entry-mock");
 
     const filteredLogs = getMockLogEntries()
@@ -46,7 +48,9 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
     };
   }
 
-  protected async fetchEntriesInRange(range: TimeRange): Promise<LogEntry[]> {
+  protected override async fetchEntriesInRange(
+    range: TimeRange,
+  ): Promise<LogEntry[]> {
     const { getMockLogEntries } = await import("~/mocks/log-entry-mock");
     const { startTime } = getTimeRangeConfig(range);
 
@@ -57,7 +61,7 @@ export class DemoLogProvider extends BaseMemoryLogProvider {
   }
 
   // Override to bypass caching - demo provider should always return fresh mock data
-  protected async getEntriesInRange(
+  protected override async getEntriesInRange(
     range: TimeRange,
     scope: LogScope = {},
   ): Promise<LogEntry[]> {

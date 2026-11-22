@@ -1,7 +1,7 @@
-const reasonSuffixPattern = /\s*\(.*\)\s*$/;
-const reasonContextPattern = /\((.*)\)\s*$/;
-
 import type { LogEntry } from "~/server/logs/types";
+
+const reasonSuffixPattern = /\s*\(.*\)\s*$/u;
+const reasonContextPattern = /\((?<context>.*)\)\s*$/u;
 
 export function getQueryReason({
   reason,
@@ -11,7 +11,9 @@ export function getQueryReason({
     reason?.replace(reasonSuffixPattern, "").trim() ||
     responseType ||
     "Unknown";
-  const context = (reason ?? "").match(reasonContextPattern)?.[1]?.trim();
+  const context = (reason ?? "")
+    .match(reasonContextPattern)
+    ?.groups?.context?.trim();
   let detail = context ?? null;
 
   if (responseType === "REBIND") {

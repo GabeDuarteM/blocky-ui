@@ -18,8 +18,8 @@ import type {
 // Base filter that identifies blocky query-log entries in VictoriaLogs.
 // blocky sets prefix:"queryLog" on every DNS query log line it emits to stdout,
 // which distinguishes them from blocky's startup and operational messages.
-const fractionalSecondsPattern = /\.\d+Z$/;
-const trailingSlashPattern = /\/$/;
+const fractionalSecondsPattern = /\.\d+Z$/u;
+const trailingSlashPattern = /\/$/u;
 
 const BASE_FILTER = "prefix:queryLog";
 
@@ -48,7 +48,7 @@ function regexFilter(
   value: string,
   match: "contains" | "exact" = "contains",
 ): string {
-  const pattern = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
   return `${field}:~${JSON.stringify(`(?i)${match === "exact" ? `^${pattern}$` : pattern}`)}`;
 }
 
@@ -133,64 +133,16 @@ export class VictoriaLogsProvider implements LogProvider {
     }
   }
 
-  private mapEntry(raw: Record<string, string | undefined>): LogEntry {
-    return {
-      requestTs: raw._time ?? null,
-      clientIp: raw.client_ip || null,
-      clientName: raw.client_names || null,
-      durationMs: raw.duration_ms ? Number(raw.duration_ms) : null,
-      reason: raw.response_reason || null,
-      questionName: raw.question_name || null,
-      answer: raw.answer || null,
-      responseCode: raw.response_code || null,
-      responseType: raw.response_type || null,
-      questionType: raw.question_type || null,
-      hostname: raw.instance || null,
-      effectiveTldp: null,
-      id: null,
-    };
-  }
-
-  private scopeQuery(scope: LogScope): string {
-    return [
-      BASE_FILTER,
-      ...(scope.excludedHostnames ?? []).map(
-        (hostname) => `NOT instance:exact(${JSON.stringify(hostname)})`,
-      ),
-    ].join(" AND ");
-  }
-
-  private logQuery(options: QueryLogFilters): string {
-    const { search, domain, responseType, client, questionType } = options;
-    const filters = [this.scopeQuery(options)];
-    if (responseType) {
-      filters.push(`response_type:exact(${JSON.stringify(responseType)})`);
-    }
-    if (client) {
-      filters.push(regexFilter("client_names", client));
-    }
-    if (questionType) {
-      filters.push(`question_type:exact(${JSON.stringify(questionType)})`);
-    }
-    if (search) {
-      filters.push(regexFilter("question_name", search));
-    }
-    if (domain) {
-      filters.push(regexFilter("question_name", domain, "exact"));
-    }
-    return filters.join(" AND ");
-  }
-
   async getQueryLogRows(options: QueryLogsOptions): Promise<LogEntry[]> {
     const entries = await this.queryRaw(
-      `${this.logQuery(options)} | sort by (_time desc, question_name asc, client_ip asc, question_type asc, response_type asc, answer asc, instance asc) | offset ${options.offset} | limit ${options.limit}`,
+      `${logQuery(options)} | sort by (_time desc, question_name asc, client_ip asc, question_type asc, response_type asc, answer asc, instance asc) | offset ${options.offset} | limit ${options.limit}`,
     );
-    return entries.map((entry) => this.mapEntry(entry));
+    return entries.map(mapEntry);
   }
 
   async getQueryLogCount(options: QueryLogFilters): Promise<number> {
     const result = await this.queryRaw(
-      `${this.logQuery(options)} | stats count() as total`,
+      `${logQuery(options)} | stats count() as total`,
     );
     return Number(result[0]?.total ?? 0);
   }
@@ -211,7 +163,7 @@ export class VictoriaLogsProvider implements LogProvider {
     const start = startTime.toISOString();
     const bucket = rangeToVlBucket(range);
 
-    const filters = [this.scopeQuery(options)];
+    const filters = [scopeQuery(options)];
     if (domain) {
       filters.push(regexFilter("question_name", domain));
     }
@@ -269,26 +221,6 @@ export class VictoriaLogsProvider implements LogProvider {
     );
   }
 
-  private rankedQuery(
-    options: LogScope & {
-      filter: "all" | "blocked";
-      limit?: number;
-      offset: number;
-    },
-  ) {
-    const base = this.scopeQuery(options);
-    return {
-      base:
-        options.filter === "blocked"
-          ? `${base} AND response_type:BLOCKED`
-          : base,
-      pagination:
-        options.limit === undefined
-          ? ""
-          : `| offset ${options.offset} | limit ${options.limit}`,
-    };
-  }
-
   async getTopDomains(
     options: LogScope & {
       range: TimeRange;
@@ -299,7 +231,7 @@ export class VictoriaLogsProvider implements LogProvider {
   ): Promise<{ items: TopDomainEntry[]; totalCount: number }> {
     const { range, filter } = options;
     const start = rangeToVlStart(range);
-    const { base, pagination } = this.rankedQuery(options);
+    const { base, pagination } = rankedQuery(options);
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
@@ -333,7 +265,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     if (filter === "all" && items.length > 0) {
       const blockedRows = await this.queryRaw(
-        `${this.scopeQuery(options)} AND response_type:BLOCKED | stats by (question_name) count() as blocked`,
+        `${scopeQuery(options)} AND response_type:BLOCKED | stats by (question_name) count() as blocked`,
         { start },
       );
       const blockedByDomain = new Map(
@@ -360,7 +292,7 @@ export class VictoriaLogsProvider implements LogProvider {
   ): Promise<{ items: TopClientEntry[]; totalCount: number }> {
     const { range, filter } = options;
     const start = rangeToVlStart(range);
-    const { base, pagination } = this.rankedQuery(options);
+    const { base, pagination } = rankedQuery(options);
 
     const [dataRows, countResult, totalQueriesResult] = await Promise.all([
       this.queryRaw(
@@ -391,7 +323,7 @@ export class VictoriaLogsProvider implements LogProvider {
 
     if (filter === "all" && items.length > 0) {
       const blockedRows = await this.queryRaw(
-        `${this.scopeQuery(options)} AND response_type:BLOCKED | stats by (client_names) count() as blocked`,
+        `${scopeQuery(options)} AND response_type:BLOCKED | stats by (client_names) count() as blocked`,
         { start },
       );
       const blockedByClient = new Map(
@@ -413,7 +345,7 @@ export class VictoriaLogsProvider implements LogProvider {
     scope: LogScope = {},
   ): Promise<QueryTypeEntry[]> {
     const rows = await this.queryRaw(
-      `${this.scopeQuery(scope)} | stats by (question_type) count() as count | format "<lc:question_type>" as __qtype_sort | sort by (count desc, __qtype_sort asc)`,
+      `${scopeQuery(scope)} | stats by (question_type) count() as count | format "<lc:question_type>" as __qtype_sort | sort by (count desc, __qtype_sort asc)`,
       { start: rangeToVlStart(range) },
     );
     const totalCount = rows.reduce((s, r) => s + Number(r.count), 0);
@@ -426,4 +358,70 @@ export class VictoriaLogsProvider implements LogProvider {
       };
     });
   }
+}
+
+function mapEntry(raw: Record<string, string | undefined>): LogEntry {
+  return {
+    requestTs: raw._time ?? null,
+    clientIp: raw.client_ip || null,
+    clientName: raw.client_names || null,
+    durationMs: raw.duration_ms ? Number(raw.duration_ms) : null,
+    reason: raw.response_reason || null,
+    questionName: raw.question_name || null,
+    answer: raw.answer || null,
+    responseCode: raw.response_code || null,
+    responseType: raw.response_type || null,
+    questionType: raw.question_type || null,
+    hostname: raw.instance || null,
+    effectiveTldp: null,
+    id: null,
+  };
+}
+
+function scopeQuery(scope: LogScope): string {
+  return [
+    BASE_FILTER,
+    ...(scope.excludedHostnames ?? []).map(
+      (hostname) => `NOT instance:exact(${JSON.stringify(hostname)})`,
+    ),
+  ].join(" AND ");
+}
+
+function logQuery(options: QueryLogFilters): string {
+  const { search, domain, responseType, client, questionType } = options;
+  const filters = [scopeQuery(options)];
+  if (responseType) {
+    filters.push(`response_type:exact(${JSON.stringify(responseType)})`);
+  }
+  if (client) {
+    filters.push(regexFilter("client_names", client));
+  }
+  if (questionType) {
+    filters.push(`question_type:exact(${JSON.stringify(questionType)})`);
+  }
+  if (search) {
+    filters.push(regexFilter("question_name", search));
+  }
+  if (domain) {
+    filters.push(regexFilter("question_name", domain, "exact"));
+  }
+  return filters.join(" AND ");
+}
+
+function rankedQuery(
+  options: LogScope & {
+    filter: "all" | "blocked";
+    limit?: number;
+    offset: number;
+  },
+) {
+  const base = scopeQuery(options);
+  return {
+    base:
+      options.filter === "blocked" ? `${base} AND response_type:BLOCKED` : base,
+    pagination:
+      options.limit === undefined
+        ? ""
+        : `| offset ${options.offset} | limit ${options.limit}`,
+  };
 }

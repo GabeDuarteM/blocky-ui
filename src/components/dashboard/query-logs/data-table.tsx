@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  type ColumnDef,
-  type CoreFeatures,
-  coreFeatures,
-  flexRender,
-  type RowData,
-  useTable,
-} from "@tanstack/react-table";
+import type { ColumnDef, CoreFeatures, RowData } from "@tanstack/react-table";
+import { coreFeatures, flexRender, useTable } from "@tanstack/react-table";
 import type { ReactNode } from "react";
 import { useCallback } from "react";
 import { PaginationControls } from "~/components/dashboard/pagination-controls";

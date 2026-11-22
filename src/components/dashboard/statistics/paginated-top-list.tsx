@@ -4,7 +4,8 @@ import type { LucideIcon } from "lucide-react";
 import { PaginationControls } from "~/components/dashboard/pagination-controls";
 import { CardFooter } from "~/components/ui/card";
 import { cn } from "~/lib/utils";
-import { TopListCard, TopListEntry, type TopListFilter } from "./top-list";
+import type { TopListFilter } from "./top-list";
+import { TopListCard, TopListEntry } from "./top-list";
 
 export interface PaginatedTopListItem {
   name: string;
@@ -40,7 +41,7 @@ function TopListDetails({
 
   return (
     <div className="space-y-3">
-      <p className="truncate font-medium font-mono text-sm" title={item.name}>
+      <p className="truncate font-mono text-sm font-medium" title={item.name}>
         {item.name}
       </p>
       <div className="space-y-1.5">
@@ -54,7 +55,7 @@ function TopListDetails({
                   : "bg-[var(--chart-1)]/75",
               )}
             />
-            <span className="text-muted-foreground text-sm">
+            <span className="text-sm text-muted-foreground">
               {isBlockedFilter ? "Blocked" : "Total"}
             </span>
           </div>
@@ -66,7 +67,7 @@ function TopListDetails({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-[var(--chart-5-muted)]" />
-              <span className="text-muted-foreground text-sm">Blocked</span>
+              <span className="text-sm text-muted-foreground">Blocked</span>
             </div>
             <span className="font-medium tabular-nums">
               {item.blocked.toLocaleString()} ({blockedPercentage.toFixed(1)}%)
@@ -135,7 +136,7 @@ function TopListPagination({
 
   return (
     <CardFooter className="flex-wrap justify-between gap-3 border-t pt-4">
-      <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
+      <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
         {(page * limit + 1).toLocaleString()}-
         {Math.min((page + 1) * limit, totalCount).toLocaleString()} of{" "}
         {totalCount.toLocaleString()}

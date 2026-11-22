@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { parseConfigurationYaml } from "~/server/config/schema";
 
-const invalidYamlPattern = /^Invalid YAML in Blocky UI configuration$/;
+const invalidYamlPattern = /^Invalid YAML in Blocky UI configuration$/u;
 const invalidSourcePattern =
-  /^Invalid Blocky UI configuration at: logSources.home/;
-const invalidConfigPattern = /Invalid (YAML|Blocky UI configuration)/;
+  /^Invalid Blocky UI configuration at: logSources.home/u;
+const invalidConfigPattern = /Invalid (?:YAML|Blocky UI configuration)/u;
 
 describe("server configuration", () => {
   it("keeps connections independent while referencing one shared log source", () => {

@@ -2,7 +2,7 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { RecordEntry } from "./record";
 
-const quotedFieldPattern = /[\t\n\r"]/;
+const quotedFieldPattern = /[\t\n\r"]/u;
 const leadingWhitespacePattern = /^\p{White_Space}/u;
 
 export type FileDestination = "csv" | "csv-client" | "console";
@@ -93,7 +93,7 @@ export async function importFiles(
     const client = (record.clientName ?? "")
       .split("; ")
       .join("-")
-      .replace(/[^a-zA-Z0-9_-]+/g, "_");
+      .replace(/[^a-zA-Z0-9_-]+/gu, "_");
     const filename =
       type === "console"
         ? "querylog.jsonl"

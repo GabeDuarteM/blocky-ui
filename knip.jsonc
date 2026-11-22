@@ -8,5 +8,5 @@
   },
   "tags": ["-knipignore"],
   // Bun invokes node-gyp implicitly when installing better-sqlite3.
-  "ignoreDependencies": ["server-only", "node-gyp"],
+  "ignoreDependencies": ["node-gyp"],
 }

@@ -8,7 +8,7 @@ import { importVictoriaLogs } from "./import-victorialogs";
 import { transformRecord } from "./record";
 import { readSnapshot, verifySnapshot } from "./snapshot";
 
-const timezoneOffsetPattern = /^[+-](?:0\d|1[0-3]):[0-5]\d$|^[+-]14:00$/;
+const timezoneOffsetPattern = /^[+-](?:0\d|1[0-3]):[0-5]\d$|^[+-]14:00$/u;
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,

@@ -1,26 +1,18 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  MySqlContainer,
-  type StartedMySqlContainer,
-} from "@testcontainers/mysql";
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
+import type { StartedMySqlContainer } from "@testcontainers/mysql";
+import { MySqlContainer } from "@testcontainers/mysql";
+import type { StartedPostgreSqlContainer } from "@testcontainers/postgresql";
+import { PostgreSqlContainer } from "@testcontainers/postgresql";
 import Database from "better-sqlite3";
 import { sql } from "drizzle-orm";
 import { drizzle as drizzleSqlite } from "drizzle-orm/better-sqlite3";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import { createConnection } from "mysql2/promise";
 import postgres from "postgres";
-
-import {
-  GenericContainer,
-  type StartedTestContainer,
-  Wait,
-} from "testcontainers";
+import type { StartedTestContainer } from "testcontainers";
+import { GenericContainer, Wait } from "testcontainers";
 import { createSeedData } from "~/server/logs/__tests__/seed-data";
 import { CsvClientLogProvider } from "~/server/logs/csv/client-provider";
 import { CsvLogProvider } from "~/server/logs/csv/provider";

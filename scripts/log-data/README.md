@@ -27,7 +27,7 @@ ports:
   http: 4000
 upstreams:
   groups:
-    default: [1.1.1.1]
+    default: [ 1.1.1.1 ]
 queryLog:
   type: postgresql
   target: postgres://test:test@postgres:5432/blocky?sslmode=disable
@@ -69,7 +69,6 @@ CSV and console cannot represent all database fields:
 VictoriaLogs imports check the final indexed count, not a full content fingerprint. Configure sufficient retention or explicitly shift old data first. VictoriaLogs and file outputs have no rollback. Discard a partial test destination before retrying; the tool does not retry writes automatically.
 
 Keep snapshots and imported data outside the repository. They contain real browsing history. New snapshot and file directories use owner-only permissions. A failed snapshot has no completion manifest and cannot pass verification.
-
 
 ```sh
 bun run test scripts/log-data/__tests__/transfer.test.ts

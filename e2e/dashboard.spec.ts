@@ -1,8 +1,9 @@
-const autoEnablePattern = /Auto-enables in/;
-
-import { expect, type Page, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { getQueryLogs } from "./query-logs";
 import { closePopup, configureDemo } from "./visual-support";
+
+const autoEnablePattern = /Auto-enables in/u;
 
 async function queryLogs(page: Page) {
   const logs = getQueryLogs(page);
@@ -63,6 +64,7 @@ test("DNS queries run only on selected servers", async ({ page }) => {
 test("query log pagination changes rows and page size", async ({ page }) => {
   const { region: logs, entries, rows } = await queryLogs(page);
   const firstPage = await rows.allTextContents();
+  // biome-ignore lint/performance/useDomNodeTextContent: Playwright locator text, compared with useInnerText below.
   const firstRow = await rows.first().innerText();
   await expect(rows).toHaveCount(10);
   await expect(

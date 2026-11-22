@@ -48,7 +48,7 @@ jobs:
   ci:
     name: CI
     if: always()
-    needs: [checks, e2e, integration-tests]
+    needs: [ checks, e2e, integration-tests ]
     runs-on: ubuntu-latest
     steps:
       - name: Require all checks to pass

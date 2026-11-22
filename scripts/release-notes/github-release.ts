@@ -1,7 +1,8 @@
 import { closesCodeFence, readCodeFence } from "./code-fence";
 
-const releaseHeadingPattern = /^## /;
-const releaseSubheadingPattern = /^( {0,3})(#{3,6})(?=\s|$)/;
+const releaseHeadingPattern = /^## /u;
+const releaseSubheadingPattern =
+  /^(?<indent> {0,3})##(?<heading>#{1,4})(?=\s|$)/u;
 
 export function formatGithubRelease(changelog: string, version: string) {
   const notes: string[] = [];
@@ -33,12 +34,11 @@ export function formatGithubRelease(changelog: string, version: string) {
     }
     notes.push(
       line
+        .replace(releaseSubheadingPattern, "$<indent>$<heading>")
         .replace(
-          releaseSubheadingPattern,
-          (_match, indent: string, heading: string) =>
-            `${indent}${heading.slice(2)}`,
-        )
-        .replace(/\[@([a-zA-Z0-9_-]+)\]\(https:\/\/github\.com\/\1\)/g, "@$1"),
+          /\[@(?<user>[a-zA-Z0-9_-]+)\]\(https:\/\/github\.com\/\k<user>\)/gu,
+          "@$<user>",
+        ),
     );
   }
   if (!inRelease) {

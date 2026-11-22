@@ -1,12 +1,13 @@
-const topListCountPattern = /^1-5 of \d+$/;
-
-import { expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { jsonlStreamProducer } from "@trpc/server/unstable-core-do-not-import";
 import SuperJSON from "superjson";
 import { z } from "zod";
 import type { DemoServerCount } from "~/demo/config";
 import type { RouterOutputs } from "~/trpc/react";
 import { getQueryLogs } from "./query-logs";
+
+const topListCountPattern = /^1-5 of \d+$/u;
 
 type Outputs = {
   [Group in keyof RouterOutputs]: {

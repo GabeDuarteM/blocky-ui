@@ -41,7 +41,7 @@ export function TopListsSection({
       <CardHeader>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 font-medium text-base">
+            <CardTitle className="flex items-center gap-2 text-base font-medium">
               <Icon className="h-5 w-5" />
               Top Lists
             </CardTitle>
@@ -119,7 +119,7 @@ export function TopListCard({
     );
   } else if (isEmpty) {
     content = (
-      <p className="py-8 text-center text-muted-foreground text-sm">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         No data available
       </p>
     );
@@ -130,7 +130,7 @@ export function TopListCard({
       <CardHeader>
         <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 font-medium text-base">
+            <CardTitle className="flex items-center gap-2 text-base font-medium">
               <Icon className="h-5 w-5" />
               {title}
             </CardTitle>
@@ -163,7 +163,7 @@ export function TopListEntry({
       <div className="cursor-default space-y-1 py-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate font-mono text-sm">{name}</span>
-          <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
+          <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
             {formatCount(count)}
           </span>
         </div>

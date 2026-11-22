@@ -17,8 +17,8 @@ import {
   InputGroupAddon,
   InputGroupInput,
 } from "~/components/ui/input-group";
+import type { FilterValue } from "~/hooks/use-filter-suggestions";
 import {
-  type FilterValue,
   formatCount,
   useFilterSuggestions,
 } from "~/hooks/use-filter-suggestions";
@@ -122,7 +122,7 @@ export function QueryLogFilterCombobox({
       >
         <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         {value ? (
-          <InputGroupAddon className="items-baseline py-1 pl-8 font-normal text-base md:text-sm">
+          <InputGroupAddon className="items-baseline py-1 pl-8 text-base font-normal md:text-sm">
             <span className="text-primary">{filterLabels[value.type]}:</span>
           </InputGroupAddon>
         ) : null}
@@ -173,7 +173,7 @@ export function QueryLogFilterCombobox({
                       : item.value}
                   </span>
                   {item.count === null ? null : (
-                    <span className="ml-2 text-muted-foreground text-xs">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       {formatCount(item.count)}
                     </span>
                   )}
@@ -187,7 +187,7 @@ export function QueryLogFilterCombobox({
             {suggestions.isLoading ? "Searching..." : "No suggestions found."}
           </div>
         ) : null}
-        <p className="border-t px-3 py-2 text-muted-foreground text-xs">
+        <p className="border-t px-3 py-2 text-xs text-muted-foreground">
           Suggestions and counts cover the last 24 hours.
         </p>
       </ComboboxContent>

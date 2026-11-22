@@ -1,5 +1,3 @@
-const targetPickerPattern = /^Choose .* targets$/;
-
 import { expect, test } from "@playwright/test";
 import { demoServers } from "~/demo/config";
 import { getQueryLogs } from "./query-logs";
@@ -20,6 +18,8 @@ import {
   popover,
   ready,
 } from "./visual-support";
+
+const targetPickerPattern = /^Choose .* targets$/u;
 
 test.use({ reducedMotion: "reduce", deviceScaleFactor: 1 });
 test.beforeEach(async ({ page }) => {
