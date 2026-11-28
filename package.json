@@ -79,7 +79,7 @@
     "@testcontainers/mysql": "12.2.2",
     "@testcontainers/postgresql": "12.2.2",
     "@types/better-sqlite3": "9.6.0",
-    "@types/node": "26.6.6",
+    "@types/node": "26.6.11",
     "@types/papaparse": "5.5.2",
     "@types/react": "19.3.3",
     "@types/react-dom": "19.3.0",

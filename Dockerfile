@@ -1,6 +1,6 @@
 ARG BUILDER_PLATFORM=linux/amd64
 
-FROM --platform=${BUILDER_PLATFORM} node:24-alpine AS deps
+FROM --platform=${BUILDER_PLATFORM} node:26-alpine AS deps
 WORKDIR /app
 ARG BUN_VERSION=1.4.2
 RUN apk add --no-cache g++ make python3 \
