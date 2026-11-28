@@ -1,5 +1,34 @@
 # blocky-ui
 
+## 2.3.0
+
+### Improvements
+
+- Support reading Blocky API headers from secret files in YAML configuration, so tokens don't need to sit in plain text. Use a `file:` or `file://` prefix, like in log source targets:
+
+  ````yaml
+  servers:
+    nas:
+      url: http://blocky:4000
+      headers:
+        Authorization: file:/run/secrets/blocky_token
+  ````
+
+  The file contains the complete header value, such as `Bearer your-token-here`. Use `!raw` when a header value itself must start with `file:`.
+
+- Keep the query log and top list pagers in place while the next page, page size, range or filter loads, instead of briefly hiding them.
+
+- Match query log searches and client filters literally on MySQL, PostgreSQL and SQLite. Typing `%` or `_` used to act as a wildcard there, so `my_host` also matched `myxhost.example` and `%` matched every row. Results now match CSV and VictoriaLogs.
+
+- Log why a log source can't be read. When the dashboard shows "Unable to read this log source.", the server log now has the source and the reason, like a refused connection or a wrong password, so a misconfigured source is easier to fix. Unexpected server errors are now logged in production too.
+
+### Contributions
+
+- Read Blocky API headers from files with file: references · [#532](https://github.com/GabeDuarteM/blocky-ui/pull/532) [`69306f8`](https://github.com/GabeDuarteM/blocky-ui/commit/69306f83c9b2cc02c29db07a1409b815701c4cf3) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Keep pagers on screen while the next page loads · [#533](https://github.com/GabeDuarteM/blocky-ui/pull/533) [`d25e3df`](https://github.com/GabeDuarteM/blocky-ui/commit/d25e3df36a55100929536505a4e8aa0ffbf8861e) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Match log searches and client filters literally on SQL providers · [#537](https://github.com/GabeDuarteM/blocky-ui/pull/537) [`e1972b8`](https://github.com/GabeDuarteM/blocky-ui/commit/e1972b80797a2dc0efe61e0b5fcffc11d69d74ca) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+- Log why a log source failed on the server · [#536](https://github.com/GabeDuarteM/blocky-ui/pull/536) [`9a27770`](https://github.com/GabeDuarteM/blocky-ui/commit/9a27770ed8604809782ad40de6574cfdc4a5ca93) by [@GabeDuarteM](https://github.com/GabeDuarteM)
+
 ## 2.2.1
 
 ### Upgrade notes
