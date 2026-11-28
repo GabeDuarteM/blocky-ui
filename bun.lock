@@ -42,7 +42,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "2.6.8",
-        "@changesets/changelog-github": "1.0.1",
+        "@changesets/changelog-github": "2.0.0",
         "@changesets/cli": "3.1.0",
         "@changesets/read": "1.1.0",
         "@faker-js/faker": "10.6.0",
@@ -121,7 +121,7 @@
 
     "@changesets/changelog-git": ["@changesets/changelog-git@1.0.1", "", { "dependencies": { "@changesets/types": "^7.1.0" } }, "sha512-FdS99KzRb4fVUCeMcXcIyUCa6wkUHVyIqFEd1joVERZ+dOVHV77Aq4owRKnfb5LDJ1Ank1ZY+9b0qJG6jGHDIg=="],
 
-    "@changesets/changelog-github": ["@changesets/changelog-github@1.0.1", "", { "dependencies": { "@changesets/get-github-info": "^1.0.1", "@changesets/types": "^7.0.0" } }, "sha512-QUcrV7878yHlWPXXPA6gqSxNKwtVHCd1K22L7ZAoJw2yGy8K4QvjwOStD75+1Q9KD9ZSUgGS94HuYdd7HOVtpA=="],
+    "@changesets/changelog-github": ["@changesets/changelog-github@2.0.0", "", { "dependencies": { "@changesets/get-github-info": "^1.0.1", "@changesets/types": "^7.1.0" } }, "sha512-i2c9rub+cYmgzYZ+xc6cFP/mOXRkd0pgcINOdsjC2rVGBWw95Kds7Nfpl9PHIB7QSmTfQdvkThVaUeYsW9tI8w=="],
 
     "@changesets/cli": ["@changesets/cli@3.1.0", "", { "dependencies": { "@changesets/apply-release-plan": "^8.2.0", "@changesets/assemble-release-plan": "^7.1.0", "@changesets/changelog-git": "^1.0.1", "@changesets/config": "^4.1.0", "@changesets/errors": "^1.0.0", "@changesets/get-dependents-graph": "^3.0.1", "@changesets/git": "^4.0.2", "@changesets/pre": "^3.0.1", "@changesets/read": "^1.1.0", "@changesets/should-skip-package": "^1.0.1", "@changesets/types": "^7.1.0", "@changesets/write": "^1.1.0", "@clack/prompts": "^1.8.1", "@manypkg/get-packages": "^3.1.0", "@pnpm/deps.graph-sequencer": "^1100.0.1", "cac": "^7.0.0", "import-meta-resolve": "^4.2.0", "launch-editor": "^2.14.2", "package-manager-detector": "^1.6.0", "semver": "^7.8.1", "tinyexec": "^1.3.1" }, "bin": { "changeset": "bin.js" } }, "sha512-5kiOk7//PkF2M0kdSR/cAlGVSCRH7BGTLjoR3KL/AVUw5/mnT0xFsCh1atajczKbup8tKDnG4UIW2ZpFHn62fw=="],
 
@@ -145,7 +145,7 @@
 
     "@changesets/should-skip-package": ["@changesets/should-skip-package@1.0.1", "", { "dependencies": { "@changesets/types": "^7.1.0" } }, "sha512-dWyV0BrdwMYEhUYOa/qqjiXak/G/YKNJJj9bJQXFW9mwar0edWf/IZUmNpFqjKB/lEopbepvrQkXdR6Gx0jgWw=="],
 
-    "@changesets/types": ["@changesets/types@7.0.0", "", {}, "sha512-c5GoiQyt3pxiXjrWSNoP8/GRf4kG+VnKzovx1OQM8dYYALlSwgedmkPmJ+ZqGxqwg9D3Bkj85Uo4KLd5BN3A0w=="],
+    "@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
     "@changesets/write": ["@changesets/write@1.1.0", "", { "dependencies": { "@changesets/format": "^0.1.3", "@changesets/types": "^7.1.0", "human-id": "^4.2.2", "yaml": "^2.9.0" } }, "sha512-kB0RCF6bybhXpkCi9Gc9gGksYRN/txIrTt6zJwMxhlcr1lCdZvhJz7QaMVLDaLPHBn+Jnr0CPivPPHfez5kLDA=="],
 
@@ -1462,30 +1462,6 @@
     "zod": ["zod@4.6.7", "", {}, "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg=="],
 
     "@base-ui/utils/reselect": ["reselect@5.3.0", "", {}, "sha512-XGoLeRAVzUTcJ1qkxPQhDJyIZ5d6zzZD9nT7AEZOaaU9UbWclhycElmhO+VD5bFeLuzhPBaOV2oXC8uG35ZSpg=="],
-
-    "@changesets/apply-release-plan/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/assemble-release-plan/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/changelog-git/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/cli/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/config/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/get-dependents-graph/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/git/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/parse/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/pre/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/read/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/should-skip-package/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
-
-    "@changesets/write/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
 
