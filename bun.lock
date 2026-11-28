@@ -44,7 +44,7 @@
         "@biomejs/biome": "2.6.8",
         "@changesets/changelog-github": "1.0.1",
         "@changesets/cli": "3.1.0",
-        "@changesets/read": "1.0.1",
+        "@changesets/read": "1.1.0",
         "@faker-js/faker": "10.6.0",
         "@playwright/test": "1.65.1",
         "@tailwindcss/postcss": "4.3.5",
@@ -137,11 +137,11 @@
 
     "@changesets/git": ["@changesets/git@4.0.2", "", { "dependencies": { "@changesets/errors": "^1.0.0", "@changesets/types": "^7.1.0", "@manypkg/get-packages": "^3.1.0", "picomatch": "^4.0.7", "tinyexec": "^1.3.1" } }, "sha512-xvmmbY4+qI3VnbBKbMEUECpiIKN6DL1HSDRQgTpm/yyZIuqDrhktSAWfdFwIitPD5psTZG44tNxNUnebkqjIOw=="],
 
-    "@changesets/parse": ["@changesets/parse@1.0.0", "", { "dependencies": { "@changesets/types": "^7.0.0", "yaml": "^2.9.0" } }, "sha512-P0iaMb9p9CRYZiTgAllEIF9AUMQHIy1G72tKlcIqJp61icZSsKQNiOPdxAMZG8m/DvZwt/oz5xEbTpike//dWg=="],
+    "@changesets/parse": ["@changesets/parse@1.1.0", "", { "dependencies": { "@changesets/types": "^7.1.0", "yaml": "^2.9.0" } }, "sha512-1c3Y1Xjw3z+DZrHuzV6qZjZE1GnyWswOkVWzhB0MkyY6s/WZb7HdckmMMvrFXVj0Fx7gwFsPyZDHa1Gsag+2EQ=="],
 
     "@changesets/pre": ["@changesets/pre@3.0.1", "", { "dependencies": { "@changesets/errors": "^1.0.0", "@changesets/types": "^7.1.0", "@manypkg/get-packages": "^3.1.0" } }, "sha512-4LXYgB0jPeL/NRLzuDDFW+cTrPmr+9HJM0bV9baRlDvoy5Lt+dTxArg9SMfqeKkWKNMxDNg2RcZI2vw4BJAJLw=="],
 
-    "@changesets/read": ["@changesets/read@1.0.1", "", { "dependencies": { "@changesets/git": "^4.0.1", "@changesets/parse": "^1.0.0", "@changesets/types": "^7.0.0" } }, "sha512-nzvSC6RcTiWf/dsuwZFXpLzGGsRHYCL68U3uHV7srsulU93aVWY7u2GEJiDZ+4GIIElfaW5EqtKC0UHroY+LTQ=="],
+    "@changesets/read": ["@changesets/read@1.1.0", "", { "dependencies": { "@changesets/git": "^4.0.2", "@changesets/parse": "^1.1.0", "@changesets/types": "^7.1.0" } }, "sha512-kIvkNosIN/qsv63ik9nlL0tr15faYbQFY/qPG73RpOfhvXQ3E/xdqzvtRQXEtNp0G5JW8KOV+1p7M/xT8fFf1A=="],
 
     "@changesets/should-skip-package": ["@changesets/should-skip-package@1.0.1", "", { "dependencies": { "@changesets/types": "^7.1.0" } }, "sha512-dWyV0BrdwMYEhUYOa/qqjiXak/G/YKNJJj9bJQXFW9mwar0edWf/IZUmNpFqjKB/lEopbepvrQkXdR6Gx0jgWw=="],
 
@@ -1469,8 +1469,6 @@
 
     "@changesets/changelog-git/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
-    "@changesets/cli/@changesets/read": ["@changesets/read@1.1.0", "", { "dependencies": { "@changesets/git": "^4.0.2", "@changesets/parse": "^1.1.0", "@changesets/types": "^7.1.0" } }, "sha512-kIvkNosIN/qsv63ik9nlL0tr15faYbQFY/qPG73RpOfhvXQ3E/xdqzvtRQXEtNp0G5JW8KOV+1p7M/xT8fFf1A=="],
-
     "@changesets/cli/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
     "@changesets/config/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
@@ -1479,9 +1477,11 @@
 
     "@changesets/git/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
+    "@changesets/parse/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
+
     "@changesets/pre/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
-    "@changesets/read/@changesets/git": ["@changesets/git@4.0.1", "", { "dependencies": { "@changesets/errors": "^1.0.0", "@changesets/types": "^7.0.0", "@manypkg/get-packages": "^3.1.0", "picomatch": "^4.0.4", "tinyexec": "^1.3.0" } }, "sha512-6vWpIAC4LkpmlqaIu37ViT5enyd9+uBwAiGqCGhASvkSHBgx4PrtTGXWTMFYpDmZbjgyonyVgMciPrW4MqtJsA=="],
+    "@changesets/read/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
     "@changesets/should-skip-package/@changesets/types": ["@changesets/types@7.1.0", "", {}, "sha512-UmpOTft7EIMCJRpLy5oy8rLNXdyhTBMMOaNi5t4B/2zEiluyys3pKc1jBXDE22SXmmwMgKtJ/m2qxgD/w1iJJA=="],
 
@@ -1578,8 +1578,6 @@
     "wrap-ansi-cjs/string-width": ["string-width@4.2.3", "", { "dependencies": { "emoji-regex": "^8.0.0", "is-fullwidth-code-point": "^3.0.0", "strip-ansi": "^6.0.1" } }, "sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g=="],
 
     "wrap-ansi-cjs/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
-
-    "@changesets/cli/@changesets/read/@changesets/parse": ["@changesets/parse@1.1.0", "", { "dependencies": { "@changesets/types": "^7.1.0", "yaml": "^2.9.0" } }, "sha512-1c3Y1Xjw3z+DZrHuzV6qZjZE1GnyWswOkVWzhB0MkyY6s/WZb7HdckmMMvrFXVj0Fx7gwFsPyZDHa1Gsag+2EQ=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/android-arm": ["@esbuild/android-arm@0.18.20", "", { "os": "android", "cpu": "arm" }, "sha512-fyi7TDI/ijKKNZTUJAQqiG5T7YjJXgnzkURqmGj13C6dCqckZBLdl4h7bkhHt/t0WP+zO9/zwroDvANaOqO5Sw=="],
 
