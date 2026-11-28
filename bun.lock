@@ -16,9 +16,9 @@
         "@t3-oss/env-nextjs": "0.13.11",
         "@tanstack/react-query": "5.108.2",
         "@tanstack/react-table": "9.3.1",
-        "@trpc/client": "11.29.7",
-        "@trpc/server": "11.29.7",
-        "@trpc/tanstack-react-query": "11.29.7",
+        "@trpc/client": "11.32.2",
+        "@trpc/server": "11.32.2",
+        "@trpc/tanstack-react-query": "11.32.2",
         "class-variance-authority": "0.7.1",
         "clsx": "2.1.1",
         "cmdk": "1.1.1",
@@ -651,11 +651,11 @@
 
     "@testcontainers/postgresql": ["@testcontainers/postgresql@12.2.2", "", { "dependencies": { "testcontainers": "^12.2.2" } }, "sha512-ePhFeUswU6aHJ1HETznfnVKuR0KYtGkMfqE1DTltgSt21WokXFby/I+c7g/fPXSE9sfxfE+GtyoUeohejpVcSA=="],
 
-    "@trpc/client": ["@trpc/client@11.29.7", "", { "peerDependencies": { "@trpc/server": "11.29.7", "typescript": ">=5.7.2" } }, "sha512-cW/8uDPDBEzSBdEoV0fLb6JL5U/YTOZRktLI7/bJJVsb9dz+qhYJST6YJEaI8yM6oz4MfnpCKf7Sk609zvjNxA=="],
+    "@trpc/client": ["@trpc/client@11.32.2", "", { "peerDependencies": { "@trpc/server": "11.32.2", "typescript": ">=5.7.2" } }, "sha512-YPpPQ7QBZzAHKIZZzy6XggezCTyo3PQ0CuY3JvV1gk9XFywHIHkypBdIgSfrruDU0wczoK+Tky+0S/1a7EyU0w=="],
 
-    "@trpc/server": ["@trpc/server@11.29.7", "", { "peerDependencies": { "@types/aws-lambda": "*", "@types/express": "*", "@types/ws": "*", "fastify": "*", "next": "*", "typescript": ">=5.7.2" }, "optionalPeers": ["@types/aws-lambda", "@types/express", "@types/ws", "fastify", "next"] }, "sha512-9chUuB0abOfVkCm87lFQ3PTUJzPlErlf5HOBzvwtiGl7B0YdPBul1O597NTzjUcF1XDTsRqdnQfrz7BeptzSXQ=="],
+    "@trpc/server": ["@trpc/server@11.32.2", "", { "peerDependencies": { "@types/aws-lambda": "*", "@types/express": "*", "@types/ws": "*", "fastify": "*", "next": "*", "typescript": ">=5.7.2" }, "optionalPeers": ["@types/aws-lambda", "@types/express", "@types/ws", "fastify", "next"] }, "sha512-4DEsVi9Y0IY9kYaofrUCXOL/B4MYutTTnfSknxi00VEXyANxZZFZYIF+XKpI1Z5zQQoSGAnB9NolF7ghiYM6uQ=="],
 
-    "@trpc/tanstack-react-query": ["@trpc/tanstack-react-query@11.29.7", "", { "peerDependencies": { "@tanstack/react-query": "^5.106.0", "@trpc/client": "11.29.7", "@trpc/server": "11.29.7", "react": ">=18.2.0", "typescript": ">=5.7.2" } }, "sha512-8UTTghi0CI9ZTp4p1nnSn7ZzzYytuIKoc7LE0obrC4ZTPloP9A2ER4WK/BkCPWIlGzGXLrSB+MrNRxyoX82TCQ=="],
+    "@trpc/tanstack-react-query": ["@trpc/tanstack-react-query@11.32.2", "", { "peerDependencies": { "@tanstack/react-query": "^5.106.0", "@trpc/client": "11.32.2", "@trpc/server": "11.32.2", "react": ">=18.2.0", "typescript": ">=5.7.2" } }, "sha512-7A8YzKWj1oExkG6r9dMNCGl6+iZbNVs/VEwjNzPYmYJfNqSoaYESZQdcQCukZpd+tPLvE31UWumdCwN/+wCq7A=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.4", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A=="],
 
